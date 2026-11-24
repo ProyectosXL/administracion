@@ -113,7 +113,9 @@ function configurarEmpleadoSelector() {
                                 nombre: emp.nombre,
                                 apellido: emp.apellido,
                                 centro_costos: emp.cod_centro_costos || emp.codigo_centro_costos || '',
-                                descripcion_centro: emp.desc_centro_costos || emp.descripcion_centro_costos || ''
+                                descripcion_centro: emp.desc_centro_costos || emp.descripcion_centro_costos || '',
+                                puesto_actual: emp.puesto_actual || '',
+                                sucursal_numero: emp.sucursal_numero || ''
                             }))
                         };
                     }
@@ -125,12 +127,19 @@ function configurarEmpleadoSelector() {
         // Evento de selección de empleado
         $('#empleado-select').on('select2:select', function (e) {
             const data = e.params.data;
+            const ccDisplay = `${data.descripcion_centro || data.desc_centro_costos || 'Sin descripción'} (${data.centro_costos || data.cod_centro_costos || 'N/A'})`;
+            const puestoActual = data.puesto_actual || '';
             
             // Guardar datos del empleado
             document.getElementById('legajo').value = data.id;
-            document.getElementById('centro_costos').value = data.centro_costos || '';
-            document.getElementById('empleado-centro-costos').textContent = 
-                `${data.centro_costos || 'N/A'} - ${data.descripcion_centro || 'Sin descripción'}`;
+            document.getElementById('centro_costos').value = data.centro_costos || data.cod_centro_costos || '';
+            document.getElementById('empleado-centro-costos').textContent = ccDisplay;
+            const puestoEl = document.getElementById('empleado-puesto-actual');
+            if (puestoEl) puestoEl.textContent = puestoActual || 'No definido';
+            const clOrigen = document.getElementById('cl_local_origen');
+            if (clOrigen) clOrigen.value = ccDisplay;
+            const clPos = document.getElementById('cl_posicion_actual');
+            if (clPos) clPos.value = puestoActual;
             
             // Guardar en NovedadesApp si está disponible
             if (window.NovedadesApp) {
@@ -138,8 +147,12 @@ function configurarEmpleadoSelector() {
                     legajo: data.id,
                     nombre: data.nombre,
                     apellido: data.apellido,
-                    centro_costos: data.centro_costos,
-                    descripcion_centro: data.descripcion_centro
+                    cod_centro_costos: data.centro_costos || data.cod_centro_costos || '',
+                    desc_centro_costos: data.descripcion_centro || data.desc_centro_costos || '',
+                    centro_costos: data.centro_costos || data.cod_centro_costos || '',
+                    descripcion_centro: data.descripcion_centro || data.desc_centro_costos || '',
+                    puesto_actual: puestoActual,
+                    sucursal_numero: data.sucursal_numero || ''
                 };
             }
             
@@ -154,6 +167,12 @@ function configurarEmpleadoSelector() {
             document.getElementById('centro_costos').value = '';
             document.getElementById('empleado-centro-costos').textContent = 
                 'Seleccione un empleado para ver su centro de costos';
+            const puestoEl = document.getElementById('empleado-puesto-actual');
+            if (puestoEl) puestoEl.textContent = 'Seleccione un empleado para ver su puesto';
+            const clOrigen = document.getElementById('cl_local_origen');
+            if (clOrigen) clOrigen.value = '';
+            const clPos = document.getElementById('cl_posicion_actual');
+            if (clPos) clPos.value = '';
             
             if (window.NovedadesApp) {
                 window.NovedadesApp.empleadoSeleccionado = null;

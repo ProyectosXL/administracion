@@ -27,31 +27,14 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
     <!-- Contenedor de alertas -->
     <div id="alertas-container" class="container mt-3"></div>
 
-    <!-- Header de la página -->
-    <div class="page-header">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h1>
-                        <i class="fas fa-home me-3"></i>
-                        Panel de Control
-                    </h1>
-                    <p class="lead mb-0">
-                        Sistema de gestión de novedades para liquidación de sueldos
-                    </p>
-                </div>
-                <div class="col-md-4 text-end">
-                    <span class="periodo-badge">
-                        <i class="fas fa-calendar-alt me-2"></i>
-                        <?php echo $periodoInfo['badge']; ?>
-                    </span>
-                </div>
+    <!-- Contenido principal -->
+    <div class="container pb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+            <div>
+                <h4 class="mb-0 fw-bold text-dark"><i class="fas fa-home text-primary me-2"></i>Panel de Control</h4>
+                <small class="text-muted">Sistema de gestión de novedades para liquidación de sueldos</small>
             </div>
         </div>
-    </div>
-
-    <!-- Contenido principal -->
-    <div class="container">
         <!-- Estadísticas rápidas -->
         <div class="row mb-4">
             <div class="col-md-4">

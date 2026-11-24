@@ -14,9 +14,9 @@ window.modoActual = modoActual;
 window.contadorNovedades = contadorNovedades;
 window.novedadesData = novedadesData;
 
-// Configuración de tipos de novedad y sus campos requeridos - CORREGIDA SEGÚN ARTIFACT
+// Configuración de tipos de novedad activos y sus campos requeridos
 const tiposNovedadConfigActualizada = {
-    1: { // Cambio de centro de costos
+    1: { // Cambio de sucursal / centro de costos
         config: 'config-cambio-sucursal',
         campos: ['nueva_sucursal', 'fecha_vigencia_sucursal'],
         validaciones: ['nueva_sucursal', 'fecha_vigencia']
@@ -26,24 +26,19 @@ const tiposNovedadConfigActualizada = {
         campos: ['nuevo_puesto', 'fecha_vigencia_puesto', 'tipo_nuevo_puesto'],
         validaciones: ['puesto', 'fecha_vigencia', 'tipo_nuevo_puesto']
     },
-    3: { // Nuevo salario neto
-        config: 'config-nuevo-salario',
-        campos: ['importe_salario', 'fecha_vigencia_salario'], // AGREGADA FECHA
-        validaciones: ['importe', 'fecha_vigencia']
-    },
-    4: { // Ajuste de premios
+    4: { // Ajuste de premios (importe no obligatorio)
         config: 'config-ajuste-premios',
-        campos: ['importe_premios', 'fecha_vigencia_premios'], // AGREGADA FECHA
-        validaciones: ['importe', 'fecha_vigencia']
+        campos: ['fecha_vigencia_premios'],
+        validaciones: ['fecha_vigencia']
     },
     5: { // Horas extras
         config: 'config-horas-extras',
-        campos: ['cantidad_horas_extras', 'fecha_vigencia_horas_extras'], // AGREGADA FECHA
+        campos: ['cantidad_horas_extras', 'fecha_vigencia_horas_extras'],
         validaciones: ['cantidad_horas', 'fecha_vigencia']
     },
     6: { // Horas adicionales
         config: 'config-horas-adicionales',
-        campos: ['cantidad_horas_adicionales', 'fecha_vigencia_horas_adicionales'], // AGREGADA FECHA
+        campos: ['cantidad_horas_adicionales', 'fecha_vigencia_horas_adicionales'],
         validaciones: ['cantidad_horas', 'fecha_vigencia']
     },
     7: { // Permisos
@@ -51,97 +46,48 @@ const tiposNovedadConfigActualizada = {
         campos: ['fecha_permiso', 'compensa'],
         validaciones: ['fecha_permiso', 'compensa']
     },
-    8: { // Cortes
-        config: 'config-cortes',
-        campos: ['cantidad_cortes', 'fecha_vigencia_cortes'], // AGREGADA FECHA
-        validaciones: ['cantidad_cortes', 'fecha_vigencia']
-    },
-    9: { // Producción 25%
-        config: 'config-produccion-25',
-        campos: ['cantidad_unidades_25', 'fecha_vigencia_produccion_25'], // AGREGADA FECHA
-        validaciones: ['cantidad_unidades', 'fecha_vigencia']
-    },
-    10: { // Producción 50%
-        config: 'config-produccion-50',
-        campos: ['cantidad_unidades_50', 'fecha_vigencia_produccion_50'], // AGREGADA FECHA
-        validaciones: ['cantidad_unidades', 'fecha_vigencia']
-    },
-    11: { // Producción 100%
-        config: 'config-produccion-100',
-        campos: ['cantidad_unidades_100', 'fecha_vigencia_produccion_100'], // AGREGADA FECHA
-        validaciones: ['cantidad_unidades', 'fecha_vigencia']
-    },
-    12: { // Plus de caja - ACTUALIZADO: usar ID real de la BD (32)
+    32: { // Plus de caja (sin importe, vencimiento opcional)
         config: 'config-plus-caja',
-        campos: ['tipo_plus_caja', 'importe_plus_caja', 'fecha_vigencia_plus_caja'],
+        campos: ['tipo_plus_caja', 'fecha_vigencia_plus_caja'],
         validaciones: ['tipo_plus_caja', 'fecha_vigencia']
     },
-    13: { // Plus de Sub-Encargada - ACTUALIZADO: usar ID real de la BD (33)
+    33: { // Plus de Sub-Encargada (SI/NO, sin importe, vencimiento opcional)
         config: 'config-plus-sub-encargada',
-        campos: ['tiene_importe_sub', 'fecha_vigencia_plus_sub'],
-        validaciones: ['fecha_vigencia']
+        campos: ['aplica_plus_sub', 'fecha_vigencia_plus_sub'],
+        validaciones: ['aplica_plus_sub', 'fecha_vigencia']
     },
-    14: { // Plus de Encargada - ACTUALIZADO: usar ID real de la BD (34)
+    34: { // Plus de Encargada (SI/NO, sin importe, vencimiento opcional)
         config: 'config-plus-encargada',
-        campos: ['tiene_importe_enc', 'fecha_vigencia_plus_enc'],
-        validaciones: ['fecha_vigencia']
+        campos: ['aplica_plus_enc', 'fecha_vigencia_plus_enc'],
+        validaciones: ['aplica_plus_enc', 'fecha_vigencia']
     },
-    15: { // Premio Local - ACTUALIZADO: usar ID real de la BD (35)
+    35: { // Premio Local (escala global por defecto, todos los importes obligatorios)
         config: 'config-premio-local',
-        campos: ['importe_premio_local', 'fecha_vigencia_premio_local', 'aplica_vendedora', 'aplica_sub_encargada'],
-        validaciones: ['importe', 'fecha_vigencia']
+        campos: [
+            'fecha_vigencia_premio_local',
+            'premio_1ro_enc_sub',
+            'premio_1ro_vend',
+            'premio_cumple_enc_sub',
+            'premio_cumple_vend',
+            'premio_no_llega_enc_sub',
+            'premio_no_llega_vend'
+        ],
+        validaciones: ['fecha_vigencia', 'premio_local_escala']
     },
-    16: { // Comisión Individual - ACTUALIZADO: usar ID real de la BD (36)
+    36: { // Comisión Individual (para Supervisoras - múltiples sucursales PROPIOS)
         config: 'config-comision-individual',
-        campos: ['tiene_tope_individual', 'fecha_vigencia_comision_individual', 'porcentaje_unico_individual', 'porcentaje_1_individual', 'porcentaje_2_individual'],
-        validaciones: ['fecha_vigencia']
-    },
-    17: { // Comisión sobre Local - ACTUALIZADO: usar ID real de la BD (37)
-        config: 'config-comision-local',
-        campos: ['tiene_tope_local', 'fecha_vigencia_comision_local', 'porcentaje_unico_local', 'porcentaje_1_local', 'porcentaje_2_local'],
-        validaciones: ['fecha_vigencia']
-    },
-    18: { // Premios - Ajuste General - ACTUALIZADO: usar ID real de la BD (38)
-        config: 'config-premios-ajuste',
-        campos: ['importe_ajuste_general', 'fecha_vigencia_ajuste'],
-        validaciones: ['importe', 'fecha_vigencia']
-    },
-    
-    // NUEVOS MAPEOS CON IDs REALES DE LA BASE DE DATOS (32-38)
-    32: { // Plus de caja
-        config: 'config-plus-caja',
-        campos: ['tipo_plus_caja', 'importe_plus_caja', 'fecha_vigencia_plus_caja'],
-        validaciones: ['tipo_plus_caja', 'fecha_vigencia']
-    },
-    33: { // Plus de Sub-Encargada
-        config: 'config-plus-sub-encargada',
-        campos: ['tiene_importe_sub', 'fecha_vigencia_plus_sub'],
-        validaciones: ['fecha_vigencia']
-    },
-    34: { // Plus de Encargada
-        config: 'config-plus-encargada',
-        campos: ['tiene_importe_enc', 'fecha_vigencia_plus_enc'],
-        validaciones: ['fecha_vigencia']
-    },
-    35: { // Premio Local
-        config: 'config-premio-local',
-        campos: ['importe_premio_local', 'fecha_vigencia_premio_local', 'aplica_vendedora', 'aplica_sub_encargada'],
-        validaciones: ['importe', 'fecha_vigencia']
-    },
-    36: { // Comisión Individual
-        config: 'config-comision-individual',
-        campos: ['porcentaje_individual', 'fecha_vigencia_comision_individual'],
-        validaciones: ['porcentaje_individual', 'fecha_vigencia']
+        campos: ['fecha_vigencia_comision_individual'],
+        validaciones: ['fecha_vigencia', 'comision_sucursales']
     },
     37: { // Comisión sobre Local
         config: 'config-comision-local',
-        campos: ['tiene_tope_local', 'fecha_vigencia_comision_local', 'porcentaje_unico_local', 'porcentaje_1_local', 'porcentaje_2_local'],
-        validaciones: ['fecha_vigencia']
+        campos: ['tiene_tope_local', 'fecha_vigencia_comision_local'],
+        validaciones: ['fecha_vigencia', 'comision_local']
     },
-    38: { // Premios - Ajuste General
+    38: { // Premios - Ajuste General (importe no obligatorio)
         config: 'config-premios-ajuste',
-        campos: ['importe_ajuste_general', 'fecha_vigencia_ajuste'],
-        validaciones: ['importe', 'fecha_vigencia']
+        campos: ['fecha_vigencia_ajuste'],
+        validaciones: ['fecha_vigencia']
     },
     53: { // Reemplazo
         config: 'config-reemplazo',
@@ -156,32 +102,33 @@ const tiposNovedadConfigActualizada = {
 };
 
 /**
- * Manejar cambio de tipo de novedad - MEJORADO CON LOGS Y FECHAS DINÁMICAS + PERÍODO SELECCIONABLE
+ * Alternar visibilidad de la sección de empleado (Premio Local único es global)
+ */
+function actualizarVisibilidadEmpleadoPorTipo(tipoSeleccionado) {
+    const empSec = document.getElementById('datos-empleado-section');
+    const ayudaGlobal = document.getElementById('empleado-ayuda-global');
+    const legajoInput = document.getElementById('legajo');
+    const esGlobal = (tipoSeleccionado === 35);
+
+    if (empSec) empSec.style.display = esGlobal ? 'none' : 'block';
+    if (ayudaGlobal) ayudaGlobal.style.display = esGlobal ? 'block' : 'none';
+    if (legajoInput) {
+        if (esGlobal) {
+            legajoInput.removeAttribute('required');
+        } else {
+            legajoInput.setAttribute('required', 'required');
+        }
+    }
+}
+
+/**
+ * Manejar cambio de tipo de novedad
  */
 function onTipoNovedadChangeActualizado(selectElement) {
     const tipoSeleccionado = parseInt(selectElement.value);
-    
-    console.log('🔍 onTipoNovedadChange llamado:', {
-        valor: selectElement.value,
-        tipoSeleccionado: tipoSeleccionado,
-        configuracionDisponible: !!tiposNovedadConfigActualizada[tipoSeleccionado],
-        configKeys: Object.keys(tiposNovedadConfigActualizada)
-    });
-    
-    // DEBUG ADICIONAL para tipos 53 y 54
-    if (tipoSeleccionado === 53 || tipoSeleccionado === 54) {
-        console.log('🎯 TIPO NUEVO DETECTADO:', tipoSeleccionado);
-        console.log('🎯 Config para este tipo:', tiposNovedadConfigActualizada[tipoSeleccionado]);
-        console.log('🎯 Elemento config ID:', tiposNovedadConfigActualizada[tipoSeleccionado]?.config);
-        
-        const configId = tiposNovedadConfigActualizada[tipoSeleccionado]?.config;
-        const configElement = document.getElementById(configId);
-        console.log('🎯 Elemento HTML encontrado:', !!configElement);
-        if (configElement) {
-            console.log('🎯 Estilo display actual:', configElement.style.display);
-            console.log('🎯 Clases del elemento:', configElement.className);
-        }
-    }
+
+    // Mostrar u ocultar selección de empleado según si el tipo es global (Premio Local)
+    actualizarVisibilidadEmpleadoPorTipo(tipoSeleccionado);
 
     // Toggle del botón de información (con verificación)
     try {
@@ -193,89 +140,56 @@ function onTipoNovedadChangeActualizado(selectElement) {
     } catch (error) {
         console.warn('Error al ejecutar toggleInfoButton:', error);
     }
-    
+
     // Ocultar todas las configuraciones
     ocultarTodasLasConfiguraciones();
-    
+
     // Limpiar todos los campos dinámicos
     limpiarCamposDinamicos();
-    
+
     if (tipoSeleccionado && tiposNovedadConfigActualizada[tipoSeleccionado]) {
-        // Mostrar configuración del tipo seleccionado
         const config = tiposNovedadConfigActualizada[tipoSeleccionado];
         const configId = config.config;
         const configElement = document.getElementById(configId);
-        
-        console.log('🔍 Configuración encontrada:', {
-            tipoSeleccionado,
-            config,
-            configId,
-            elementoEncontrado: !!configElement
-        });
-        
-        console.log('Mostrando configuración:', {
-            configId: configId,
-            elementoEncontrado: !!configElement
-        });
-        
+
         if (configElement) {
-            // Mostrar la sección de configuración
             document.getElementById('configuracion-novedad').style.display = 'block';
             configElement.style.display = 'block';
             configElement.classList.add('fade-in');
-            
-            // Hacer requeridos los campos necesarios
-            const campos = config.campos;
-            campos.forEach(campoId => {
+
+            config.campos.forEach(campoId => {
                 const campo = document.getElementById(campoId);
                 if (campo) {
                     campo.setAttribute('required', 'required');
-                    
-                    // Si es un campo de fecha de vigencia, configurarlo según el tipo de corte
-                    if (campoId.includes('fecha_vigencia')) {
-                        console.log(`🕘 Configurando fecha vigencia para tipo ${tipoSeleccionado}, campo ${campoId}`);
+
+                    if (campoId.includes('fecha_vigencia') && !campoId.includes('hasta')) {
                         setTimeout(() => {
                             configurarFechaVigencia(tipoSeleccionado, campoId);
-                        }, 100); // Pequeño delay para asegurar que el DOM esté listo
+                        }, 100);
                     }
                 }
             });
 
-            // Lógica específica para cambio de sucursal
             if (tipoSeleccionado === 1) {
                 configurarCambioSucursal();
-            }
-            
-            // Lógica específica para cambio de puesto
-            if (tipoSeleccionado === 2) {
+            } else if (tipoSeleccionado === 2) {
                 configurarCambioPuesto();
             }
         }
-        
-        // Mostrar y configurar el período de aplicación SOLO en modo único
+
         if (window.modoActual === 'unica' || (!window.modoActual && modoActual === 'unica')) {
             mostrarPeriodoAplicacion(tipoSeleccionado);
         }
     } else {
-        // Ocultar la sección de configuración
         document.getElementById('configuracion-novedad').style.display = 'none';
-        // Ocultar también el período de aplicación (solo en modo único)
         if (window.modoActual === 'unica' || (!window.modoActual && modoActual === 'unica')) {
             ocultarPeriodoAplicacion();
         }
     }
 
-    if (tipoSeleccionado === 12 || tipoSeleccionado === 32) { // Plus de caja
-        setTimeout(() => configurarCamposPlusCaja(), 100);
-    } else if (tipoSeleccionado === 13 || tipoSeleccionado === 33) { // Plus Sub-Encargada
-        setTimeout(() => configurarCamposPlusConImporte('sub'), 100);
-    } else if (tipoSeleccionado === 14 || tipoSeleccionado === 34) { // Plus Encargada
-        setTimeout(() => configurarCamposPlusConImporte('enc'), 100);
-    } else if (tipoSeleccionado === 15 || tipoSeleccionado === 35) { // Premio Local
-        setTimeout(() => configurarCamposPremioLocal(), 100);
-    } else if (tipoSeleccionado === 16 || tipoSeleccionado === 36) { // Comisión Individual
-        setTimeout(() => configurarCamposComision('individual'), 100);
-    } else if (tipoSeleccionado === 17 || tipoSeleccionado === 37) { // Comisión Local
+    if (tipoSeleccionado === 36) {
+        setTimeout(() => inicializarComisionSucursales('unica'), 100);
+    } else if (tipoSeleccionado === 37) {
         setTimeout(() => configurarCamposComision('local'), 100);
     }
 }
@@ -305,10 +219,19 @@ function limpiarCamposDinamicos() {
     configuraciones.forEach(config => {
         const inputs = config.querySelectorAll('input, select, textarea');
         inputs.forEach(input => {
-            input.value = '';
+            if (input.type === 'checkbox' || input.type === 'radio') {
+                input.checked = false;
+            } else {
+                input.value = '';
+            }
             input.classList.remove('is-invalid', 'is-valid');
         });
-        
+
+        const tbodyComInd = config.querySelector('#tbody_comision_ind_unica');
+        if (tbodyComInd) {
+            tbodyComInd.innerHTML = '<tr class="fila-vacia-comision"><td colspan="5" class="text-center text-muted py-3">Agregue al menos una sucursal PROPIOS</td></tr>';
+        }
+
         // Limpiar mensajes de fecha de vigencia
         const mensajesFecha = config.querySelectorAll('.fecha-vigencia-info');
         mensajesFecha.forEach(mensaje => mensaje.remove());
@@ -336,37 +259,29 @@ function configurarCambioSucursal() {
  */
 async function cargarSucursalActualEmpleado(legajo) {
     try {
-        // Primero obtener la información del empleado para conseguir su centro de costos
         const empleado = await NovedadesApp.request('get_empleado_info', { legajo: legajo });
         
         if (empleado && empleado.codigo_centro_costos) {
             const codigoCentroCostos = empleado.codigo_centro_costos;
             
-            // Solo intentar obtener sucursal si el código comienza con "LOC"
             if (codigoCentroCostos.startsWith('LOC')) {
-                // Obtener la sucursal asociada al centro de costos usando RO_V_SUCURSALES_CON_CC
                 const sucursalDescripcion = await NovedadesApp.request('get_sucursal_por_centro_costos', { 
                     codigo: codigoCentroCostos 
                 });
                 
                 if (sucursalDescripcion) {
-                    // Mostrar la sucursal actual
                     document.getElementById('sucursal_actual').value = codigoCentroCostos;
                     document.getElementById('sucursal-actual-text').textContent = sucursalDescripcion;
                     document.getElementById('sucursal-actual-info').style.display = 'block';
                 } else {
-                    // Si no se encuentra mapeo, ocultar sucursal actual
                     document.getElementById('sucursal-actual-info').style.display = 'none';
                 }
             } else {
-                // Para departamentos centrales (ADM, COM, FAB, LOG), no mostrar sucursal actual
                 document.getElementById('sucursal-actual-info').style.display = 'none';
             }
             
-            // Siempre cargar la lista de sucursales disponibles para seleccionar
             cargarSucursalesEnSelect();
         } else {
-            console.warn('No se pudo obtener el centro de costos del empleado');
             document.getElementById('sucursal-actual-info').style.display = 'none';
         }
     } catch (error) {
@@ -380,14 +295,17 @@ async function cargarSucursalActualEmpleado(legajo) {
  */
 async function cargarSucursalesEnSelect() {
     try {
-        const sucursales = await NovedadesApp.request('get_sucursales');
+        const sucursales = await NovedadesApp.request('get_sucursales_con_casa_central');
         const nuevaSucursalSelect = document.getElementById('nueva_sucursal');
-        const sucursalActual = document.getElementById('sucursal_actual').value;
-        
+        const sucursalActual = (document.getElementById('sucursal_actual')?.value || '').trim();
+        const sucursalActualNum = sucursalActual.replace(/^LOC0*/i, '');
+
+        if (!nuevaSucursalSelect) return;
         nuevaSucursalSelect.innerHTML = '<option value="">Seleccione nueva sucursal...</option>';
-        
+
         sucursales.forEach(sucursal => {
-            if (sucursal.numero !== sucursalActual) {
+            const num = String(sucursal.numero || '').trim();
+            if (num !== sucursalActual && num !== sucursalActualNum) {
                 nuevaSucursalSelect.innerHTML += `<option value="${sucursal.numero}">${sucursal.descripcion}</option>`;
             }
         });
@@ -507,54 +425,56 @@ async function enviarFormulario(event) {
  * Validar datos básicos del formulario - ACTUALIZADO PARA CAMPO ÚNICO CON DEBUGGING
  */
 function validarDatosBasicos() {
-    console.log('🔍 Iniciando validación básica...');
-    
-    const camposBasicos = ['empleado-select', 'tipo_novedad'];
+    const tipoEl = document.getElementById('tipo_novedad');
+    const tipoNovedad = parseInt(tipoEl ? tipoEl.value : '0', 10);
+    const esGlobalPremioLocal = (tipoNovedad === 35);
+
+    const camposBasicos = esGlobalPremioLocal ? ['tipo_novedad'] : ['empleado-select', 'tipo_novedad'];
     let valido = true;
 
     camposBasicos.forEach(campoId => {
         const campo = document.getElementById(campoId);
-        console.log(`📋 Validando campo ${campoId}:`, campo ? campo.value : 'CAMPO NO ENCONTRADO');
-        
         if (!campo || !campo.value.trim()) {
-            console.log(`❌ Campo ${campoId} inválido`);
-            if (campo) {
-                campo.classList.add('is-invalid');
-            }
+            if (campo) campo.classList.add('is-invalid');
             valido = false;
         } else {
-            console.log(`✅ Campo ${campoId} válido`);
             campo.classList.remove('is-invalid');
             campo.classList.add('is-valid');
         }
     });
-    
-    // Validar que el legajo esté completado (campo hidden)
-    const legajoHidden = document.getElementById('legajo');
-    console.log('🆔 Legajo hidden:', legajoHidden ? legajoHidden.value : 'CAMPO NO ENCONTRADO');
-    
-    if (!legajoHidden || !legajoHidden.value) {
-        console.log('❌ Legajo hidden inválido');
-        // Si no hay legajo, marcar el select de empleado como inválido
-        const empleadoSelect = document.getElementById('empleado-select');
-        if (empleadoSelect) {
-            empleadoSelect.classList.add('is-invalid');
+
+    if (!esGlobalPremioLocal) {
+        const legajoHidden = document.getElementById('legajo');
+        if (!legajoHidden || !legajoHidden.value) {
+            const empleadoSelect = document.getElementById('empleado-select');
+            if (empleadoSelect) empleadoSelect.classList.add('is-invalid');
+            valido = false;
         }
-        valido = false;
-    } else {
-        console.log('✅ Legajo hidden válido');
     }
 
-    // Validar empleado seleccionado en memoria
-    const empleadoSeleccionado = window.NovedadesApp ? window.NovedadesApp.empleadoSeleccionado : null;
-    console.log('👤 Empleado en memoria:', empleadoSeleccionado);
-
-    console.log(`📊 Resultado validación básica: ${valido ? 'VÁLIDO' : 'INVÁLIDO'}`);
     return valido;
 }
 
 /**
- * Validar configuración específica según tipo de novedad - ACTUALIZADO
+ * Validar fecha de vencimiento opcional (>= fecha vigencia)
+ */
+function validarRangoFechaOpcional(fechaVigencia, fechaHastaInput, errores) {
+    if (!fechaHastaInput || !fechaHastaInput.value) {
+        if (fechaHastaInput) fechaHastaInput.classList.remove('is-invalid');
+        return true;
+    }
+    if (fechaVigencia && fechaHastaInput.value < fechaVigencia) {
+        errores.push('La fecha de vencimiento no puede ser anterior a la fecha de vigencia');
+        fechaHastaInput.classList.add('is-invalid');
+        return false;
+    }
+    fechaHastaInput.classList.remove('is-invalid');
+    fechaHastaInput.classList.add('is-valid');
+    return true;
+}
+
+/**
+ * Validar configuración específica según tipo de novedad
  */
 function validarConfiguracionTipoActualizado(tipoNovedad) {
     if (!tiposNovedadConfigActualizada[tipoNovedad]) {
@@ -566,22 +486,12 @@ function validarConfiguracionTipoActualizado(tipoNovedad) {
     const errores = [];
     let valido = true;
 
-    // Validar campos requeridos
+    // Validar campos requeridos declarados en la config
     config.campos.forEach(campoId => {
         const campo = document.getElementById(campoId);
-        if (campo) {
-            let estaVacio = false;
-            
-            if (campo.type === 'date') {
-                estaVacio = !campo.value || campo.value === '';
-            } else if (campo.type === 'checkbox') {
-                // Los checkboxes no son obligatorios por defecto
-                estaVacio = false;
-            } else {
-                estaVacio = !campo.value.trim();
-            }
-            
-            if (estaVacio && config.validaciones.includes(campoId.replace(/_(plus_caja|sub|enc|premio_local|individual|local|ajuste).*/, ''))) {
+        if (campo && campo.hasAttribute('required')) {
+            const vacio = (campo.type === 'checkbox') ? false : !campo.value.trim();
+            if (vacio) {
                 campo.classList.add('is-invalid');
                 valido = false;
             } else {
@@ -591,196 +501,228 @@ function validarConfiguracionTipoActualizado(tipoNovedad) {
         }
     });
 
-    // Validaciones específicas por tipo
     switch (tipoNovedad) {
-        case 1: // Cambio de sucursal
-            const sucursalActual = document.getElementById('sucursal_actual').value;
-            const nuevaSucursal = document.getElementById('nueva_sucursal').value;
-            if (sucursalActual === nuevaSucursal) {
+        case 1: { // Cambio de sucursal
+            const sucursalActual = (document.getElementById('sucursal_actual')?.value || '').trim();
+            const sucursalActualNum = sucursalActual.replace(/^LOC0*/i, '');
+            const nuevaSucursal = (document.getElementById('nueva_sucursal')?.value || '').trim();
+            if (!nuevaSucursal) {
+                errores.push('Debe seleccionar la nueva sucursal');
+                document.getElementById('nueva_sucursal')?.classList.add('is-invalid');
+                valido = false;
+            } else if (sucursalActual && (nuevaSucursal === sucursalActual || nuevaSucursal === sucursalActualNum)) {
                 errores.push('La nueva sucursal debe ser diferente a la actual');
-                document.getElementById('nueva_sucursal').classList.add('is-invalid');
+                document.getElementById('nueva_sucursal')?.classList.add('is-invalid');
+                valido = false;
+            }
+            const fvSuc = document.getElementById('fecha_vigencia_sucursal')?.value || '';
+            if (!fvSuc) {
+                errores.push('La fecha de vigencia es obligatoria');
+                valido = false;
+            }
+            if (!validarRangoFechaOpcional(fvSuc, document.getElementById('fecha_vigencia_hasta_sucursal'), errores)) {
                 valido = false;
             }
             break;
+        }
 
-        case 3: // Nuevo salario neto
-        case 4: // Ajuste de premios
-            const importe = parseFloat(document.getElementById(tipoNovedad === 3 ? 'importe_salario' : 'importe_premios').value);
-            if (importe <= 0) {
-                errores.push('El importe debe ser mayor a cero');
+        case 2: { // Nuevo puesto
+            const nuevoPuesto = document.getElementById('nuevo_puesto')?.value;
+            const fvPuesto = document.getElementById('fecha_vigencia_puesto')?.value;
+            const radioTemp = document.getElementById('tipo_puesto_temporario');
+            if (!nuevoPuesto) {
+                errores.push('Debe seleccionar el nuevo puesto');
                 valido = false;
             }
-            // Validar límite máximo (decimal(15,2) permite hasta 999,999,999,999.99)
-            if (importe > 999999999999.99) {
-                errores.push('El importe no puede ser mayor a $999,999,999,999.99');
+            if (!fvPuesto) {
+                errores.push('La fecha de vigencia es obligatoria');
+                valido = false;
+            }
+            if (radioTemp && radioTemp.checked) {
+                const fHastaPuesto = document.getElementById('fecha_vigencia_hasta_puesto');
+                if (!fHastaPuesto || !fHastaPuesto.value) {
+                    errores.push('La fecha de fin es obligatoria para cambios temporarios');
+                    fHastaPuesto?.classList.add('is-invalid');
+                    valido = false;
+                } else if (fvPuesto && fHastaPuesto.value < fvPuesto) {
+                    errores.push('La fecha de fin no puede ser anterior a la fecha de vigencia');
+                    fHastaPuesto.classList.add('is-invalid');
+                    valido = false;
+                }
+            }
+            break;
+        }
+
+        case 4: { // Ajuste de premios (importe opcional)
+            const impRaw = document.getElementById('importe_premios')?.value?.trim() || '';
+            if (impRaw !== '') {
+                const importe = parseFloat(impRaw);
+                if (isNaN(importe) || importe <= 0) {
+                    errores.push('Si ingresa un importe, debe ser mayor a cero');
+                    document.getElementById('importe_premios')?.classList.add('is-invalid');
+                    valido = false;
+                } else if (importe > 999999999999.99) {
+                    errores.push('El importe no puede ser mayor a $999,999,999,999.99');
+                    valido = false;
+                }
+            }
+            if (!document.getElementById('fecha_vigencia_premios')?.value) {
+                errores.push('La fecha de vigencia es obligatoria');
                 valido = false;
             }
             break;
+        }
 
         case 5: // Horas extras
-        case 6: // Horas adicionales
-            const cantidadHoras = parseInt(document.getElementById(tipoNovedad === 5 ? 'cantidad_horas_extras' : 'cantidad_horas_adicionales').value);
-            if (cantidadHoras <= 0) {
+        case 6: { // Horas adicionales
+            const idCant = tipoNovedad === 5 ? 'cantidad_horas_extras' : 'cantidad_horas_adicionales';
+            const idFec = tipoNovedad === 5 ? 'fecha_vigencia_horas_extras' : 'fecha_vigencia_horas_adicionales';
+            const cantidadHoras = parseInt(document.getElementById(idCant)?.value || '0', 10);
+            if (!cantidadHoras || cantidadHoras <= 0) {
                 errores.push('La cantidad de horas debe ser mayor a cero');
                 valido = false;
             }
+            if (!document.getElementById(idFec)?.value) {
+                errores.push('La fecha de vigencia es obligatoria');
+                valido = false;
+            }
             break;
+        }
 
-        case 7: // Permisos
-            console.log('🔍 Iniciando validación de PERMISOS...');
-            const fechaPermisoValue = document.getElementById('fecha_permiso').value;
-            const compensaValue = document.getElementById('compensa').value;
-            
-            console.log('🔍 Valores obtenidos:', {
-                fecha_permiso: fechaPermisoValue,
-                compensa: compensaValue
-            });
-            
-            // Solo validar que la fecha esté presente - SIN RESTRICCIONES DE FECHA FUTURA
+        case 7: { // Permisos
+            const fechaPermisoValue = document.getElementById('fecha_permiso')?.value;
+            const compensaValue = document.getElementById('compensa')?.value;
             if (!fechaPermisoValue) {
-                console.log('❌ Fecha de permiso vacía');
                 errores.push('La fecha del permiso es obligatoria');
-                document.getElementById('fecha_permiso').classList.add('is-invalid');
+                document.getElementById('fecha_permiso')?.classList.add('is-invalid');
                 valido = false;
-            } else {
-                console.log('✅ Fecha de permiso presente:', fechaPermisoValue);
-                document.getElementById('fecha_permiso').classList.remove('is-invalid');
-                document.getElementById('fecha_permiso').classList.add('is-valid');
             }
-            
-            // Validar compensa
             if (!compensaValue) {
-                console.log('❌ Campo compensa vacío');
                 errores.push('Debe indicar si compensa o no');
-                document.getElementById('compensa').classList.add('is-invalid');
-                valido = false;
-            } else {
-                console.log('✅ Campo compensa presente:', compensaValue);
-                document.getElementById('compensa').classList.remove('is-invalid');
-                document.getElementById('compensa').classList.add('is-valid');
-            }
-            
-            console.log('🔍 Fin validación PERMISOS - válido:', valido);
-            break;
-
-        case 8: // Cortes
-            const cantidadCortes = parseInt(document.getElementById('cantidad_cortes').value);
-            if (cantidadCortes <= 0) {
-                errores.push('La cantidad de cortes debe ser mayor a cero');
+                document.getElementById('compensa')?.classList.add('is-invalid');
                 valido = false;
             }
             break;
+        }
 
-        case 9: // Producción 25%
-        case 10: // Producción 50%
-        case 11: // Producción 100%
-            const cantidadUnidades = parseInt(document.getElementById(`cantidad_unidades_${tipoNovedad === 9 ? '25' : tipoNovedad === 10 ? '50' : '100'}`).value);
-            if (cantidadUnidades <= 0) {
-                errores.push('La cantidad de unidades debe ser mayor a cero');
-                valido = false;
-            }
-            break;
-
-        case 12: // Plus de caja
-        case 32: // Plus de caja (ID real BD)
-            const tipoPlusCaja = document.getElementById('tipo_plus_caja').value;
+        case 32: { // Plus de caja (sin importe, vencimiento opcional)
+            const tipoPlusCaja = document.getElementById('tipo_plus_caja')?.value;
+            const fvCaja = document.getElementById('fecha_vigencia_plus_caja')?.value;
             if (!tipoPlusCaja) {
                 errores.push('Debe seleccionar el tipo de plus de caja');
                 valido = false;
             }
-            
-            // Solo validar importe si el tipo lo requiere (premio requiere importe, recibo puede ser opcional)
-            if (tipoPlusCaja === 'premio') {
-                const importePlusCaja = parseFloat(document.getElementById('importe_plus_caja').value);
-                if (!importePlusCaja || importePlusCaja <= 0) {
-                    errores.push('El importe es obligatorio para premios de caja');
+            if (!fvCaja) {
+                errores.push('La fecha de vigencia es obligatoria');
+                valido = false;
+            }
+            if (!validarRangoFechaOpcional(fvCaja, document.getElementById('fecha_vigencia_hasta_plus_caja'), errores)) {
+                valido = false;
+            }
+            break;
+        }
+
+        case 33: { // Plus de Sub-Encargada (SI/NO, vencimiento opcional)
+            const aplicaSub = document.getElementById('aplica_plus_sub')?.value;
+            const fvSub = document.getElementById('fecha_vigencia_plus_sub')?.value;
+            if (aplicaSub !== '1' && aplicaSub !== '0') {
+                errores.push('Debe indicar si aplica o no el Plus de Sub-Encargada');
+                document.getElementById('aplica_plus_sub')?.classList.add('is-invalid');
+                valido = false;
+            }
+            if (!fvSub) {
+                errores.push('La fecha de vigencia es obligatoria');
+                valido = false;
+            }
+            if (!validarRangoFechaOpcional(fvSub, document.getElementById('fecha_vigencia_hasta_plus_sub'), errores)) {
+                valido = false;
+            }
+            break;
+        }
+
+        case 34: { // Plus de Encargada (SI/NO, vencimiento opcional)
+            const aplicaEnc = document.getElementById('aplica_plus_enc')?.value;
+            const fvEnc = document.getElementById('fecha_vigencia_plus_enc')?.value;
+            if (aplicaEnc !== '1' && aplicaEnc !== '0') {
+                errores.push('Debe indicar si aplica o no el Plus de Encargada');
+                document.getElementById('aplica_plus_enc')?.classList.add('is-invalid');
+                valido = false;
+            }
+            if (!fvEnc) {
+                errores.push('La fecha de vigencia es obligatoria');
+                valido = false;
+            }
+            if (!validarRangoFechaOpcional(fvEnc, document.getElementById('fecha_vigencia_hasta_plus_enc'), errores)) {
+                valido = false;
+            }
+            break;
+        }
+
+        case 35: { // Premio Local (escala global, los 6 importes obligatorios)
+            const fvPremio = document.getElementById('fecha_vigencia_premio_local')?.value;
+            if (!fvPremio) {
+                errores.push('La fecha de vigencia es obligatoria');
+                valido = false;
+            }
+            const camposEscala = [
+                { id: 'premio_1ro_enc_sub', label: '1ro en el ranking - Encargada/Sub' },
+                { id: 'premio_1ro_vend', label: '1ro en el ranking - Vendedora' },
+                { id: 'premio_cumple_enc_sub', label: 'Cumple objetivo - Encargada/Sub' },
+                { id: 'premio_cumple_vend', label: 'Cumple objetivo - Vendedora' },
+                { id: 'premio_no_llega_enc_sub', label: '1ro que no llega - Encargada/Sub' },
+                { id: 'premio_no_llega_vend', label: '1ro que no llega - Vendedora' }
+            ];
+            camposEscala.forEach(item => {
+                const el = document.getElementById(item.id);
+                const val = parseFloat(el?.value || '0');
+                if (!val || val <= 0) {
+                    errores.push(`El importe "${item.label}" es obligatorio y debe ser mayor a 0`);
+                    el?.classList.add('is-invalid');
                     valido = false;
+                } else {
+                    el.classList.remove('is-invalid');
+                    el.classList.add('is-valid');
                 }
-            }
+            });
             break;
+        }
 
-        case 13: // Plus de Sub-Encargada
-        case 33: // Plus de Sub-Encargada (ID real BD)
-            const tieneImporteSub = document.getElementById('tiene_importe_sub').value;
-            if (tieneImporteSub === '1') {
-                const importeSub = parseFloat(document.getElementById('importe_sub_encargada').value);
-                if (!importeSub || importeSub <= 0) {
-                    errores.push('Debe especificar el importe cuando selecciona "Sí"');
-                    valido = false;
-                }
-            }
-            break;
-
-        case 14: // Plus de Encargada
-        case 34: // Plus de Encargada (ID real BD)
-            const tieneImporteEnc = document.getElementById('tiene_importe_enc').value;
-            if (tieneImporteEnc === '1') {
-                const importeEnc = parseFloat(document.getElementById('importe_encargada').value);
-                if (!importeEnc || importeEnc <= 0) {
-                    errores.push('Debe especificar el importe cuando selecciona "Sí"');
-                    valido = false;
-                }
-            }
-            break;
-
-        case 15: // Premio Local
-        case 35: // Premio Local (ID real BD)
-            const importePremioLocal = parseFloat(document.getElementById('importe_premio_local').value);
-            if (!importePremioLocal || importePremioLocal <= 0) {
-                errores.push('El importe del premio es obligatorio');
+        case 36: { // Comisión Individual (para Supervisoras - múltiples sucursales PROPIOS)
+            const fvComInd = document.getElementById('fecha_vigencia_comision_individual')?.value;
+            if (!fvComInd) {
+                errores.push('La fecha de vigencia es obligatoria');
                 valido = false;
             }
-            
-            // Validar que al menos una aplicación esté seleccionada (pero no ambas)
-            const aplicaVendedora = document.getElementById('aplica_vendedora').checked;
-            const aplicaSubEncargada = document.getElementById('aplica_sub_encargada').checked;
-            
-            if (!aplicaVendedora && !aplicaSubEncargada) {
-                errores.push('Debe seleccionar al menos a quién aplica el premio');
-                valido = false;
-            }
-            
-            // Validar que no se seleccionen ambas (excluyente)
-            if (aplicaVendedora && aplicaSubEncargada) {
-                errores.push('Solo puede seleccionar una opción: Vendedora O Sub-Encargada, no ambas');
+            const resCom = recopilarSucursalesComision('unica', true);
+            if (!resCom.valido) {
+                resCom.errores.forEach(e => errores.push(e));
                 valido = false;
             }
             break;
+        }
 
-        case 16: // Comisión Individual
-        case 36: // Comisión Individual (ID real BD)
-            // COMISIÓN INDIVIDUAL: Solo validar un porcentaje simple
-            const porcentajeIndividual = parseFloat(document.getElementById('porcentaje_individual').value);
-            if (!porcentajeIndividual || porcentajeIndividual <= 0) {
-                errores.push('El porcentaje de comisión individual es requerido y debe ser mayor a 0');
+        case 37: { // Comisión sobre Local
+            const fvComLoc = document.getElementById('fecha_vigencia_comision_local')?.value;
+            if (!fvComLoc) {
+                errores.push('La fecha de vigencia es obligatoria');
                 valido = false;
             }
-            break;
-
-        case 17: // Comisión sobre Local
-        case 37: // Comisión sobre Local (ID real BD)
-            // COMISIÓN SOBRE LOCAL: Validar estructura con tope
-            const tieneTope = document.getElementById('tiene_tope_local').value;
-            
+            const tieneTope = document.getElementById('tiene_tope_local')?.value;
             if (tieneTope === '1') {
-                // Con tope: validar dos porcentajes
-                const porcentaje1 = parseFloat(document.getElementById('porcentaje_1_local').value);
-                const porcentaje2 = parseFloat(document.getElementById('porcentaje_2_local').value);
-                
-                if (!porcentaje1 || porcentaje1 <= 0) {
-                    errores.push('El primer porcentaje es requerido y debe ser mayor a 0');
+                const p1 = parseFloat(document.getElementById('porcentaje_1_local')?.value || '0');
+                const p2 = parseFloat(document.getElementById('porcentaje_2_local')?.value || '0');
+                if (!p1 || p1 <= 0 || p1 > 100) {
+                    errores.push('El 1er porcentaje (antes del tope) debe ser mayor a 0 y menor o igual a 100');
                     valido = false;
                 }
-                if (!porcentaje2 || porcentaje2 <= 0) {
-                    errores.push('El segundo porcentaje es requerido y debe ser mayor a 0');
+                if (!p2 || p2 <= 0 || p2 > 100) {
+                    errores.push('El 2do porcentaje (luego del tope) debe ser mayor a 0 y menor o igual a 100');
                     valido = false;
                 }
             } else if (tieneTope === '0') {
-                // Sin tope: validar un porcentaje
-                const porcentajeUnico = parseFloat(document.getElementById('porcentaje_unico_local').value);
-                
-                if (!porcentajeUnico || porcentajeUnico <= 0) {
-                    errores.push('El porcentaje es requerido y debe ser mayor a 0');
+                const pu = parseFloat(document.getElementById('porcentaje_unico_local')?.value || '0');
+                if (!pu || pu <= 0 || pu > 100) {
+                    errores.push('El porcentaje debe ser mayor a 0 y menor o igual a 100');
                     valido = false;
                 }
             } else {
@@ -788,17 +730,26 @@ function validarConfiguracionTipoActualizado(tipoNovedad) {
                 valido = false;
             }
             break;
+        }
 
-        case 18: // Premios - Ajuste General
-        case 38: // Premios - Ajuste General (ID real BD)
-            const importeAjuste = parseFloat(document.getElementById('importe_ajuste_general').value);
-            if (!importeAjuste || importeAjuste <= 0) {
-                errores.push('El importe del ajuste es obligatorio');
+        case 38: { // Premios - Ajuste General (importe opcional)
+            const impAjRaw = document.getElementById('importe_ajuste_general')?.value?.trim() || '';
+            if (impAjRaw !== '') {
+                const impAj = parseFloat(impAjRaw);
+                if (isNaN(impAj) || impAj <= 0) {
+                    errores.push('Si ingresa un importe en Ajuste General, debe ser mayor a 0');
+                    document.getElementById('importe_ajuste_general')?.classList.add('is-invalid');
+                    valido = false;
+                }
+            }
+            if (!document.getElementById('fecha_vigencia_ajuste')?.value) {
+                errores.push('La fecha de vigencia es obligatoria');
                 valido = false;
             }
             break;
+        }
 
-        case 53: // Reemplazo
+        case 53: { // Reemplazo
             const puestoReemplazo = document.getElementById('puesto_reemplazo');
             const fechaVigenciaReemplazo = document.getElementById('fecha_vigencia_reemplazo');
             const tipoReemplazoPermanente = document.getElementById('tipo_reemplazo_permanente');
@@ -808,19 +759,15 @@ function validarConfiguracionTipoActualizado(tipoNovedad) {
                 errores.push('El puesto de reemplazo es obligatorio');
                 valido = false;
             }
-
             if (!fechaVigenciaReemplazo || !fechaVigenciaReemplazo.value) {
                 errores.push('La fecha de vigencia del reemplazo es obligatoria');
                 valido = false;
             }
-
-            if ((!tipoReemplazoPermanente || !tipoReemplazoPermanente.checked) && 
+            if ((!tipoReemplazoPermanente || !tipoReemplazoPermanente.checked) &&
                 (!tipoReemplazoTemporario || !tipoReemplazoTemporario.checked)) {
                 errores.push('Debe seleccionar el tipo de reemplazo');
                 valido = false;
             }
-
-            // Si es temporario, validar fecha de fin
             if (tipoReemplazoTemporario && tipoReemplazoTemporario.checked) {
                 const fechaFinReemplazo = document.getElementById('fecha_vigencia_hasta_reemplazo');
                 if (!fechaFinReemplazo || !fechaFinReemplazo.value) {
@@ -829,8 +776,9 @@ function validarConfiguracionTipoActualizado(tipoNovedad) {
                 }
             }
             break;
+        }
 
-        case 54: // Aumento Salarial
+        case 54: { // Aumento Salarial
             const fechaVigenciaAumento = document.getElementById('fecha_vigencia_aumento');
             const tipoAumentoPorcentaje = document.getElementById('tipo_aumento_porcentaje');
             const tipoAumentoMonto = document.getElementById('tipo_aumento_monto');
@@ -839,14 +787,11 @@ function validarConfiguracionTipoActualizado(tipoNovedad) {
                 errores.push('La fecha de vigencia del aumento es obligatoria');
                 valido = false;
             }
-
-            if ((!tipoAumentoPorcentaje || !tipoAumentoPorcentaje.checked) && 
+            if ((!tipoAumentoPorcentaje || !tipoAumentoPorcentaje.checked) &&
                 (!tipoAumentoMonto || !tipoAumentoMonto.checked)) {
                 errores.push('Debe seleccionar el tipo de aumento');
                 valido = false;
             }
-
-            // Validar campo específico según tipo seleccionado
             if (tipoAumentoPorcentaje && tipoAumentoPorcentaje.checked) {
                 const porcentajeAumento = parseFloat(document.getElementById('porcentaje_aumento').value);
                 if (!porcentajeAumento || porcentajeAumento <= 0) {
@@ -861,6 +806,7 @@ function validarConfiguracionTipoActualizado(tipoNovedad) {
                 }
             }
             break;
+        }
     }
 
     if (errores.length > 0) {
@@ -871,380 +817,242 @@ function validarConfiguracionTipoActualizado(tipoNovedad) {
 }
 
 /**
- * Recopilar datos del formulario según el tipo de novedad - CON DEBUGGING Y FALLBACK MEJORADO
+ * Recopilar datos del formulario según el tipo de novedad
  */
 async function recopilarDatosFormularioActualizado(tipoNovedad) {
-    console.log('📦 Iniciando recopilación de datos...');
-    
-    // Obtener datos del empleado
-    const legajo = document.getElementById('legajo').value;
-    
-    let nombreEmpleado = '';
-    let apellidoEmpleado = '';
-    
-    // Método 1: Obtener desde NovedadesApp si está disponible
-    const empleadoSeleccionado = window.NovedadesApp ? window.NovedadesApp.empleadoSeleccionado : null;
-    console.log('👤 Empleado desde NovedadesApp:', empleadoSeleccionado);
-    
-    if (empleadoSeleccionado && empleadoSeleccionado.nombre && empleadoSeleccionado.apellido) {
-        nombreEmpleado = empleadoSeleccionado.nombre;
-        apellidoEmpleado = empleadoSeleccionado.apellido;
-        console.log('✅ Usando datos almacenados en NovedadesApp');
+    let datos;
+
+    if (tipoNovedad === 35) {
+        // Premio Local global (no requiere empleado)
+        datos = {
+            legajo: 0,
+            nombre: 'TODOS',
+            apellido: 'LOCALES',
+            tipo_novedad: 35,
+            es_global: 1,
+            observaciones: document.getElementById('observaciones') ? document.getElementById('observaciones').value : ''
+        };
     } else {
-        // Método 2: Obtener del Select2 directamente
-        try {
-            const empleadoSelect = $('#empleado-select');
-            if (empleadoSelect.length && empleadoSelect.val()) {
-                const selectedData = empleadoSelect.select2('data')[0];
-                console.log('👤 Datos desde Select2:', selectedData);
-                
-                if (selectedData) {
-                    // Si viene con nombre y apellido separados
-                    if (selectedData.nombre && selectedData.apellido) {
-                        nombreEmpleado = selectedData.nombre;
-                        apellidoEmpleado = selectedData.apellido;
-                    } else if (selectedData.text) {
-                        // Extraer nombre y apellido del texto "NOMBRE APELLIDO (LEGAJO)"
-                        const match = selectedData.text.match(/^(.+?)\s+(.+?)\s*\(\d+\)$/);
-                        if (match) {
-                            nombreEmpleado = match[1].trim();
-                            apellidoEmpleado = match[2].trim();
+        const legajo = document.getElementById('legajo').value;
+        let nombreEmpleado = '';
+        let apellidoEmpleado = '';
+
+        const empleadoSeleccionado = window.NovedadesApp ? window.NovedadesApp.empleadoSeleccionado : null;
+        if (empleadoSeleccionado && empleadoSeleccionado.nombre && empleadoSeleccionado.apellido) {
+            nombreEmpleado = empleadoSeleccionado.nombre;
+            apellidoEmpleado = empleadoSeleccionado.apellido;
+        } else {
+            try {
+                const empleadoSelect = $('#empleado-select');
+                if (empleadoSelect.length && empleadoSelect.val()) {
+                    const selectedData = empleadoSelect.select2('data')[0];
+                    if (selectedData) {
+                        if (selectedData.nombre && selectedData.apellido) {
+                            nombreEmpleado = selectedData.nombre;
+                            apellidoEmpleado = selectedData.apellido;
+                        } else if (selectedData.text) {
+                            const match = selectedData.text.match(/^(.+?)\s+(.+?)\s*\(\d+\)$/);
+                            if (match) {
+                                nombreEmpleado = match[1].trim();
+                                apellidoEmpleado = match[2].trim();
+                            }
                         }
                     }
-                    console.log('✅ Extraído del Select2:', { nombreEmpleado, apellidoEmpleado });
                 }
+            } catch (e) {
+                console.warn('Error obteniendo datos del Select2:', e);
             }
-        } catch (e) {
-            console.warn('⚠️ Error obteniendo datos del Select2:', e);
-        }
-        
-        // Método 3: Buscar por legajo como último recurso
-        if ((!nombreEmpleado || !apellidoEmpleado) && legajo) {
-            console.log('🔍 Buscando empleado por legajo:', legajo);
-            try {
-                const empleadoData = await NovedadesApp.request('buscar_empleado', { legajo: legajo }, 'GET');
-                if (empleadoData && empleadoData.nombre && empleadoData.apellido) {
-                    nombreEmpleado = empleadoData.nombre;
-                    apellidoEmpleado = empleadoData.apellido;
-                    console.log('✅ Empleado encontrado por legajo:', empleadoData);
-                }
-            } catch (error) {
-                console.warn('⚠️ Error buscando empleado por legajo:', error);
-            }
-        }
-    }
-    
-    // Validar que tenemos los datos obligatorios
-    if (!nombreEmpleado || !apellidoEmpleado) {
-        throw new Error('No se pudo obtener el nombre y apellido del empleado seleccionado');
-    }
-    
-    // Datos básicos - OBLIGATORIOS
-    const datos = {
-        legajo: legajo,
-        nombre: nombreEmpleado,
-        apellido: apellidoEmpleado,
-        tipo_novedad: tipoNovedad,
-        observaciones: document.getElementById('observaciones') ? document.getElementById('observaciones').value : ''
-    };
-    
-    console.log('📋 Datos básicos recopilados:', datos);
 
-    // Agregar campos específicos según el tipo
+            if ((!nombreEmpleado || !apellidoEmpleado) && legajo) {
+                try {
+                    const empleadoData = await NovedadesApp.request('buscar_empleado', { legajo: legajo }, 'GET');
+                    if (empleadoData && empleadoData.nombre && empleadoData.apellido) {
+                        nombreEmpleado = empleadoData.nombre;
+                        apellidoEmpleado = empleadoData.apellido;
+                    }
+                } catch (error) {
+                    console.warn('Error buscando empleado por legajo:', error);
+                }
+            }
+        }
+
+        if (!nombreEmpleado || !apellidoEmpleado) {
+            throw new Error('No se pudo obtener el nombre y apellido del empleado seleccionado');
+        }
+
+        datos = {
+            legajo: legajo,
+            nombre: nombreEmpleado,
+            apellido: apellidoEmpleado,
+            tipo_novedad: tipoNovedad,
+            observaciones: document.getElementById('observaciones') ? document.getElementById('observaciones').value : ''
+        };
+    }
+
     switch (tipoNovedad) {
-        case 1: // Cambio de sucursal
+        case 1: { // Cambio de sucursal
             datos.nueva_sucursal = document.getElementById('nueva_sucursal').value;
             datos.fecha_vigencia = document.getElementById('fecha_vigencia_sucursal').value;
-            // Agregar sucursal actual para las observaciones (usar número, no descripción)
-            const empleadoSeleccionado = window.NovedadesApp?.empleadoSeleccionado;
-            if (empleadoSeleccionado && empleadoSeleccionado.sucursal_numero) {
-                datos.sucursal_actual = empleadoSeleccionado.sucursal_numero;
+            const fhSuc = document.getElementById('fecha_vigencia_hasta_sucursal')?.value?.trim();
+            datos.fecha_vigencia_hasta = fhSuc || null;
+            const empSel = window.NovedadesApp?.empleadoSeleccionado;
+            if (empSel && empSel.sucursal_numero) {
+                datos.sucursal_actual = empSel.sucursal_numero;
             }
             break;
+        }
 
-        case 2: // Nuevo puesto
+        case 2: { // Nuevo puesto
             datos.puesto = document.getElementById('nuevo_puesto').value;
             datos.fecha_vigencia = document.getElementById('fecha_vigencia_puesto').value;
-            
-            // Obtener tipo de puesto (permanente/temporario) - MEJORADO
-            let tipoPuesto = 'permanente'; // default seguro
-            
-            // Verificar radio buttons
-            const radioPermanente = document.getElementById('tipo_puesto_permanente');
             const radioTemporario = document.getElementById('tipo_puesto_temporario');
-            
-            if (radioTemporario && radioTemporario.checked) {
-                tipoPuesto = 'temporario';
-            } else if (radioPermanente && radioPermanente.checked) {
-                tipoPuesto = 'permanente';
-            }
-            // Si ninguno está seleccionado, queda 'permanente' por defecto
-            
+            const tipoPuesto = (radioTemporario && radioTemporario.checked) ? 'temporario' : 'permanente';
             datos.tipo_nuevo_puesto = tipoPuesto;
-            
-            // Si es temporario, agregar fecha de fin
-            if (tipoPuesto === 'temporario') {
-                const fechaHasta = document.getElementById('fecha_vigencia_hasta_puesto');
-                datos.fecha_vigencia_hasta = fechaHasta ? fechaHasta.value : '';
-            } else {
-                // Para permanente, asegurar que fecha_vigencia_hasta sea null
-                datos.fecha_vigencia_hasta = null;
-            }
-            
-            console.log('🔍 NUEVO PUESTO - Datos recopilados:', {
-                puesto: datos.puesto,
-                fecha_vigencia: datos.fecha_vigencia,
-                tipo_nuevo_puesto: datos.tipo_nuevo_puesto,
-                fecha_vigencia_hasta: datos.fecha_vigencia_hasta || 'N/A',
-                radioPermanenteChecked: radioPermanente ? radioPermanente.checked : 'no encontrado',
-                radioTemporarioChecked: radioTemporario ? radioTemporario.checked : 'no encontrado'
-            });
+            datos.fecha_vigencia_hasta = (tipoPuesto === 'temporario')
+                ? (document.getElementById('fecha_vigencia_hasta_puesto')?.value || '')
+                : null;
             break;
+        }
 
-        case 3: // Nuevo salario neto
-            datos.importe = parseFloat(document.getElementById('importe_salario').value);
-            datos.fecha_vigencia = document.getElementById('fecha_vigencia_salario').value;
-            break;
-
-        case 4: // Ajuste de premios
-            datos.importe = parseFloat(document.getElementById('importe_premios').value);
+        case 4: { // Ajuste de premios (importe opcional)
+            const impRaw = document.getElementById('importe_premios')?.value?.trim() || '';
+            datos.importe = impRaw !== '' ? parseFloat(impRaw) : null;
             datos.fecha_vigencia = document.getElementById('fecha_vigencia_premios').value;
             break;
+        }
 
         case 5: // Horas extras
-            datos.cantidad_horas = parseInt(document.getElementById('cantidad_horas_extras').value);
+            datos.cantidad_horas = parseInt(document.getElementById('cantidad_horas_extras').value, 10);
             datos.fecha_vigencia = document.getElementById('fecha_vigencia_horas_extras').value;
             break;
 
         case 6: // Horas adicionales
-            datos.cantidad_horas = parseInt(document.getElementById('cantidad_horas_adicionales').value);
+            datos.cantidad_horas = parseInt(document.getElementById('cantidad_horas_adicionales').value, 10);
             datos.fecha_vigencia = document.getElementById('fecha_vigencia_horas_adicionales').value;
             break;
 
-        case 7: // Permisos
+        case 7: { // Permisos
             const fechaPermisoElement = document.getElementById('fecha_permiso');
             const compensaElement = document.getElementById('compensa');
-            
             datos.fecha_permiso = fechaPermisoElement ? fechaPermisoElement.value : '';
             datos.compensa = compensaElement ? compensaElement.value === '1' : false;
-            
-            console.log('🔍 PERMISOS - Datos recopilados:', {
-                fecha_permiso: datos.fecha_permiso,
-                compensa: datos.compensa,
-                elemento_fecha_exists: !!fechaPermisoElement,
-                elemento_compensa_exists: !!compensaElement,
-                fecha_elemento_value: fechaPermisoElement ? fechaPermisoElement.value : 'NO EXISTE',
-                compensa_elemento_value: compensaElement ? compensaElement.value : 'NO EXISTE'
-            });
             break;
+        }
 
-        case 8: // Cortes
-            datos.cantidad_cortes = parseInt(document.getElementById('cantidad_cortes').value);
-            datos.fecha_vigencia = document.getElementById('fecha_vigencia_cortes').value;
-            break;
-
-        case 9: // Producción 25%
-            datos.cantidad_unidades = parseInt(document.getElementById('cantidad_unidades_25').value);
-            datos.fecha_vigencia = document.getElementById('fecha_vigencia_produccion_25').value;
-            break;
-
-        case 10: // Producción 50%
-            datos.cantidad_unidades = parseInt(document.getElementById('cantidad_unidades_50').value);
-            datos.fecha_vigencia = document.getElementById('fecha_vigencia_produccion_50').value;
-            break;
-
-        case 11: // Producción 100%
-            datos.cantidad_unidades = parseInt(document.getElementById('cantidad_unidades_100').value);
-            datos.fecha_vigencia = document.getElementById('fecha_vigencia_produccion_100').value;
-            break;
-
-        case 12: // Plus de caja
-        case 32: // Plus de caja (ID real BD)
+        case 32: { // Plus de caja (sin importe, vencimiento opcional)
             datos.tipo_plus_caja = document.getElementById('tipo_plus_caja').value;
             datos.fecha_vigencia = document.getElementById('fecha_vigencia_plus_caja').value;
-            
-            // Solo incluir importe si se especifica
-            const importePlusCaja = document.getElementById('importe_plus_caja');
-            if (importePlusCaja && importePlusCaja.value) {
-                datos.importe = parseFloat(importePlusCaja.value);
-            }
+            const fhCaja = document.getElementById('fecha_vigencia_hasta_plus_caja')?.value?.trim();
+            datos.fecha_vigencia_hasta = fhCaja || null;
             break;
+        }
 
-        case 13: // Plus de Sub-Encargada
-        case 33: // Plus de Sub-Encargada (ID real BD)
+        case 33: { // Plus de Sub-Encargada (SI/NO, vencimiento opcional)
+            datos.aplica_plus = document.getElementById('aplica_plus_sub').value;
             datos.fecha_vigencia = document.getElementById('fecha_vigencia_plus_sub').value;
-            datos.tiene_importe = document.getElementById('tiene_importe_sub').value;
-            
-            if (datos.tiene_importe === '1') {
-                const importeSub = document.getElementById('importe_sub_encargada');
-                if (importeSub && importeSub.value) {
-                    datos.importe = parseFloat(importeSub.value);
-                }
-            }
+            const fhSub = document.getElementById('fecha_vigencia_hasta_plus_sub')?.value?.trim();
+            datos.fecha_vigencia_hasta = fhSub || null;
             break;
+        }
 
-        case 14: // Plus de Encargada
-        case 34: // Plus de Encargada (ID real BD)
+        case 34: { // Plus de Encargada (SI/NO, vencimiento opcional)
+            datos.aplica_plus = document.getElementById('aplica_plus_enc').value;
             datos.fecha_vigencia = document.getElementById('fecha_vigencia_plus_enc').value;
-            datos.tiene_importe = document.getElementById('tiene_importe_enc').value;
-            
-            if (datos.tiene_importe === '1') {
-                const importeEnc = document.getElementById('importe_encargada');
-                if (importeEnc && importeEnc.value) {
-                    datos.importe = parseFloat(importeEnc.value);
-                }
-            }
+            const fhEnc = document.getElementById('fecha_vigencia_hasta_plus_enc')?.value?.trim();
+            datos.fecha_vigencia_hasta = fhEnc || null;
             break;
+        }
 
-        case 15: // Premio Local
-        case 35: // Premio Local (ID real BD)
-            datos.importe = parseFloat(document.getElementById('importe_premio_local').value);
+        case 35: { // Premio Local (escala global)
             datos.fecha_vigencia = document.getElementById('fecha_vigencia_premio_local').value;
-            datos.aplica_vendedora = document.getElementById('aplica_vendedora').checked;
-            datos.aplica_sub_encargada = document.getElementById('aplica_sub_encargada').checked;
+            datos.escala_premios = [
+                {
+                    nivel_codigo: 'PRIMER_RANKING',
+                    importe_enc_sub: parseFloat(document.getElementById('premio_1ro_enc_sub').value),
+                    importe_vend: parseFloat(document.getElementById('premio_1ro_vend').value)
+                },
+                {
+                    nivel_codigo: 'CUMPLE_OBJETIVO',
+                    importe_enc_sub: parseFloat(document.getElementById('premio_cumple_enc_sub').value),
+                    importe_vend: parseFloat(document.getElementById('premio_cumple_vend').value)
+                },
+                {
+                    nivel_codigo: 'PRIMER_NO_LLEGA',
+                    importe_enc_sub: parseFloat(document.getElementById('premio_no_llega_enc_sub').value),
+                    importe_vend: parseFloat(document.getElementById('premio_no_llega_vend').value)
+                }
+            ];
             break;
+        }
 
-        case 16: // Comisión Individual
-        case 16: // Comisión Individual
-        case 36: // Comisión Individual (ID real BD)
-            // COMISIÓN INDIVIDUAL: Solo un porcentaje simple
+        case 36: { // Comisión Individual (múltiples sucursales PROPIOS)
             datos.fecha_vigencia = document.getElementById('fecha_vigencia_comision_individual').value;
-            datos.porcentaje_individual = parseFloat(document.getElementById('porcentaje_individual').value);
+            datos.comision_sucursales = recopilarSucursalesComision('unica', false).items;
             datos.tipo_comision = 'individual';
             break;
+        }
 
-        case 17: // Comisión sobre Local
-        case 37: // Comisión sobre Local (ID real BD)
-            // COMISIÓN SOBRE LOCAL: Con estructura de tope
+        case 37: { // Comisión sobre Local
             datos.fecha_vigencia = document.getElementById('fecha_vigencia_comision_local').value;
             datos.tiene_tope = document.getElementById('tiene_tope_local').value === '1';
-            
             if (datos.tiene_tope) {
-                // Con tope: dos porcentajes
                 datos.porcentaje_1 = parseFloat(document.getElementById('porcentaje_1_local').value);
                 datos.porcentaje_2 = parseFloat(document.getElementById('porcentaje_2_local').value);
             } else {
-                // Sin tope: un porcentaje
                 datos.porcentaje_unico = parseFloat(document.getElementById('porcentaje_unico_local').value);
             }
             datos.tipo_comision = 'local';
             break;
+        }
 
-        case 18: // Premios - Ajuste General
-        case 38: // Premios - Ajuste General (ID real BD)
-            datos.importe = parseFloat(document.getElementById('importe_ajuste_general').value);
+        case 38: { // Premios - Ajuste General (importe opcional)
+            const impAjRaw = document.getElementById('importe_ajuste_general')?.value?.trim() || '';
+            datos.importe = impAjRaw !== '' ? parseFloat(impAjRaw) : null;
             datos.fecha_vigencia = document.getElementById('fecha_vigencia_ajuste').value;
             break;
+        }
 
-        case 53: // Reemplazo
+        case 53: { // Reemplazo
             datos.puesto = document.getElementById('puesto_reemplazo').value;
             datos.fecha_vigencia = document.getElementById('fecha_vigencia_reemplazo').value;
-            
-            // Obtener tipo de reemplazo (permanente/temporario)
-            let tipoReemplazo = 'permanente'; // default seguro
-            
-            // Verificar radio buttons
-            const radioPermanenteReemplazo = document.getElementById('tipo_reemplazo_permanente');
-            const radioTemporarioReemplazo = document.getElementById('tipo_reemplazo_temporario');
-            
-            if (radioTemporarioReemplazo && radioTemporarioReemplazo.checked) {
-                tipoReemplazo = 'temporario';
-            } else if (radioPermanenteReemplazo && radioPermanenteReemplazo.checked) {
-                tipoReemplazo = 'permanente';
-            }
-            
+            const radioTempReemp = document.getElementById('tipo_reemplazo_temporario');
+            const tipoReemplazo = (radioTempReemp && radioTempReemp.checked) ? 'temporario' : 'permanente';
             datos.tipo_reemplazo = tipoReemplazo;
-            
-            // Si es temporario, agregar fecha de fin
-            if (tipoReemplazo === 'temporario') {
-                const fechaHastaReemplazo = document.getElementById('fecha_vigencia_hasta_reemplazo');
-                datos.fecha_vigencia_hasta = fechaHastaReemplazo ? fechaHastaReemplazo.value : '';
-            } else {
-                // Para permanente, asegurar que fecha_vigencia_hasta sea null
-                datos.fecha_vigencia_hasta = null;
-            }
-            
-            console.log('🔍 REEMPLAZO - Datos recopilados:', {
-                puesto: datos.puesto,
-                fecha_vigencia: datos.fecha_vigencia,
-                tipo_reemplazo: datos.tipo_reemplazo,
-                fecha_vigencia_hasta: datos.fecha_vigencia_hasta || 'N/A'
-            });
+            datos.fecha_vigencia_hasta = (tipoReemplazo === 'temporario')
+                ? (document.getElementById('fecha_vigencia_hasta_reemplazo')?.value || '')
+                : null;
             break;
+        }
 
-        case 54: // Aumento Salarial
+        case 54: { // Aumento Salarial
             datos.fecha_vigencia = document.getElementById('fecha_vigencia_aumento').value;
-            
-            // Obtener tipo de aumento (porcentaje/monto)
-            let tipoAumento = 'porcentaje'; // default seguro
-            
-            // Verificar radio buttons
             const radioPorcentaje = document.getElementById('tipo_aumento_porcentaje');
             const radioMonto = document.getElementById('tipo_aumento_monto');
-            
             if (radioMonto && radioMonto.checked) {
-                tipoAumento = 'monto';
+                datos.tipo_aumento = 'monto';
                 datos.valor_numerico = parseFloat(document.getElementById('monto_aumento').value);
-                datos.porcentaje_1 = null; // Limpiar campo porcentaje
-            } else if (radioPorcentaje && radioPorcentaje.checked) {
-                tipoAumento = 'porcentaje';
+                datos.porcentaje_1 = null;
+            } else {
+                datos.tipo_aumento = 'porcentaje';
                 datos.porcentaje_1 = parseFloat(document.getElementById('porcentaje_aumento').value);
-                datos.valor_numerico = null; // Limpiar campo monto
+                datos.valor_numerico = null;
             }
-            
-            datos.tipo_aumento = tipoAumento;
-            
-            console.log('🔍 AUMENTO SALARIAL - Datos recopilados:', {
-                fecha_vigencia: datos.fecha_vigencia,
-                tipo_aumento: datos.tipo_aumento,
-                porcentaje_1: datos.porcentaje_1,
-                valor_numerico: datos.valor_numerico
-            });
             break;
-    }
-    
-    // Agregar período de aplicación seleccionado (solo en modo único)
-    const modoActivo = window.modoActual || modoActual;
-    console.log('🔍 Modo detectado para período:', { window: window.modoActual, local: modoActual, activo: modoActivo });
-    
-    if (modoActivo === 'unica') {
-        console.log('🔍 Iniciando validación de período...');
-        const validacionPeriodo = validarPeriodoAplicacionFormulario();
-        console.log('🔍 Validación período completa:', validacionPeriodo);
-        
-        // También verificar directamente el select
-        const select = document.getElementById('periodo_aplicacion');
-        if (select) {
-            console.log('🔍 Valor directo del select:', {
-                value: select.value,
-                selectedIndex: select.selectedIndex,
-                selectedOption: select.options[select.selectedIndex]?.text
-            });
-        } else {
-            console.error('❌ No se encontró el select de período de aplicación');
         }
-        
+    }
+
+    const modoActivo = window.modoActual || modoActual;
+    if (modoActivo === 'unica') {
+        const validacionPeriodo = validarPeriodoAplicacionFormulario();
         if (!validacionPeriodo.valido) {
             throw new Error(validacionPeriodo.error || 'Error en el período de aplicación');
         }
-        
         if (validacionPeriodo.periodo) {
             datos.periodo_mes = validacionPeriodo.periodo.mes;
             datos.periodo_anio = validacionPeriodo.periodo.año;
-            console.log('📅 Período agregado a los datos:', {
-                mes: datos.periodo_mes,
-                año: datos.periodo_anio,
-                valorOriginal: validacionPeriodo.periodo.value,
-                texto: validacionPeriodo.periodo.text
-            });
-        } else {
-            console.warn('⚠️ No se encontró información de período en la validación');
         }
-    } else {
-        console.log('ℹ️ No se procesa período - modo actual:', modoActivo);
     }
 
-    console.log('📦 Datos finales recopilados:', datos);
     return datos;
 }
 
@@ -1963,172 +1771,259 @@ function configurarAutocompletadoEmpleado() {
     });
 }
 
+window.sucursalesPropiosCache = window.sucursalesPropiosCache || null;
+window.sucursalesConCasaCentralCache = window.sucursalesConCasaCentralCache || null;
+
 /**
- * Configurar campos para Premio Local con checkboxes excluyentes
+ * Obtener sucursales PROPIOS habilitadas (con caché)
  */
-function configurarCamposPremioLocal() {
-    const checkVendedora = document.getElementById('aplica_vendedora');
-    const checkSubEncargada = document.getElementById('aplica_sub_encargada');
-    
-    if (checkVendedora && checkSubEncargada) {
-        // Función para manejar exclusividad
-        function manejarExclusividad(checkActual, checkOtro) {
-            checkActual.addEventListener('change', function() {
-                if (this.checked) {
-                    checkOtro.checked = false;
-                }
+async function obtenerSucursalesPropios() {
+    if (Array.isArray(window.sucursalesPropiosCache)) {
+        return window.sucursalesPropiosCache;
+    }
+    const lista = await NovedadesApp.request('get_sucursales');
+    window.sucursalesPropiosCache = Array.isArray(lista) ? lista : [];
+    return window.sucursalesPropiosCache;
+}
+
+/**
+ * Obtener todas las sucursales + Casa Central (con caché)
+ */
+async function obtenerSucursalesConCasaCentral() {
+    if (Array.isArray(window.sucursalesConCasaCentralCache)) {
+        return window.sucursalesConCasaCentralCache;
+    }
+    const lista = await NovedadesApp.request('get_sucursales_con_casa_central');
+    window.sucursalesConCasaCentralCache = Array.isArray(lista) ? lista : [];
+    return window.sucursalesConCasaCentralCache;
+}
+
+/**
+ * Inicializar selector y botones de Comisión Individual por Sucursales (PROPIOS)
+ * Reutilizable entre carga única ('unica') y checklist ('prueba', 'confirmacion')
+ */
+async function inicializarComisionSucursales(contexto) {
+    const selectId = contexto === 'unica' ? 'comision_ind_sucursal_select' : `cl_${contexto}_com_ind_sucursal_select`;
+    const btnId = contexto === 'unica' ? 'btn_agregar_suc_com_ind_unica' : `cl_${contexto}_btn_agregar_suc`;
+    const selectEl = document.getElementById(selectId);
+    const btnEl = document.getElementById(btnId);
+
+    if (selectEl) {
+        try {
+            const sucursales = await obtenerSucursalesPropios();
+            selectEl.innerHTML = '<option value="">Seleccionar sucursal PROPIOS...</option>';
+            sucursales.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.numero;
+                opt.textContent = s.descripcion;
+                opt.setAttribute('data-nombre', s.nombre || s.descripcion);
+                selectEl.appendChild(opt);
             });
+        } catch (err) {
+            console.error('Error cargando sucursales PROPIOS:', err);
         }
-        
-        // Aplicar exclusividad a ambos checkboxes
-        manejarExclusividad(checkVendedora, checkSubEncargada);
-        manejarExclusividad(checkSubEncargada, checkVendedora);
-        
-        console.log('✅ Premio Local configurado con checkboxes excluyentes');
+    }
+
+    if (btnEl) {
+        btnEl.onclick = function() {
+            agregarSucursalComision(contexto);
+        };
     }
 }
 
 /**
- * Configurar campos dinámicos para comisiones
+ * Agregar fila de sucursal a la tabla de Comisión Individual
+ */
+function agregarSucursalComision(contexto) {
+    const selectId = contexto === 'unica' ? 'comision_ind_sucursal_select' : `cl_${contexto}_com_ind_sucursal_select`;
+    const tbodyId = contexto === 'unica' ? 'tbody_comision_ind_unica' : `cl_${contexto}_tbody_com_ind`;
+    const selectEl = document.getElementById(selectId);
+    const tbodyEl = document.getElementById(tbodyId);
+
+    if (!selectEl || !tbodyEl) return;
+
+    const nro = (selectEl.value || '').trim();
+    if (!nro) {
+        NovedadesApp.mostrarError('Seleccione una sucursal PROPIOS para agregar');
+        return;
+    }
+
+    if (tbodyEl.querySelector(`tr[data-nro-sucursal="${CSS.escape(nro)}"]`)) {
+        NovedadesApp.mostrarError('Esa sucursal ya fue agregada a la lista');
+        return;
+    }
+
+    const opt = selectEl.options[selectEl.selectedIndex];
+    const nombre = opt ? (opt.getAttribute('data-nombre') || opt.textContent) : nro;
+
+    const filaVacia = tbodyEl.querySelector('.fila-vacia-comision');
+    if (filaVacia) filaVacia.remove();
+
+    const tr = document.createElement('tr');
+    tr.setAttribute('data-nro-sucursal', nro);
+    tr.setAttribute('data-nombre-sucursal', nombre);
+    tr.innerHTML = `
+        <td class="align-middle fw-semibold">${nombre}</td>
+        <td>
+            <div class="input-group input-group-sm">
+                <input type="number" class="form-control com-ind-pct1" step="0.01" min="0.01" max="100" placeholder="Ej: 1.50" required>
+                <span class="input-group-text">%</span>
+            </div>
+        </td>
+        <td class="text-center align-middle">
+            <div class="form-check form-switch d-inline-block">
+                <input class="form-check-input com-ind-tope-chk" type="checkbox" onchange="toggleTopeFilaComision(this)">
+            </div>
+        </td>
+        <td>
+            <div class="input-group input-group-sm">
+                <input type="number" class="form-control com-ind-pct2" step="0.01" min="0.01" max="100" placeholder="Sin tope" disabled>
+                <span class="input-group-text">%</span>
+            </div>
+        </td>
+        <td class="text-center align-middle">
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="eliminarFilaComisionSucursal(this, '${tbodyId}')">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+    tbodyEl.appendChild(tr);
+    selectEl.value = '';
+}
+
+function toggleTopeFilaComision(checkbox) {
+    const tr = checkbox.closest('tr');
+    if (!tr) return;
+    const pct2 = tr.querySelector('.com-ind-pct2');
+    if (!pct2) return;
+    if (checkbox.checked) {
+        pct2.disabled = false;
+        pct2.required = true;
+        pct2.placeholder = 'Ej: 0.75';
+    } else {
+        pct2.disabled = true;
+        pct2.required = false;
+        pct2.value = '';
+        pct2.placeholder = 'Sin tope';
+        pct2.classList.remove('is-invalid', 'is-valid');
+    }
+}
+
+function eliminarFilaComisionSucursal(btn, tbodyId) {
+    const tr = btn.closest('tr');
+    if (tr) tr.remove();
+    const tbody = document.getElementById(tbodyId);
+    if (tbody && tbody.querySelectorAll('tr[data-nro-sucursal]').length === 0) {
+        tbody.innerHTML = '<tr class="fila-vacia-comision"><td colspan="5" class="text-center text-muted py-3">Agregue al menos una sucursal PROPIOS</td></tr>';
+    }
+}
+
+function recopilarSucursalesComision(contexto, validar = true) {
+    const tbodyId = contexto === 'unica' ? 'tbody_comision_ind_unica' : `cl_${contexto}_tbody_com_ind`;
+    const tbody = document.getElementById(tbodyId);
+    const items = [];
+    const errores = [];
+
+    if (!tbody) {
+        return { valido: false, items: [], errores: ['No se encontró la tabla de sucursales de comisión'] };
+    }
+
+    const filas = tbody.querySelectorAll('tr[data-nro-sucursal]');
+    if (filas.length === 0) {
+        if (validar) errores.push('Debe agregar al menos una sucursal PROPIOS en Comisión Individual');
+        return { valido: false, items: [], errores };
+    }
+
+    filas.forEach(tr => {
+        const nro = tr.getAttribute('data-nro-sucursal');
+        const nombre = tr.getAttribute('data-nombre-sucursal');
+        const pct1El = tr.querySelector('.com-ind-pct1');
+        const chkEl = tr.querySelector('.com-ind-tope-chk');
+        const pct2El = tr.querySelector('.com-ind-pct2');
+
+        const pct1 = parseFloat(pct1El?.value || '0');
+        const tieneTope = chkEl && chkEl.checked ? 1 : 0;
+        const pct2 = tieneTope ? parseFloat(pct2El?.value || '0') : null;
+
+        if (validar) {
+            if (!pct1 || pct1 <= 0 || pct1 > 100) {
+                errores.push(`Ingrese un porcentaje válido (0.01 - 100) para ${nombre}`);
+                pct1El?.classList.add('is-invalid');
+            } else {
+                pct1El?.classList.remove('is-invalid');
+            }
+            if (tieneTope && (!pct2 || pct2 <= 0 || pct2 > 100)) {
+                errores.push(`Ingrese un porcentaje post-tope válido (0.01 - 100) para ${nombre}`);
+                pct2El?.classList.add('is-invalid');
+            } else {
+                pct2El?.classList.remove('is-invalid');
+            }
+        }
+
+        items.push({
+            nro_sucursal: nro,
+            nombre_sucursal: nombre,
+            porcentaje_1: pct1,
+            tiene_tope: tieneTope,
+            porcentaje_2: pct2
+        });
+    });
+
+    return {
+        valido: errores.length === 0,
+        items,
+        errores
+    };
+}
+
+/**
+ * Configurar campos dinámicos para comisiones (Comisión sobre Local)
  */
 function configurarCamposComision(tipoComision) {
     if (tipoComision === 'individual') {
-        // COMISIÓN INDIVIDUAL: No tiene campos dinámicos, solo validación simple
-        console.log('✅ Comisión Individual configurada (sin campos dinámicos)');
+        inicializarComisionSucursales('unica');
         return;
     }
-    
+
     if (tipoComision === 'local') {
-        // COMISIÓN SOBRE LOCAL: Configurar campos con tope/sin tope
         const tienTopeSelect = document.getElementById('tiene_tope_local');
         const camposSinTope = document.getElementById('campos_sin_tope_local');
         const camposConTope = document.getElementById('campos_con_tope_local');
-        
+
         if (tienTopeSelect) {
-            tienTopeSelect.addEventListener('change', function() {
+            tienTopeSelect.onchange = function() {
                 const tieneTope = this.value === '1';
-                
+
                 if (tieneTope) {
-                    // Mostrar campos con tope, ocultar sin tope
                     if (camposConTope) {
                         camposConTope.style.display = 'block';
-                        camposConTope.querySelectorAll('input').forEach(input => {
-                            input.setAttribute('required', 'required');
-                        });
+                        camposConTope.querySelectorAll('input').forEach(i => i.setAttribute('required', 'required'));
                     }
                     if (camposSinTope) {
                         camposSinTope.style.display = 'none';
-                        camposSinTope.querySelectorAll('input').forEach(input => {
-                            input.removeAttribute('required');
-                            input.value = '';
-                        });
+                        camposSinTope.querySelectorAll('input').forEach(i => { i.removeAttribute('required'); i.value = ''; });
                     }
                 } else if (this.value === '0') {
-                    // Mostrar campos sin tope, ocultar con tope
                     if (camposSinTope) {
                         camposSinTope.style.display = 'block';
-                        camposSinTope.querySelectorAll('input').forEach(input => {
-                            input.setAttribute('required', 'required');
-                        });
+                        camposSinTope.querySelectorAll('input').forEach(i => i.setAttribute('required', 'required'));
                     }
                     if (camposConTope) {
                         camposConTope.style.display = 'none';
-                        camposConTope.querySelectorAll('input').forEach(input => {
-                            input.removeAttribute('required');
-                            input.value = '';
-                        });
+                        camposConTope.querySelectorAll('input').forEach(i => { i.removeAttribute('required'); i.value = ''; });
                     }
                 } else {
-                    // No seleccionado: ocultar ambos
                     if (camposSinTope) {
                         camposSinTope.style.display = 'none';
-                        camposSinTope.querySelectorAll('input').forEach(input => {
-                            input.removeAttribute('required');
-                            input.value = '';
-                        });
+                        camposSinTope.querySelectorAll('input').forEach(i => { i.removeAttribute('required'); i.value = ''; });
                     }
                     if (camposConTope) {
                         camposConTope.style.display = 'none';
-                        camposConTope.querySelectorAll('input').forEach(input => {
-                            input.removeAttribute('required');
-                            input.value = '';
-                        });
+                        camposConTope.querySelectorAll('input').forEach(i => { i.removeAttribute('required'); i.value = ''; });
                     }
                 }
-                
-                console.log(`Comisión sobre Local: Tope = ${tieneTope}`);
-            });
-            
-            console.log('✅ Comisión sobre Local configurada con campos dinámicos');
-        } else {
-            console.error('❌ No se encontró el select tiene_tope_local');
+            };
         }
-    }
-}
-
-/**
- * Configurar campos para plus con importe opcional
- */
-function configurarCamposPlusConImporte(tipo) {
-    const sufijo = tipo === 'sub' ? 'sub' : 'enc';
-    const tieneImporteSelect = document.getElementById(`tiene_importe_${sufijo}`);
-    const campoImporte = document.getElementById(`campo_importe_${sufijo === 'sub' ? 'sub_encargada' : 'encargada'}`);
-    
-    if (tieneImporteSelect && campoImporte) {
-        tieneImporteSelect.addEventListener('change', function() {
-            if (this.value === '1') {
-                // Mostrar campo de importe
-                campoImporte.style.display = 'block';
-                const inputImporte = campoImporte.querySelector('input[type="number"]');
-                if (inputImporte) {
-                    inputImporte.setAttribute('required', 'required');
-                }
-            } else {
-                // Ocultar campo de importe
-                campoImporte.style.display = 'none';
-                const inputImporte = campoImporte.querySelector('input[type="number"]');
-                if (inputImporte) {
-                    inputImporte.removeAttribute('required');
-                    inputImporte.value = '';
-                }
-            }
-        });
-    }
-}
-
-/**
- * Configurar campos para plus de caja
- */
-function configurarCamposPlusCaja() {
-    const tipoSelect = document.getElementById('tipo_plus_caja');
-    const campoImporte = document.getElementById('campo_importe_plus_caja');
-    
-    if (tipoSelect && campoImporte) {
-        tipoSelect.addEventListener('change', function() {
-            if (this.value === 'premio') {
-                // Para premios, el importe es obligatorio
-                campoImporte.style.display = 'block';
-                const inputImporte = campoImporte.querySelector('input[type="number"]');
-                if (inputImporte) {
-                    inputImporte.setAttribute('required', 'required');
-                }
-            } else if (this.value === 'recibo') {
-                // Para recibos, el importe es opcional
-                campoImporte.style.display = 'block';
-                const inputImporte = campoImporte.querySelector('input[type="number"]');
-                if (inputImporte) {
-                    inputImporte.removeAttribute('required');
-                }
-            } else {
-                // Sin selección, ocultar importe
-                campoImporte.style.display = 'none';
-                const inputImporte = campoImporte.querySelector('input[type="number"]');
-                if (inputImporte) {
-                    inputImporte.removeAttribute('required');
-                    inputImporte.value = '';
-                }
-            }
-        });
     }
 }
 
@@ -2137,7 +2032,6 @@ function configurarCamposPlusCaja() {
  */
 function configurarValidacionTiempoReal() {
     const campos = document.querySelectorAll('#form-novedad input, #form-novedad select, #form-novedad textarea');
-    
     campos.forEach(campo => {
         campo.addEventListener('blur', function() {
             if (this.hasAttribute('required') && !this.value.trim()) {
@@ -2149,7 +2043,6 @@ function configurarValidacionTiempoReal() {
                 }
             }
         });
-        
         campo.addEventListener('input', function() {
             this.classList.remove('is-invalid');
         });
@@ -2160,16 +2053,16 @@ function configurarValidacionTiempoReal() {
  * Configurar eventos específicos
  */
 function configurarEventosEspecificos() {
-    // Manejar cambio de sucursal actual para cambio de sucursal
     const sucursalSelect = document.getElementById('sucursal');
-    sucursalSelect.addEventListener('change', function() {
-        const tipoNovedad = parseInt(document.getElementById('tipo_novedad').value);
-        if (tipoNovedad === 1) {
-            configurarCambioSucursal();
-        }
-    });
+    if (sucursalSelect) {
+        sucursalSelect.addEventListener('change', function() {
+            const tipoNovedad = parseInt(document.getElementById('tipo_novedad')?.value || '0', 10);
+            if (tipoNovedad === 1) {
+                configurarCambioSucursal();
+            }
+        });
+    }
 
-    // Manejar cambios en campos numéricos
     const camposNumericos = document.querySelectorAll('input[type="number"]');
     camposNumericos.forEach(campo => {
         campo.addEventListener('input', function() {
@@ -2181,38 +2074,15 @@ function configurarEventosEspecificos() {
 }
 
 /**
- * Inicialización específica del formulario - ACTUALIZADA
+ * Inicialización específica del formulario
  */
 document.addEventListener('DOMContentLoaded', function() {
-    // Configurar envío del formulario
-    const form = document.getElementById('form-novedad');
-    if (form) {
-        form.addEventListener('submit', enviarFormulario);
-    }
-    
-    // Cargar datos iniciales
     cargarSucursales();
     cargarPuestos();
-    cargarTiposNovedad(); // NUEVO: Cargar tipos de novedad específicamente
-    
-    // Configurar cambio de tipo de novedad - REMOVIDO: ya se configura en main.js
-    // const tipoNovedadSelect = document.getElementById('tipo_novedad');
-    // if (tipoNovedadSelect) {
-    //     tipoNovedadSelect.addEventListener('change', function() {
-    //         console.log('Tipo de novedad seleccionado:', this.value);
-    //         onTipoNovedadChangeActualizado(this);
-    //     });
-    // }
-    
-    // Configurar validación en tiempo real
+    cargarTiposNovedad();
     configurarValidacionTiempoReal();
-    
-    // Configurar autocompletado de empleado
     configurarAutocompletadoEmpleado();
-    
-    // Configurar eventos específicos
     configurarEventosEspecificos();
-    
     console.log('Formulario Nueva Novedad - Inicializado correctamente');
 });
 
@@ -2336,2061 +2206,976 @@ window.onTipoNovedadChangeSpecific = onTipoNovedadChangeActualizado;
  */
 
 /**
- * Inicializar eventos de modo de carga
+ * FUNCIONES PARA MANEJO DE MODO ÚNICO Y MODO MÚLTIPLE (CHECKLIST PREDETERMINADO)
  */
+
 function initializarModosCarga() {
     const botonesModoCarga = document.querySelectorAll('.modo-carga-btn');
-    
     botonesModoCarga.forEach(boton => {
         boton.addEventListener('click', function() {
             const modo = this.getAttribute('data-modo');
             seleccionarModoCarga(modo);
         });
     });
-    
-    // Event listener para agregar nueva novedad
-    const btnAgregarNovedad = document.getElementById('agregar-novedad-btn');
-    if (btnAgregarNovedad) {
-        btnAgregarNovedad.addEventListener('click', agregarNuevaNovedadCard);
-    }
 }
 
-/**
- * Seleccionar modo de carga
- */
 function seleccionarModoCarga(modo) {
-    console.log('🔄 Seleccionando modo de carga:', modo);
-    
     window.modoActual = modo;
-    
-    // Actualizar indicador de modo
     actualizarIndicadorModo(modo);
-    
-    // Ocultar sección de selección de modo
+
     const modoSection = document.getElementById('modo-carga-section');
-    if (modoSection) {
-        modoSection.style.display = 'none';
-        console.log('👁️ Sección de modo ocultada');
-    }
-    
-    // Mostrar formulario
+    if (modoSection) modoSection.style.display = 'none';
+
     const formNovedad = document.getElementById('form-novedad');
-    if (formNovedad) {
-        formNovedad.style.display = 'block';
-        console.log('📋 Formulario mostrado');
-    }
-    
-    // Mostrar botón de cambiar modo
+    if (formNovedad) formNovedad.style.display = 'block';
+
     const btnCambiarModo = document.getElementById('btn-cambiar-modo-top');
-    if (btnCambiarModo) {
-        btnCambiarModo.style.display = 'inline-block';
-    }
-    
+    if (btnCambiarModo) btnCambiarModo.style.display = 'inline-block';
+
     if (modo === 'unica') {
-        console.log('🔄 Configurando modo único...');
         configurarModoUnico();
     } else if (modo === 'multiple') {
-        console.log('🔄 Configurando modo múltiple...');
         configurarModoMultiple();
     }
-    
-    console.log('✅ Selección de modo completada:', modo);
 }
 
-/**
- * Actualizar indicador de modo activo
- */
 function actualizarIndicadorModo(modo) {
     const indicator = document.getElementById('modo-activo-indicator');
     const text = document.getElementById('modo-activo-text');
-    
-    if (indicator && text) {
-        if (modo === 'unica') {
-            text.textContent = 'Modo: Novedad Única';
-            indicator.style.backgroundColor = 'var(--primary-color)';
-        } else if (modo === 'multiple') {
-            text.textContent = 'Modo: Novedades Múltiples';
-            indicator.style.backgroundColor = 'var(--success-color)';
-        }
-        
-        indicator.style.display = 'block';
-    }
-}
-
-/**
- * Actualizar indicador de modo activo
- */
-function actualizarIndicadorModo(modo) {
-    const indicator = document.getElementById('modo-activo-indicator');
-    const text = document.getElementById('modo-activo-text');
-    
     if (indicator && text) {
         if (modo === 'unica') {
             text.textContent = 'Modo: Novedad Única';
             indicator.style.backgroundColor = '#0d6efd';
         } else if (modo === 'multiple') {
-            text.textContent = 'Modo: Novedades Múltiples';
+            text.textContent = 'Modo: Checklist Múltiple';
             indicator.style.backgroundColor = '#198754';
         }
         indicator.style.display = 'block';
     }
 }
 
-/**
- * Volver a la selección de modo - ACCIÓN DIRECTA (sin confirmación)
- */
 function volverSeleccionModo() {
-    // ELIMINADA: confirmación de cambio de modo
-    // El cambio ahora es directo e inmediato
-    
-    // Limpiar formulario
     if (typeof limpiarFormularioSinConfirmacion === 'function') {
         limpiarFormularioSinConfirmacion();
     } else {
-        document.getElementById('form-novedad').reset();
+        document.getElementById('form-novedad')?.reset();
         if (typeof $ !== 'undefined' && $('#empleado-select').length) {
             $('#empleado-select').val(null).trigger('change');
         }
     }
-    
-    // Limpiar novedades múltiples PERO MANTENER LA ESTRUCTURA
-    window.novedadesData = [];
-    window.contadorNovedades = 0;
-    const cardsContainer = document.getElementById('novedades-cards-container');
-    if (cardsContainer) {
-        cardsContainer.innerHTML = ''; // Solo limpiar las cards, no todo el contenedor
-    }
-    
-    // Ocultar elementos específicos del modo múltiple SIN destruir la estructura
+
     const multiplesContainer = document.getElementById('novedades-multiples-container');
-    if (multiplesContainer) {
-        multiplesContainer.style.display = 'none';
-    }
-    
+    if (multiplesContainer) multiplesContainer.style.display = 'none';
+
     const configGlobal = document.getElementById('configuracion-global-section');
-    if (configGlobal) {
-        configGlobal.style.display = 'none';
-    }
-    
-    // Ocultar formulario y mostrar selección de modo
-    document.getElementById('form-novedad').style.display = 'none';
-    document.getElementById('modo-carga-section').style.display = 'block';
-    
-    // Ocultar botón de cambiar modo
-    document.getElementById('btn-cambiar-modo-top').style.display = 'none';
-    
-    // Ocultar indicador de modo
+    if (configGlobal) configGlobal.style.display = 'none';
+
+    const form = document.getElementById('form-novedad');
+    if (form) form.style.display = 'none';
+
+    const modoSection = document.getElementById('modo-carga-section');
+    if (modoSection) modoSection.style.display = 'block';
+
+    const btnCambiar = document.getElementById('btn-cambiar-modo-top');
+    if (btnCambiar) btnCambiar.style.display = 'none';
+
     const indicator = document.getElementById('modo-activo-indicator');
-    if (indicator) {
-        indicator.style.display = 'none';
-    }
-    
-    // Resetear modo actual
+    if (indicator) indicator.style.display = 'none';
+
+    const empSec = document.getElementById('datos-empleado-section');
+    if (empSec) empSec.style.display = 'block';
+    const ayudaGlobal = document.getElementById('empleado-ayuda-global');
+    if (ayudaGlobal) ayudaGlobal.style.display = 'none';
+
     window.modoActual = null;
-    
-    console.log('🔄 Volviendo a selección de modo');
 }
 
-/**
- * Configurar modo único (funcionalidad original)
- */
 function configurarModoUnico() {
-    console.log('📝 Configurando modo único');
-    
-    // Mostrar elementos del modo único
-    document.getElementById('tipo-novedad-unica').style.display = 'block';
-    document.getElementById('configuracion-novedad').style.display = 'none';
-    document.getElementById('observaciones-section').style.display = 'block'; // Mostrar observaciones
-    
-    // Ocultar elementos del modo múltiple
-    document.getElementById('configuracion-global-section').style.display = 'none';
-    document.getElementById('novedades-multiples-container').style.display = 'none';
-    
-    // Mostrar período de aplicación inmediatamente en modo único
-    setTimeout(() => {
-        mostrarPeriodoAplicacion();
-    }, 200);
-    
-    // Inicializar funcionalidad original
+    const tipoUnica = document.getElementById('tipo-novedad-unica');
+    const configNovedad = document.getElementById('configuracion-novedad');
+    const obsSec = document.getElementById('observaciones-section');
+    const configGlobal = document.getElementById('configuracion-global-section');
+    const multCont = document.getElementById('novedades-multiples-container');
+
+    if (tipoUnica) tipoUnica.style.display = 'block';
+    if (configNovedad) configNovedad.style.display = 'none';
+    if (obsSec) obsSec.style.display = 'block';
+    if (configGlobal) configGlobal.style.display = 'none';
+    if (multCont) multCont.style.display = 'none';
+
+    setTimeout(() => mostrarPeriodoAplicacion(), 150);
+
     if (typeof inicializarFormularioOriginal === 'function') {
         inicializarFormularioOriginal();
     }
 }
 
-/**
- * Configurar modo múltiple
- */
 function configurarModoMultiple() {
-    console.log('📚 Configurando modo múltiple - INICIO');
-    
-    // Inicializar contador de novedades
-    window.contadorNovedades = 0;
-    window.novedadesData = [];
-    
-    console.log('🔢 Contadores inicializados');
-    
-    // Ocultar elementos del modo único
     const tipoUnica = document.getElementById('tipo-novedad-unica');
     const configNovedad = document.getElementById('configuracion-novedad');
-    const observacionesSection = document.getElementById('observaciones-section');
-    
+    const obsSec = document.getElementById('observaciones-section');
     if (tipoUnica) tipoUnica.style.display = 'none';
     if (configNovedad) configNovedad.style.display = 'none';
-    if (observacionesSection) observacionesSection.style.display = 'none';
-    
-    console.log('👁️ Elementos de modo único ocultados');
-    
-    // Ocultar el período de aplicación (específico del modo único)
+    if (obsSec) obsSec.style.display = 'none';
+
+    // Asegurar que la sección de empleado esté visible y obligatoria en modo checklist
+    actualizarVisibilidadEmpleadoPorTipo(0);
+
     if (typeof ocultarPeriodoAplicacion === 'function') {
         ocultarPeriodoAplicacion();
     }
-    
-    // Mostrar elementos del modo múltiple
+
     const configGlobal = document.getElementById('configuracion-global-section');
     const multiplesContainer = document.getElementById('novedades-multiples-container');
-    
-    console.log('🔍 Elementos múltiples encontrados:', {
-        configGlobal: !!configGlobal,
-        multiplesContainer: !!multiplesContainer
-    });
-    
-    if (configGlobal) {
-        configGlobal.style.display = 'block';
-        console.log('✅ ConfigGlobal mostrado');
-    } else {
-        console.error('❌ ConfigGlobal no encontrado');
-    }
-    
-    if (multiplesContainer) {
-        multiplesContainer.style.display = 'block';
-        console.log('✅ MultiplesContainer mostrado');
-    } else {
-        console.error('❌ MultiplesContainer no encontrado');
-    }
-    
-    // Verificar y asegurar que la estructura del contenedor múltiple esté correcta
-    if (multiplesContainer) {
-        // Buscar o crear el contenedor de cards
-        let cardsContainer = document.getElementById('novedades-cards-container');
-        if (!cardsContainer) {
-            console.warn('⚠️ novedades-cards-container no existe, creándolo...');
-            // Recrear la estructura si no existe
-            multiplesContainer.innerHTML = `
-                <div class="form-section">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5>
-                            <i class="fas fa-layer-group me-2"></i>
-                            Novedades para el Empleado
-                        </h5>
-                        <button type="button" class="btn btn-success" id="agregar-novedad-btn">
-                            <i class="fas fa-plus me-2"></i>
-                            Agregar otra novedad
-                        </button>
-                    </div>
-                    
-                    <!-- Contenedor dinámico para las cards de novedades -->
-                    <div id="novedades-cards-container">
-                        <!-- Las cards se generarán dinámicamente aquí -->
-                    </div>
-                </div>
-            `;
-            
-            // Reconfigurar el event listener del botón agregar
-            const btnAgregarNovedad = document.getElementById('agregar-novedad-btn');
-            if (btnAgregarNovedad) {
-                btnAgregarNovedad.addEventListener('click', agregarNuevaNovedadCard);
-                console.log('🔄 Event listener del botón agregar reconfigurado');
-            }
-            
-            cardsContainer = document.getElementById('novedades-cards-container');
-        }
-    }
-    
-    // Limpiar contenedor de cards
-    const container = document.getElementById('novedades-cards-container');
-    console.log('📦 Container cards encontrado:', !!container);
-    
-    if (container) {
-        container.innerHTML = '';
-        console.log('🧹 Container limpiado');
-    }
-    
-    // Inicializar configuración global
-    if (typeof inicializarConfiguracionGlobal === 'function') {
-        inicializarConfiguracionGlobal();
-        console.log('⚙️ Configuración global inicializada');
-    }
-    
-    // Agregar primera card de novedad
-    console.log('➕ Agregando primera card...');
-    if (typeof agregarNuevaNovedadCard === 'function') {
-        agregarNuevaNovedadCard();
-    } else {
-        console.error('❌ agregarNuevaNovedadCard no está definida');
-    }
-    
-    console.log('📚 Configurando modo múltiple - FIN');
-}
+    if (configGlobal) configGlobal.style.display = 'block';
+    if (multiplesContainer) multiplesContainer.style.display = 'block';
 
-/**
- * Inicializar configuración global para modo múltiple
- */
-function inicializarConfiguracionGlobal() {
-    // Cargar opciones de período
     cargarOpcionesPeriodo();
-    
-    // Configurar fecha de vigencia por defecto
-    const fechaVigenciaGlobal = document.getElementById('fecha_vigencia_global');
-    if (fechaVigenciaGlobal) {
-        // Establecer fecha minima como hoy - Formatear manualmente
-        const hoy = new Date();
-        const year = hoy.getFullYear();
-        const month = String(hoy.getMonth() + 1).padStart(2, '0');
-        const day = String(hoy.getDate()).padStart(2, '0');
-        fechaVigenciaGlobal.min = `${year}-${month}-${day}`;
-        
-        // Event listener para actualizar displays cuando cambie la fecha global
-        fechaVigenciaGlobal.addEventListener('change', function() {
-            actualizarDisplayFechaGlobal();
-        });
-        
-        // Actualizar display inicial
-        actualizarDisplayFechaGlobal();
-    }
+    inicializarChecklistMultiple();
 }
 
-/**
- * Cargar opciones de período (mes y año separados con rangos amplios)
- */
 function cargarOpcionesPeriodo() {
     const selectMes = document.getElementById('periodo_mes_global');
     const selectAnio = document.getElementById('periodo_anio_global');
-    
     if (!selectMes || !selectAnio) return;
-    
-    // Nombres de meses
+
     const meses = [
         'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
         'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
     ];
-    
-    // Fecha actual
     const ahora = new Date();
-    const mesActual = ahora.getMonth(); // 0-based
+    const mesActual = ahora.getMonth() + 1;
     const anioActual = ahora.getFullYear();
-    
-    // Limpiar opciones
+
     selectMes.innerHTML = '<option value="">Seleccionar mes...</option>';
-    selectAnio.innerHTML = '<option value="">Seleccionar año...</option>';
-    
-    // Cargar todos los meses (1-12)
     for (let mes = 1; mes <= 12; mes++) {
-        const optionMes = document.createElement('option');
-        optionMes.value = mes; // 1-based para la BD
-        optionMes.textContent = meses[mes - 1]; // 0-based para el array
-        selectMes.appendChild(optionMes);
+        const opt = document.createElement('option');
+        opt.value = mes;
+        opt.textContent = meses[mes - 1];
+        selectMes.appendChild(opt);
     }
-    
-    // Cargar años con rango amplio (año anterior hasta 2 años adelante)
+
+    selectAnio.innerHTML = '<option value="">Seleccionar año...</option>';
     for (let anio = anioActual - 1; anio <= anioActual + 2; anio++) {
-        const optionAnio = document.createElement('option');
-        optionAnio.value = anio;
-        optionAnio.textContent = anio;
-        selectAnio.appendChild(optionAnio);
+        const opt = document.createElement('option');
+        opt.value = anio;
+        opt.textContent = anio;
+        selectAnio.appendChild(opt);
     }
-    
-    // Establecer valores por defecto: mes actual
-    // Esto corresponde al período actual del sistema
-    const mesActualParaBD = mesActual + 1; // +1 para convertir de base-0 a base-1
-    selectMes.value = mesActualParaBD;
-    selectAnio.value = anioActual;
-    
-    console.log('📅 Período auto-seleccionado:', {
-        mes: selectMes.value,
-        año: selectAnio.value,
-        descripcion: 'Período actual del sistema'
-    });
+
+    selectMes.value = String(mesActual);
+    selectAnio.value = String(anioActual);
 }
 
 /**
- * Agregar nueva card de novedad
+ * Inicializar Checklist Predeterminado (Propuesta -> Durante la Prueba -> Confirmación)
  */
-function agregarNuevaNovedadCard() {
-    console.log('🔄 Iniciando agregarNuevaNovedadCard...');
-    console.log('Current contadorNovedades:', window.contadorNovedades);
-    
-    window.contadorNovedades++;
-    
-    const cardId = `novedad-card-${window.contadorNovedades}`;
-    const container = document.getElementById('novedades-cards-container');
-    
-    console.log('📦 Container encontrado:', !!container);
-    console.log('🆔 Card ID:', cardId);
-    
-    if (!container) {
-        console.error('❌ Container novedades-cards-container no encontrado');
-        return;
+async function inicializarChecklistMultiple() {
+    const bodyPrueba = document.getElementById('cl_bloque_prueba_body');
+    const bodyConf = document.getElementById('cl_bloque_confirmacion_body');
+
+    if (bodyPrueba) bodyPrueba.innerHTML = generarHtmlBloqueChecklist('prueba');
+    if (bodyConf) bodyConf.innerHTML = generarHtmlBloqueChecklist('confirmacion');
+
+    // Sincronizar visibilidad de bloques con switches de etapa
+    const chkPrueba = document.getElementById('cl_incluir_prueba');
+    const chkConf = document.getElementById('cl_incluir_confirmacion');
+
+    if (chkPrueba && bodyPrueba) {
+        chkPrueba.checked = true;
+        bodyPrueba.style.display = 'block';
+        chkPrueba.onchange = function() {
+            bodyPrueba.style.display = this.checked ? 'block' : 'none';
+            actualizarHintFechaFinChecklist();
+        };
     }
-    
-    const cardHtml = `
-        <div class="card mb-3 novedad-card" id="${cardId}" data-novedad-id="${window.contadorNovedades}">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">
-                    <i class="fas fa-file-alt me-2"></i>
-                    Novedad #${window.contadorNovedades}
-                </h6>
-                ${window.contadorNovedades > 1 ? `
-                <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarNovedadCard('${cardId}')">
-                    <i class="fas fa-times"></i>
-                </button>
-                ` : ''}
-            </div>
-            <div class="card-body">
-                <!-- Tipo de novedad -->
-                <div class="row mb-3">
-                    <div class="col-md-8">
-                        <div class="position-relative">
-                            <label for="tipo_novedad_${window.contadorNovedades}" class="form-label">
-                                Tipo de novedad <span class="required">*</span>
-                            </label>
-                            <select class="form-select tipo-novedad-multiple" id="tipo_novedad_${window.contadorNovedades}" 
-                                    name="tipo_novedad_${window.contadorNovedades}" data-card-id="${cardId}" required>
-                                <option value="">Seleccione tipo de novedad...</option>
-                            </select>
-                            <div class="invalid-feedback">
-                                El tipo de novedad es obligatorio
-                            </div>
-                            <!-- Botón de información -->
-                            <button type="button" class="tipo-novedad-info-btn" id="infoBtn-${window.contadorNovedades}" 
-                                    onclick="mostrarInfoTipoNovedad('${window.contadorNovedades}')" title="Información sobre este tipo de novedad"
-                                    style="display: none;">
-                                <i class="fas fa-info"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Configuración específica (se genera dinámicamente) -->
-                <div id="config-${window.contadorNovedades}" class="configuracion-novedad-multiple">
-                    <!-- La configuración específica aparecerá aquí -->
-                </div>
-                
-                <!-- NUEVO: Checkbox de fecha global -->
-                <div class="row mb-3">
-                    <div class="col-12">
-                        <div class="form-check">
-                            <input type="checkbox" 
-                                   class="form-check-input checkbox-fecha-global" 
-                                   id="usar_fecha_global_${window.contadorNovedades}" 
-                                   name="usar_fecha_global_${window.contadorNovedades}"
-                                   checked>
-                            <label class="form-check-label" for="usar_fecha_global_${window.contadorNovedades}">
-                                <i class="fas fa-calendar-check me-1"></i>
-                                Respetar fecha vigencia global 
-                                <span class="badge bg-primary fecha-global-display ms-1"></span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- NUEVO: Selector de fecha individual (oculto por defecto) -->
-                <div class="row mb-3 fecha-individual-container" id="fecha_individual_container_${window.contadorNovedades}" style="display: none;">
-                    <div class="col-md-6">
-                        <label for="fecha_vigencia_individual_${window.contadorNovedades}" class="form-label">
-                            <i class="fas fa-calendar-alt me-1"></i>
-                            Fecha de vigencia personalizada <span class="required">*</span>
-                        </label>
-                        <input type="date" 
-                               class="form-control fecha-individual" 
-                               id="fecha_vigencia_individual_${window.contadorNovedades}" 
-                               name="fecha_vigencia_individual_${window.contadorNovedades}">
-                        <div class="invalid-feedback">
-                            Debe especificar una fecha de vigencia personalizada
-                        </div>
-                        <div class="form-text">
-                            <i class="fas fa-info-circle me-1"></i>
-                            Esta fecha sobrescribirá la fecha global solo para esta novedad
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Observaciones específicas de esta novedad -->
-                <div class="row">
-                    <div class="col-12">
-                        <label for="observaciones_${window.contadorNovedades}" class="form-label">
-                            Observaciones específicas
-                        </label>
-                        <textarea class="form-control" id="observaciones_${window.contadorNovedades}" 
-                                  name="observaciones_${window.contadorNovedades}" rows="2" 
-                                  placeholder="Observaciones específicas para esta novedad..."></textarea>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    container.insertAdjacentHTML('beforeend', cardHtml);
-    
-    console.log('📝 HTML de card insertado');
-    console.log('🔄 Cargando tipos de novedad...');
-    
-    // Cargar tipos de novedad en el nuevo select (async)
-    cargarTiposNovedadEnSelect(`tipo_novedad_${window.contadorNovedades}`).then(() => {
-        console.log('✅ Select2 inicializado para card', window.contadorNovedades);
-        // Inicializar checkbox de fecha para esta card
-        inicializarCheckboxFechaCard(window.contadorNovedades);
-    }).catch(error => {
-        console.error('❌ Error inicializando select en card:', error);
-    });
-    
-    // NOTA: Los event listeners de Select2 se configuran en inicializarSelect2TiposNovedad()
-    // No agregamos listeners manuales aquí para evitar conflictos
-    
-    console.log(`✅ Agregada card de novedad #${window.contadorNovedades}`);
-}
 
-/**
- * Eliminar card de novedad
- */
-function eliminarNovedadCard(cardId) {
-    const card = document.getElementById(cardId);
-    if (card) {
-        // Remover del array de datos
-        const novedadId = parseInt(card.getAttribute('data-novedad-id'));
-        window.novedadesData = window.novedadesData.filter(n => n.id !== novedadId);
-        
-        // Remover del DOM
-        card.remove();
-        
-        console.log(`🗑️ Eliminada card ${cardId}`);
+    if (chkConf && bodyConf) {
+        chkConf.checked = false;
+        bodyConf.style.display = 'none';
+        chkConf.onchange = function() {
+            bodyConf.style.display = this.checked ? 'block' : 'none';
+            sugerirFechaConfirmacion();
+        };
     }
-}
 
-/**
- * Inicializar checkbox de fecha para una card específica
- */
-function inicializarCheckboxFechaCard(novedadId) {
-    const checkbox = document.getElementById(`usar_fecha_global_${novedadId}`);
-    const container = document.getElementById(`fecha_individual_container_${novedadId}`);
-    
-    if (!checkbox || !container) return;
-    
-    // Actualizar display de fecha global
-    actualizarDisplayFechaGlobal();
-    
-    // Estado inicial (checkbox activado = fecha oculta)
-    if (checkbox.checked) {
-        container.style.display = 'none';
-    } else {
-        container.style.display = 'block';
-    }
-    
-    // Evento al cambiar checkbox
-    checkbox.addEventListener('change', function() {
-        const fechaIndividual = document.getElementById(`fecha_vigencia_individual_${novedadId}`);
-        
-        if (this.checked) {
-            // Activado: Ocultar fecha individual con animación
-            $(container).slideUp(200);
-            // Limpiar validación
-            if (fechaIndividual) {
-                fechaIndividual.classList.remove('is-invalid');
-            }
-        } else {
-            // Desactivado: Mostrar fecha individual con animación
-            $(container).slideDown(200);
-        }
-    });
-    
-    console.log(`✅ Checkbox fecha inicializado para card ${novedadId}`);
-}
-
-/**
- * Actualizar display de fecha global en todos los badges
- */
-function actualizarDisplayFechaGlobal() {
-    const fechaGlobalInput = document.getElementById('fecha_vigencia_global');
-    if (!fechaGlobalInput) return;
-    
-    const fechaGlobal = fechaGlobalInput.value;
-    const fechaFormateada = fechaGlobal ? formatearFechaParaDisplay(fechaGlobal) : 'No definida';
-    
-    // Actualizar todos los badges de fecha global
-    document.querySelectorAll('.fecha-global-display').forEach(badge => {
-        badge.textContent = fechaFormateada;
-    });
-}
-
-/**
- * Formatear fecha de yyyy-mm-dd a dd/mm/yyyy
- */
-function formatearFechaParaDisplay(fecha) {
-    if (!fecha) return '';
-    const [year, month, day] = fecha.split('-');
-    return `${day}/${month}/${year}`;
-}
-
-/**
- * Manejar cambio de tipo de novedad en modo múltiple
- */
-function onTipoNovedadChangeMultiple(selectElement, novedadId) {
-    const tipoSeleccionado = parseInt(selectElement.value);
-    const configContainer = document.getElementById(`config-${novedadId}`);
-    
-    console.log('🔍 Cambio tipo novedad múltiple:', {
-        novedadId,
-        tipoSeleccionado,
-        configContainer: !!configContainer
-    });
-
-    // Toggle del botón de información para modo múltiple (con verificación)
+    // Cargar sucursales para Local destino
     try {
-        if (typeof window.toggleInfoButton === 'function') {
-            window.toggleInfoButton(selectElement, novedadId);
-        } else if (typeof toggleInfoButton === 'function') {
-            toggleInfoButton(selectElement, novedadId);
-        }
-    } catch (error) {
-        console.warn('Error al ejecutar toggleInfoButton:', error);
-    }
-    
-    if (!configContainer) return;
-    
-    // Limpiar configuración anterior
-    configContainer.innerHTML = '';
-    
-    if (tipoSeleccionado && tiposNovedadConfigActualizada[tipoSeleccionado]) {
-        // Generar configuración específica
-        const configHtml = generarConfiguracionEspecificaMultiple(tipoSeleccionado, novedadId);
-        configContainer.innerHTML = configHtml;
-        
-        // Aplicar configuraciones específicas según el tipo
-        setTimeout(() => {
-            aplicarConfiguracionesEspecificasMultiple(tipoSeleccionado, novedadId);
-        }, 100);
-    }
-}
-
-/**
- * Generar HTML de configuración específica para modo múltiple
- */
-function generarConfiguracionEspecificaMultiple(tipoNovedad, novedadId) {
-    // Aquí generamos el HTML específico según el tipo de novedad
-    // Por simplicidad, vamos a reutilizar las configuraciones existentes pero con IDs únicos
-    
-    const config = tiposNovedadConfigActualizada[tipoNovedad];
-    if (!config) return '';
-    
-    // Mapear cada tipo de novedad a su HTML específico
-    switch (tipoNovedad) {
-        case 1: // Cambio de sucursal
-            return generarConfigCambioSucursalMultiple(novedadId);
-        case 2: // Nuevo puesto
-            return generarConfigNuevoPuestoMultiple(novedadId);
-        case 3: // Nuevo salario
-            return generarConfigNuevoSalarioMultiple(novedadId);
-        case 4: // Ajuste premios
-            return generarConfigAjustePremiosMultiple(novedadId);
-        case 5: // Horas extras
-            return generarConfigHorasExtrasMultiple(novedadId);
-        case 6: // Horas adicionales
-            return generarConfigHorasAdicionalesMultiple(novedadId);
-        case 7: // Permisos
-            return generarConfigPermisosMultiple(novedadId);
-        case 8: // Cortes
-            return generarConfigCortesMultiple(novedadId);
-        case 9: // Producción 25%
-        case 10: // Producción 50%
-        case 11: // Producción 100%
-            return generarConfigProduccionMultiple(tipoNovedad, novedadId);
-        case 12: // Plus de caja
-        case 32: // Plus de caja (ID real BD)
-            return generarConfigPlusCajaMultiple(novedadId);
-        case 13: // Plus de Sub-Encargada
-        case 33: // Plus de Sub-Encargada (ID real BD)
-            return generarConfigPlusSubEncargadaMultiple(novedadId);
-        case 14: // Plus de Encargada
-        case 34: // Plus de Encargada (ID real BD)
-            return generarConfigPlusEncargadaMultiple(novedadId);
-        case 15: // Premio Local
-        case 35: // Premio Local (ID real BD)
-            return generarConfigPremioLocalMultiple(novedadId);
-        case 16: // Comisión Individual
-        case 36: // Comisión Individual (ID real BD)
-            return generarConfigComisionIndividualMultiple(novedadId);
-        case 17: // Comisión sobre Local
-        case 37: // Comisión sobre Local (ID real BD)
-            return generarConfigComisionLocalMultiple(novedadId);
-        case 18: // Premios - Ajuste General
-        case 38: // Premios - Ajuste General (ID real BD)
-            return generarConfigPremiosAjusteGeneralMultiple(novedadId);
-        case 53: // Reemplazo
-            return generarConfigReemplazoMultiple(novedadId);
-        case 54: // Aumento Salarial
-            return generarConfigAumentoSalarialMultiple(novedadId);
-        default:
-            return `<div class="alert alert-warning">Tipo de novedad ${tipoNovedad} no configurado para modo múltiple</div>`;
-    }
-}
-
-/**
- * Cargar tipos de novedad en un select específico
- */
-async function cargarTiposNovedadEnSelect(selectId) {
-    console.log('🔄 Cargando tipos de novedad para select:', selectId);
-    
-    try {
-        const select = document.getElementById(selectId);
-        console.log('📋 Select encontrado:', !!select);
-        
-        if (!select) {
-            console.error('❌ Select no encontrado:', selectId);
-            return;
-        }
-        
-        let tipos = [];
-        
-        // Verificar si NovedadesApp está disponible
-        if (typeof NovedadesApp === 'undefined' || !NovedadesApp.request) {
-            console.warn('⚠️ NovedadesApp no disponible, usando fetch directo');
-            
-            // Fallback usando fetch directo
-            const response = await fetch('controller/novedades_controller.php?action=get_tipos_novedad');
-            const data = await response.json();
-            
-            if (data.success && data.data) {
-                tipos = data.data;
-                console.log('✅ Tipos de novedad obtenidos (fallback):', tipos.length);
-            } else {
-                console.error('❌ Error en respuesta de tipos de novedad:', data);
-                return;
-            }
-        } else {
-            tipos = await NovedadesApp.request('get_tipos_novedad');
-            console.log('📦 Tipos recibidos:', tipos);
-        }
-        
-        if (select && tipos) {
-            console.log('🔍 Debug tipos recibidos:', tipos.slice(0, 3).map(t => ({id: t.id, descripcion: t.descripcion, activo: t.activo, tipo_activo: typeof t.activo})));
-            
-            // Filtrar solo tipos activos y ordenar alfabéticamente - CORREGIDO FILTRO
-            const tiposActivos = tipos
-                .filter(tipo => {
-                    // Manejar diferentes formatos del campo activo
-                    const esActivo = tipo.activo == 1 || tipo.activo === '1' || tipo.activo === true || tipo.activo === 'true';
-                    if (!esActivo) {
-                        console.log('🚫 Tipo filtrado (no activo):', tipo.descripcion, 'activo:', tipo.activo);
-                    }
-                    return esActivo;
-                })
-                .sort((a, b) => a.descripcion.localeCompare(b.descripcion, 'es', { sensitivity: 'accent' }));
-            
-            console.log('🔤 Tipos ordenados alfabéticamente para', selectId, ':', tiposActivos.map(t => t.descripcion).slice(0, 5));
-            console.log('📊 Total tipos activos encontrados:', tiposActivos.length, 'de', tipos.length);
-            
-            // FALLBACK: Si no hay tipos activos, usar todos los tipos disponibles
-            let tiposParaUsar = tiposActivos;
-            if (tiposActivos.length === 0 && tipos.length > 0) {
-                console.warn('⚠️ No se encontraron tipos activos, usando todos los tipos disponibles');
-                tiposParaUsar = tipos.sort((a, b) => a.descripcion.localeCompare(b.descripcion, 'es', { sensitivity: 'accent' }));
-            }
-            
-            // Actualizar tiposNovedadData global si no existe
-            if (!window.tiposNovedadData || Object.keys(window.tiposNovedadData).length === 0) {
-                window.tiposNovedadData = {};
-                tipos.forEach(tipo => {
-                    window.tiposNovedadData[tipo.id] = tipo;
-                });
-                console.log('📊 tiposNovedadData actualizado globalmente');
-            }
-            
-            select.innerHTML = '<option value="">Buscar tipo de novedad...</option>';
-            tiposParaUsar.forEach(tipo => {
-                select.innerHTML += `<option value="${tipo.id}">${tipo.descripcion}</option>`;
+        const sucursales = await obtenerSucursalesConCasaCentral();
+        const selectDest = document.getElementById('cl_local_destino');
+        if (selectDest) {
+            selectDest.innerHTML = '<option value="">Sin cambio de sucursal</option>';
+            sucursales.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.numero;
+                opt.textContent = s.descripcion;
+                selectDest.appendChild(opt);
             });
-            
-            // Esperar un momento para que el DOM se actualice antes de inicializar Select2
-            setTimeout(() => {
-                inicializarSelect2TiposNovedad(select);
-            }, 100);
-            
-            console.log('✅ Tipos de novedad cargados y ordenados alfabéticamente:', tiposParaUsar.length);
         }
-    } catch (error) {
-        console.error('❌ Error cargando tipos de novedad:', error);
-        
-        // Mensaje de error para el usuario
-        const select = document.getElementById(selectId);
-        if (select) {
-            select.innerHTML = '<option value="">Error cargando tipos de novedad</option>';
-        }
+    } catch (e) {
+        console.error('Error cargando sucursales para checklist:', e);
     }
-}
 
-// Funciones de generación de configuración específica (ejemplos básicos)
-function generarConfigCambioSucursalMultiple(novedadId) {
-    return `
-        <div class="row">
-            <div class="col-md-6">
-                <label for="nueva_sucursal_${novedadId}" class="form-label">
-                    Nueva Sucursal <span class="required">*</span>
-                </label>
-                <select class="form-select" id="nueva_sucursal_${novedadId}" name="nueva_sucursal_${novedadId}" required>
-                    <option value="">Seleccione nueva sucursal...</option>
-                </select>
-                <div class="invalid-feedback">La nueva sucursal es obligatoria</div>
-            </div>
-        </div>
-    `;
-}
-
-function generarConfigNuevoSalarioMultiple(novedadId) {
-    return `
-        <div class="row">
-            <div class="col-md-6">
-                <label for="importe_salario_${novedadId}" class="form-label">
-                    Nuevo Salario Neto <span class="required">*</span>
-                </label>
-                <input type="number" class="form-control" id="importe_salario_${novedadId}" 
-                       name="importe_salario_${novedadId}" step="0.01" min="0" required>
-                <div class="invalid-feedback">El importe es obligatorio</div>
-            </div>
-        </div>
-    `;
-}
-
-function generarConfigPermisosMultiple(novedadId) {
-    return `
-        <div class="row">
-            <div class="col-md-6">
-                <label for="fecha_permiso_${novedadId}" class="form-label">
-                    Fecha del Permiso <span class="required">*</span>
-                </label>
-                <input type="date" class="form-control" id="fecha_permiso_${novedadId}" 
-                       name="fecha_permiso_${novedadId}" required>
-                <div class="invalid-feedback">La fecha del permiso es obligatoria</div>
-            </div>
-            <div class="col-md-6">
-                <label for="compensa_${novedadId}" class="form-label">
-                    ¿Compensa? <span class="required">*</span>
-                </label>
-                <select class="form-select" id="compensa_${novedadId}" name="compensa_${novedadId}" required>
-                    <option value="">Seleccione...</option>
-                    <option value="1">SI</option>
-                    <option value="0">NO</option>
-                </select>
-                <div class="invalid-feedback">Debe indicar si compensa</div>
-            </div>
-        </div>
-    `;
-}
-
-// Funciones auxiliares para otros tipos (completadas)
-function generarConfigNuevoPuestoMultiple(novedadId) {
-    return `
-        <div class="row">
-            <div class="col-md-6">
-                <label for="nuevo_puesto_${novedadId}" class="form-label">
-                    Nuevo Puesto <span class="required">*</span>
-                </label>
-                <select class="form-select" id="nuevo_puesto_${novedadId}" name="nuevo_puesto_${novedadId}" required>
-                    <option value="">Seleccione nuevo puesto...</option>
-                </select>
-                <div class="invalid-feedback">El nuevo puesto es obligatorio</div>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Tipo de Cambio <span class="required">*</span></label>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="tipo_nuevo_puesto_${novedadId}" 
-                                   id="tipo_puesto_permanente_${novedadId}" value="permanente" checked>
-                            <label class="form-check-label" for="tipo_puesto_permanente_${novedadId}">
-                                <i class="fas fa-check-circle text-success me-2"></i>
-                                <strong>Permanente</strong>
-                                <br><small class="text-muted">Cambio definitivo de puesto</small>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="tipo_nuevo_puesto_${novedadId}" 
-                                   id="tipo_puesto_temporario_${novedadId}" value="temporario">
-                            <label class="form-check-label" for="tipo_puesto_temporario_${novedadId}">
-                                <i class="fas fa-clock text-warning me-2"></i>
-                                <strong>Temporario</strong>
-                                <br><small class="text-muted">Cambio temporal con fecha de fin</small>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- Fecha de fin (solo para temporario) -->
-        <div class="row mt-3" id="campo_fecha_fin_${novedadId}" style="display: none;">
-            <div class="col-md-6">
-                <label for="fecha_vigencia_hasta_puesto_${novedadId}" class="form-label">
-                    Fecha de fin <span class="required">*</span>
-                </label>
-                <input type="date" class="form-control" id="fecha_vigencia_hasta_puesto_${novedadId}" name="fecha_vigencia_hasta_${novedadId}">
-                <div class="invalid-feedback">
-                    La fecha de fin es obligatoria para cambios temporarios
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-function generarConfigAjustePremiosMultiple(novedadId) {
-    return `
-        <div class="row">
-            <div class="col-md-6">
-                <label for="importe_premios_${novedadId}" class="form-label">
-                    Importe <span class="required">*</span>
-                </label>
-                <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="number" class="form-control" id="importe_premios_${novedadId}" 
-                           name="importe_premios_${novedadId}" step="0.01" min="0" required>
-                </div>
-                <div class="invalid-feedback">El importe es obligatorio</div>
-            </div>
-        </div>
-    `;
-}
-
-function generarConfigHorasExtrasMultiple(novedadId) {
-    return `
-        <div class="row">
-            <div class="col-md-6">
-                <label for="cantidad_horas_extras_${novedadId}" class="form-label">
-                    Cantidad de horas <span class="required">*</span>
-                </label>
-                <div class="input-group">
-                    <input type="number" class="form-control" id="cantidad_horas_extras_${novedadId}" 
-                           name="cantidad_horas_extras_${novedadId}" min="1" required>
-                    <span class="input-group-text">hs</span>
-                </div>
-                <div class="invalid-feedback">La cantidad de horas es obligatoria</div>
-            </div>
-        </div>
-    `;
-}
-
-function generarConfigHorasAdicionalesMultiple(novedadId) {
-    return `
-        <div class="row">
-            <div class="col-md-6">
-                <label for="cantidad_horas_adicionales_${novedadId}" class="form-label">
-                    Cantidad de horas <span class="required">*</span>
-                </label>
-                <div class="input-group">
-                    <input type="number" class="form-control" id="cantidad_horas_adicionales_${novedadId}" 
-                           name="cantidad_horas_adicionales_${novedadId}" min="1" required>
-                    <span class="input-group-text">hs</span>
-                </div>
-                <div class="invalid-feedback">La cantidad de horas es obligatoria</div>
-            </div>
-        </div>
-    `;
-}
-
-function generarConfigCortesMultiple(novedadId) {
-    return `
-        <div class="row">
-            <div class="col-md-6">
-                <label for="cantidad_cortes_${novedadId}" class="form-label">
-                    Cantidad de cortes <span class="required">*</span>
-                </label>
-                <input type="number" class="form-control" id="cantidad_cortes_${novedadId}" 
-                       name="cantidad_cortes_${novedadId}" min="1" required>
-                <div class="invalid-feedback">La cantidad de cortes es obligatoria</div>
-            </div>
-        </div>
-    `;
-}
-
-function generarConfigProduccionMultiple(tipoNovedad, novedadId) {
-    const porcentaje = tipoNovedad === 9 ? '25' : tipoNovedad === 10 ? '50' : '100';
-    return `
-        <div class="row">
-            <div class="col-md-6">
-                <label for="cantidad_unidades_${porcentaje}_${novedadId}" class="form-label">
-                    Cantidad de unidades producidas <span class="required">*</span>
-                </label>
-                <div class="input-group">
-                    <input type="number" class="form-control" id="cantidad_unidades_${porcentaje}_${novedadId}" 
-                           name="cantidad_unidades_${porcentaje}_${novedadId}" min="1" required>
-                    <span class="input-group-text">un.</span>
-                </div>
-                <div class="invalid-feedback">La cantidad de unidades es obligatoria</div>
-                <small class="form-text text-muted">Producción con ${porcentaje}% de eficiencia</small>
-            </div>
-        </div>
-    `;
-}
-
-// Funciones para tipos más complejos
-function generarConfigPlusCajaMultiple(novedadId) {
-    return `
-        <div class="row">
-            <div class="col-md-4">
-                <label for="tipo_plus_caja_${novedadId}" class="form-label">
-                    Tipo de Plus <span class="required">*</span>
-                </label>
-                <select class="form-select" id="tipo_plus_caja_${novedadId}" name="tipo_plus_caja_${novedadId}" required>
-                    <option value="">Seleccione tipo...</option>
-                    <option value="premio">Premio (requiere importe)</option>
-                    <option value="recibo">Recibo (opcional importe)</option>
-                </select>
-                <div class="invalid-feedback">El tipo de plus es obligatorio</div>
-            </div>
-            <div class="col-md-4" id="campo_importe_plus_caja_${novedadId}">
-                <label for="importe_plus_caja_${novedadId}" class="form-label">
-                    Importe <span class="required">*</span>
-                </label>
-                <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="number" class="form-control" id="importe_plus_caja_${novedadId}" 
-                           name="importe_plus_caja_${novedadId}" step="0.01" min="0">
-                </div>
-                <div class="invalid-feedback">El importe es obligatorio para premios</div>
-            </div>
-        </div>
-    `;
-}
-
-function generarConfigPlusSubEncargadaMultiple(novedadId) {
-    return `
-        <div class="row">
-            <div class="col-md-4">
-                <label for="tiene_importe_sub_${novedadId}" class="form-label">
-                    ¿Tiene importe específico? <span class="required">*</span>
-                </label>
-                <select class="form-select" id="tiene_importe_sub_${novedadId}" name="tiene_importe_sub_${novedadId}" required>
-                    <option value="">Seleccione...</option>
-                    <option value="1">Sí (especificar importe)</option>
-                    <option value="0">No</option>
-                </select>
-                <div class="invalid-feedback">Debe seleccionar una opción</div>
-            </div>
-            <div class="col-md-4" id="campo_importe_sub_encargada_${novedadId}" style="display: none;">
-                <label for="importe_sub_encargada_${novedadId}" class="form-label">
-                    Importe Específico <span class="required">*</span>
-                </label>
-                <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="number" class="form-control" id="importe_sub_encargada_${novedadId}" 
-                           name="importe_sub_encargada_${novedadId}" step="0.01" min="0">
-                </div>
-                <div class="invalid-feedback">El importe es obligatorio</div>
-            </div>
-        </div>
-    `;
-}
-
-function generarConfigPlusEncargadaMultiple(novedadId) {
-    return `
-        <div class="row">
-            <div class="col-md-4">
-                <label for="tiene_importe_enc_${novedadId}" class="form-label">
-                    ¿Tiene importe específico? <span class="required">*</span>
-                </label>
-                <select class="form-select" id="tiene_importe_enc_${novedadId}" name="tiene_importe_enc_${novedadId}" required>
-                    <option value="">Seleccione...</option>
-                    <option value="1">Sí (especificar importe)</option>
-                    <option value="0">No</option>
-                </select>
-                <div class="invalid-feedback">Debe seleccionar una opción</div>
-            </div>
-            <div class="col-md-4" id="campo_importe_encargada_${novedadId}" style="display: none;">
-                <label for="importe_encargada_${novedadId}" class="form-label">
-                    Importe Específico <span class="required">*</span>
-                </label>
-                <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="number" class="form-control" id="importe_encargada_${novedadId}" 
-                           name="importe_encargada_${novedadId}" step="0.01" min="0">
-                </div>
-                <div class="invalid-feedback">El importe es obligatorio</div>
-            </div>
-        </div>
-    `;
-}
-
-function generarConfigPremioLocalMultiple(novedadId) {
-    return `
-        <div class="row">
-            <div class="col-md-4">
-                <label for="importe_premio_local_${novedadId}" class="form-label">
-                    Importe <span class="required">*</span>
-                </label>
-                <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="number" class="form-control" id="importe_premio_local_${novedadId}" 
-                           name="importe_premio_local_${novedadId}" step="0.01" min="0" required>
-                </div>
-                <div class="invalid-feedback">El importe es obligatorio</div>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Aplicable a <span class="required">*</span></label>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="aplica_vendedora_${novedadId}" 
-                           name="aplica_vendedora_${novedadId}" value="1">
-                    <label class="form-check-label" for="aplica_vendedora_${novedadId}">
-                        Vendedora
-                    </label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="aplica_sub_encargada_${novedadId}" 
-                           name="aplica_sub_encargada_${novedadId}" value="1">
-                    <label class="form-check-label" for="aplica_sub_encargada_${novedadId}">
-                        Sub-Encargada
-                    </label>
-                </div>
-                <div class="invalid-feedback">Debe seleccionar al menos una aplicación</div>
-            </div>
-        </div>
-    `;
-}
-
-function generarConfigComisionIndividualMultiple(novedadId) {
-    return `
-        <div class="row">
-            <div class="col-md-6">
-                <label for="porcentaje_individual_${novedadId}" class="form-label">
-                    Porcentaje de Comisión <span class="required">*</span>
-                </label>
-                <div class="input-group">
-                    <input type="number" class="form-control" id="porcentaje_individual_${novedadId}" 
-                           name="porcentaje_individual_${novedadId}" step="0.01" min="0.01" max="99.99" required>
-                    <span class="input-group-text">%</span>
-                </div>
-                <div class="invalid-feedback">El porcentaje es obligatorio</div>
-                <small class="form-text text-muted">Ejemplo: 2.50 para 2.50%</small>
-            </div>
-        </div>
-    `;
-}
-
-function generarConfigComisionLocalMultiple(novedadId) {
-    return `
-        <div class="row">
-            <div class="col-md-4">
-                <label for="tiene_tope_local_${novedadId}" class="form-label">
-                    Estructura de Comisión <span class="required">*</span>
-                </label>
-                <select class="form-select" id="tiene_tope_local_${novedadId}" name="tiene_tope_local_${novedadId}" required>
-                    <option value="">Seleccione...</option>
-                    <option value="0">Sin tope (porcentaje único)</option>
-                    <option value="1">Con tope (dos porcentajes)</option>
-                </select>
-                <div class="invalid-feedback">Debe seleccionar la estructura</div>
-            </div>
-        </div>
-        <div class="row mt-3" id="campos_sin_tope_local_${novedadId}" style="display: none;">
-            <div class="col-md-4">
-                <label for="porcentaje_unico_local_${novedadId}" class="form-label">
-                    Porcentaje Único <span class="required">*</span>
-                </label>
-                <div class="input-group">
-                    <input type="number" class="form-control" id="porcentaje_unico_local_${novedadId}" 
-                           name="porcentaje_unico_local_${novedadId}" step="0.01" min="0.01" max="99.99">
-                    <span class="input-group-text">%</span>
-                </div>
-                <div class="invalid-feedback">El porcentaje es obligatorio</div>
-            </div>
-        </div>
-        <div class="row mt-3" id="campos_con_tope_local_${novedadId}" style="display: none;">
-            <div class="col-md-3">
-                <label for="porcentaje_1_local_${novedadId}" class="form-label">
-                    Primer Porcentaje <span class="required">*</span>
-                </label>
-                <div class="input-group">
-                    <input type="number" class="form-control" id="porcentaje_1_local_${novedadId}" 
-                           name="porcentaje_1_local_${novedadId}" step="0.01" min="0.01" max="99.99">
-                    <span class="input-group-text">%</span>
-                </div>
-                <div class="invalid-feedback">El porcentaje es obligatorio</div>
-            </div>
-            <div class="col-md-3">
-                <label for="porcentaje_2_local_${novedadId}" class="form-label">
-                    Segundo Porcentaje <span class="required">*</span>
-                </label>
-                <div class="input-group">
-                    <input type="number" class="form-control" id="porcentaje_2_local_${novedadId}" 
-                           name="porcentaje_2_local_${novedadId}" step="0.01" min="0.01" max="99.99">
-                    <span class="input-group-text">%</span>
-                </div>
-                <div class="invalid-feedback">El porcentaje es obligatorio</div>
-            </div>
-        </div>
-    `;
-}
-
-function generarConfigPremiosAjusteGeneralMultiple(novedadId) {
-    return `
-        <div class="row">
-            <div class="col-md-6">
-                <label for="importe_ajuste_general_${novedadId}" class="form-label">
-                    Importe del Ajuste <span class="required">*</span>
-                </label>
-                <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="number" class="form-control" id="importe_ajuste_general_${novedadId}" 
-                           name="importe_ajuste_general_${novedadId}" step="0.01" min="0" required>
-                </div>
-                <div class="invalid-feedback">El importe es obligatorio</div>
-            </div>
-        </div>
-    `;
-}
-
-/**
- * Generar configuración para Reemplazo en modo múltiple
- */
-function generarConfigReemplazoMultiple(novedadId) {
-    return `
-        <div class="row">
-            <!-- Tipo de Reemplazo -->
-            <div class="col-md-12 mb-3">
-                <label class="form-label">
-                    Tipo de Reemplazo <span class="required">*</span>
-                </label>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="tipo_reemplazo_${novedadId}" 
-                                   id="tipo_reemplazo_permanente_${novedadId}" value="permanente" checked 
-                                   onchange="toggleFechaFinReemplazoMultiple('${novedadId}')">
-                            <label class="form-check-label" for="tipo_reemplazo_permanente_${novedadId}">
-                                <i class="fas fa-check-circle text-success me-2"></i>
-                                <strong>Permanente</strong>
-                                <br><small class="text-muted">Reemplazo definitivo</small>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="tipo_reemplazo_${novedadId}" 
-                                   id="tipo_reemplazo_temporario_${novedadId}" value="temporario" 
-                                   onchange="toggleFechaFinReemplazoMultiple('${novedadId}')">
-                            <label class="form-check-label" for="tipo_reemplazo_temporario_${novedadId}">
-                                <i class="fas fa-clock text-warning me-2"></i>
-                                <strong>Temporario</strong>
-                                <br><small class="text-muted">Reemplazo temporal con fecha de fin</small>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                <div class="invalid-feedback">Debe seleccionar el tipo de reemplazo</div>
-            </div>
-            
-            <div class="col-md-6">
-                <label for="puesto_reemplazo_${novedadId}" class="form-label">
-                    Puesto de Reemplazo <span class="required">*</span>
-                </label>
-                <select class="form-select" id="puesto_reemplazo_${novedadId}" name="puesto_reemplazo_${novedadId}" required>
-                    <option value="">Seleccione puesto de reemplazo...</option>
-                </select>
-                <div class="invalid-feedback">El puesto de reemplazo es obligatorio</div>
-            </div>
-            
-            <!-- Fecha de fin (solo para temporario) -->
-            <div class="col-md-6" id="campo_fecha_fin_reemplazo_${novedadId}" style="display: none;">
-                <label for="fecha_vigencia_hasta_reemplazo_${novedadId}" class="form-label">
-                    Fecha de fin <span class="required">*</span>
-                </label>
-                <input type="date" class="form-control" id="fecha_vigencia_hasta_reemplazo_${novedadId}" 
-                       name="fecha_vigencia_hasta_reemplazo_${novedadId}">
-                <div class="invalid-feedback">La fecha de fin es obligatoria para reemplazos temporarios</div>
-            </div>
-        </div>
-    `;
-}
-
-/**
- * Generar configuración para Aumento Salarial en modo múltiple
- */
-function generarConfigAumentoSalarialMultiple(novedadId) {
-    return `
-        <div class="row">
-            <!-- Tipo de Aumento -->
-            <div class="col-md-12 mb-3">
-                <label class="form-label">
-                    Tipo de Aumento <span class="required">*</span>
-                </label>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="tipo_aumento_${novedadId}" 
-                                   id="tipo_aumento_porcentaje_${novedadId}" value="porcentaje" checked 
-                                   onchange="toggleTipoAumentoMultiple('${novedadId}')">
-                            <label class="form-check-label" for="tipo_aumento_porcentaje_${novedadId}">
-                                <i class="fas fa-percentage text-primary me-2"></i>
-                                <strong>Porcentaje</strong>
-                                <br><small class="text-muted">Aumento por porcentaje sobre el salario actual</small>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="tipo_aumento_${novedadId}" 
-                                   id="tipo_aumento_monto_${novedadId}" value="monto" 
-                                   onchange="toggleTipoAumentoMultiple('${novedadId}')">
-                            <label class="form-check-label" for="tipo_aumento_monto_${novedadId}">
-                                <i class="fas fa-dollar-sign text-success me-2"></i>
-                                <strong>Monto Fijo</strong>
-                                <br><small class="text-muted">Aumento por monto específico</small>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                <div class="invalid-feedback">Debe seleccionar el tipo de aumento</div>
-            </div>
-            
-            <!-- Campo Porcentaje -->
-            <div class="col-md-6" id="campo_porcentaje_aumento_${novedadId}">
-                <label for="porcentaje_aumento_${novedadId}" class="form-label">
-                    Porcentaje de Aumento <span class="required">*</span>
-                </label>
-                <div class="input-group">
-                    <input type="number" class="form-control" id="porcentaje_aumento_${novedadId}" 
-                           name="porcentaje_aumento_${novedadId}" step="0.01" min="0.01" max="100" 
-                           placeholder="0.00" required>
-                    <span class="input-group-text">%</span>
-                </div>
-                <div class="invalid-feedback">El porcentaje debe ser mayor a 0.01</div>
-                <small class="form-text text-muted">Ejemplo: 15.5 para 15.5%</small>
-            </div>
-            
-            <!-- Campo Monto -->
-            <div class="col-md-6" id="campo_monto_aumento_${novedadId}" style="display: none;">
-                <label for="monto_aumento_${novedadId}" class="form-label">
-                    Monto del Aumento <span class="required">*</span>
-                </label>
-                <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="number" class="form-control" id="monto_aumento_${novedadId}" 
-                           name="monto_aumento_${novedadId}" step="0.01" min="0.01" placeholder="0.00">
-                </div>
-                <div class="invalid-feedback">El monto debe ser mayor a 0.01</div>
-            </div>
-        </div>
-    `;
-}
-
-/**
- * Aplicar configuraciones específicas después de generar HTML
- */
-function aplicarConfiguracionesEspecificasMultiple(tipoNovedad, novedadId) {
-    // Aquí aplicamos lógica específica como cargar opciones, configurar fechas, etc.
-    switch (tipoNovedad) {
-        case 1: // Cambio de sucursal
-            cargarSucursalesEnSelectMultiple(`nueva_sucursal_${novedadId}`);
-            break;
-        case 2: // Nuevo puesto
-            cargarPuestosEnSelectMultiple(`nuevo_puesto_${novedadId}`);
-            configurarTipoPuestoMultiple(novedadId);
-            break;
-        case 12: // Plus de caja
-        case 32:
-            configurarPlusCajaMultiple(novedadId);
-            break;
-        case 13: // Plus Sub-Encargada
-        case 33:
-            configurarPlusSubEncargadaMultiple(novedadId);
-            break;
-        case 14: // Plus Encargada
-        case 34:
-            configurarPlusEncargadaMultiple(novedadId);
-            break;
-        case 17: // Comisión sobre Local
-        case 37:
-            configurarComisionLocalMultiple(novedadId);
-            break;
-        case 53: // Reemplazo
-            cargarPuestosEnSelectMultiple(`puesto_reemplazo_${novedadId}`);
-            break;
-        case 54: // Aumento Salarial
-            // No necesita configuración especial inicial
-            break;
-    }
-}
-
-/**
- * Cargar sucursales en select múltiple
- */
-async function cargarSucursalesEnSelectMultiple(selectId) {
-    try {
-        const sucursales = await NovedadesApp.request('get_sucursales_con_casa_central');
-        const select = document.getElementById(selectId);
-        
-        if (select && sucursales) {
-            select.innerHTML = '<option value="">Seleccione nueva sucursal...</option>';
-            sucursales.forEach(sucursal => {
-                select.innerHTML += `<option value="${sucursal.numero}">${sucursal.descripcion}</option>`;
-            });
-            console.log(`✅ Sucursales cargadas en ${selectId}:`, sucursales.length);
-        }
-    } catch (error) {
-        console.error(`Error cargando sucursales en ${selectId}:`, error);
-    }
-}
-
-/**
- * Cargar puestos en select múltiple
- */
-async function cargarPuestosEnSelectMultiple(selectId) {
+    // Cargar puestos desde Tango (TAREA_HABITUAL) para Puesto a prueba y Puesto confirmación
     try {
         const puestos = await NovedadesApp.request('get_puestos');
-        const select = document.getElementById(selectId);
-        
-        if (select && puestos) {
-            select.innerHTML = '<option value="">Seleccione nuevo puesto...</option>';
-            puestos.forEach(puesto => {
-                select.innerHTML += `<option value="${puesto.nombre_puesto}">${puesto.nombre_puesto}</option>`;
+        const poblarPuestos = (el, placeholder) => {
+            if (!el) return;
+            el.innerHTML = `<option value="">${placeholder}</option>`;
+            (puestos || []).forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.nombre_puesto;
+                opt.textContent = p.nombre_puesto;
+                el.appendChild(opt);
             });
-            console.log(`✅ Puestos cargados en ${selectId}:`, puestos.length);
-        }
-    } catch (error) {
-        console.error(`Error cargando puestos en ${selectId}:`, error);
-    }
-}
+        };
+        const selPrueba = document.getElementById('cl_puesto_prueba');
+        const selConf = document.getElementById('cl_confirmacion_puesto');
+        poblarPuestos(selPrueba, 'No aplica / Sin período a prueba');
+        poblarPuestos(selConf, 'Seleccionar puesto de confirmación...');
 
-/**
- * Configurar tipo de puesto (permanente/temporario)
- */
-function configurarTipoPuestoMultiple(novedadId) {
-    const radioTemporario = document.getElementById(`tipo_puesto_temporario_${novedadId}`);
-    const radioPermanente = document.getElementById(`tipo_puesto_permanente_${novedadId}`);
-    const campoFechaFin = document.getElementById(`campo_fecha_fin_${novedadId}`);
-    
-    if (radioTemporario && radioPermanente && campoFechaFin) {
-        // Event listener para mostrar/ocultar fecha fin
-        [radioTemporario, radioPermanente].forEach(radio => {
-            radio.addEventListener('change', function() {
-                if (radioTemporario.checked) {
-                    campoFechaFin.style.display = 'block';
-                    const fechaInput = document.getElementById(`fecha_vigencia_hasta_puesto_${novedadId}`);
-                    if (fechaInput) fechaInput.required = true;
-                } else {
-                    campoFechaFin.style.display = 'none';
-                    const fechaInput = document.getElementById(`fecha_vigencia_hasta_puesto_${novedadId}`);
-                    if (fechaInput) {
-                        fechaInput.required = false;
-                        fechaInput.value = '';
-                    }
+        if (selPrueba) {
+            selPrueba.onchange = function() {
+                actualizarHintFechaFinChecklist();
+                if (selConf && !selConf.value && this.value) {
+                    selConf.value = this.value;
                 }
-            });
-        });
+            };
+        }
+    } catch (e) {
+        console.error('Error cargando puestos para checklist:', e);
+    }
+
+    // Fecha fin -> sugerir día siguiente como fecha de confirmación
+    const fechaFinEl = document.getElementById('cl_fecha_fin');
+    if (fechaFinEl) {
+        fechaFinEl.onchange = sugerirFechaConfirmacion;
+    }
+
+    // Poblar selects de sucursales PROPIOS para Comisiones Individuales dentro de cada etapa
+    inicializarComisionSucursales('prueba');
+    inicializarComisionSucursales('confirmacion');
+
+    // Sync local origen y posición actual si ya hay un empleado seleccionado
+    const emp = window.NovedadesApp?.empleadoSeleccionado;
+    if (emp) {
+        const ccDesc = emp.desc_centro_costos || emp.descripcion_centro || '';
+        const ccCod = emp.cod_centro_costos || emp.centro_costos || '';
+        const clOrig = document.getElementById('cl_local_origen');
+        const clPos = document.getElementById('cl_posicion_actual');
+        if (clOrig && ccDesc) clOrig.value = `${ccDesc} (${ccCod})`;
+        if (clPos) clPos.value = emp.puesto_actual || '';
+    }
+}
+
+function sugerirFechaConfirmacion() {
+    const fechaFinEl = document.getElementById('cl_fecha_fin');
+    const fechaConfEl = document.getElementById('cl_confirmacion_fecha');
+    if (!fechaConfEl || fechaConfEl.value) return;
+    if (fechaFinEl && fechaFinEl.value) {
+        const d = new Date(fechaFinEl.value + 'T00:00:00');
+        if (!isNaN(d.getTime())) {
+            d.setDate(d.getDate() + 1);
+            fechaConfEl.value = d.toISOString().split('T')[0];
+        }
+    }
+}
+
+function actualizarHintFechaFinChecklist() {
+    const puesto = document.getElementById('cl_puesto_prueba')?.value || '';
+    const reemplazoChk = document.getElementById('cl_prueba_reemplazo_chk');
+    const hint = document.getElementById('cl_fecha_fin_hint');
+    const req = Boolean(puesto || (reemplazoChk && reemplazoChk.checked));
+    if (hint) {
+        hint.innerHTML = req
+            ? '<span class="text-danger fw-semibold">* Obligatoria (período a prueba / reemplazo)</span>'
+            : '(obligatoria si tiene puesto a prueba o reemplazo)';
     }
 }
 
 /**
- * Configurar Plus de Caja en modo múltiple
+ * Generar HTML parametrizado de una etapa del checklist ('prueba' o 'confirmacion')
  */
-function configurarPlusCajaMultiple(novedadId) {
-    const tipoSelect = document.getElementById(`tipo_plus_caja_${novedadId}`);
-    const campoImporte = document.getElementById(`campo_importe_plus_caja_${novedadId}`);
-    const inputImporte = document.getElementById(`importe_plus_caja_${novedadId}`);
-    
-    if (tipoSelect && campoImporte && inputImporte) {
-        tipoSelect.addEventListener('change', function() {
-            if (this.value === 'premio') {
-                campoImporte.style.display = 'block';
-                inputImporte.required = true;
-                const label = campoImporte.querySelector('label');
-                if (label) label.innerHTML = 'Importe <span class="required">*</span>';
-            } else if (this.value === 'recibo') {
-                campoImporte.style.display = 'block';
-                inputImporte.required = false;
-                const label = campoImporte.querySelector('label');
-                if (label) label.innerHTML = 'Importe (opcional)';
-            } else {
-                campoImporte.style.display = 'none';
-                inputImporte.required = false;
-                inputImporte.value = '';
-            }
-        });
+function generarHtmlBloqueChecklist(etapa) {
+    const esPrueba = (etapa === 'prueba');
+    const p = `cl_${etapa}`;
+
+    const cabeceraEtapa = esPrueba
+        ? `<div class="alert alert-warning py-2 small mb-3">
+                <i class="fas fa-calendar-alt me-1"></i>
+                Las novedades marcadas en esta etapa tomarán la <strong>Fecha de inicio</strong> de la Propuesta (y Fecha de finalización para Reemplazo).
+           </div>`
+        : `<div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="cl_confirmacion_fecha" class="form-label fw-semibold">
+                        Fecha de vigencia (Confirmación) <span class="required">*</span>
+                    </label>
+                    <input type="date" class="form-control" id="cl_confirmacion_fecha">
+                    <div class="invalid-feedback">Indique la fecha de confirmación</div>
+                </div>
+           </div>`;
+
+    const bloquePuestoEtapa = esPrueba
+        ? `<div class="col-md-6">
+                <div class="border rounded p-3 h-100 bg-light-subtle">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="${p}_reemplazo_chk" onchange="toggleItemChecklist('${p}_reemplazo'); actualizarHintFechaFinChecklist();">
+                        <label class="form-check-label fw-bold" for="${p}_reemplazo_chk">Reemplazo (Temporario)</label>
+                    </div>
+                    <div id="${p}_reemplazo_fields" style="display:none;">
+                        <small class="text-muted d-block">
+                            Usará el <strong>Puesto a prueba</strong>, <strong>Fecha de inicio</strong> y <strong>Fecha de finalización</strong> definidos en la Propuesta (tipo Temporario).
+                        </small>
+                    </div>
+                </div>
+           </div>`
+        : `<div class="col-md-6">
+                <div class="border rounded p-3 h-100 bg-light-subtle">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="${p}_puesto_chk" onchange="toggleItemChecklist('${p}_puesto')">
+                        <label class="form-check-label fw-bold" for="${p}_puesto_chk">Nuevo Puesto (Efectivización)</label>
+                    </div>
+                    <div id="${p}_puesto_fields" style="display:none;">
+                        <div class="mb-2">
+                            <label class="form-label small mb-1">Puesto definitivo <span class="required">*</span></label>
+                            <select class="form-select form-select-sm" id="cl_confirmacion_puesto">
+                                <option value="">Seleccionar puesto...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label small mb-1">Convenio <span class="required">*</span></label>
+                            <select class="form-select form-select-sm" id="cl_confirmacion_convenio">
+                                <option value="">Seleccionar convenio...</option>
+                                <option value="Comercio">Comercio</option>
+                                <option value="FC">FC (Fuera de Convenio)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+           </div>`;
+
+    return `
+        ${cabeceraEtapa}
+        <div class="row g-3">
+            <!-- Cambio de Sucursal -->
+            <div class="col-md-6">
+                <div class="border rounded p-3 h-100 bg-light-subtle">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="${p}_sucursal_chk" onchange="toggleItemChecklist('${p}_sucursal')">
+                        <label class="form-check-label fw-bold" for="${p}_sucursal_chk">Cambio de Sucursal</label>
+                    </div>
+                    <div id="${p}_sucursal_fields" style="display:none;">
+                        <small class="text-muted d-block mb-2">Usará el <strong>Local destino</strong> indicado en Propuesta.</small>
+                        <label class="form-label small mb-1">Fecha de vencimiento (opcional)</label>
+                        <input type="date" class="form-control form-control-sm" id="${p}_sucursal_hasta">
+                        <small class="text-muted">Si se deja vacía, se considera sin vencimiento.</small>
+                    </div>
+                </div>
+            </div>
+
+            ${bloquePuestoEtapa}
+
+            <!-- Plus Encargada -->
+            <div class="col-md-4">
+                <div class="border rounded p-3 h-100 bg-light-subtle">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="${p}_plus_enc_chk" onchange="toggleItemChecklist('${p}_plus_enc')">
+                        <label class="form-check-label fw-bold" for="${p}_plus_enc_chk">Plus Encargada</label>
+                    </div>
+                    <div id="${p}_plus_enc_fields" style="display:none;">
+                        <select class="form-select form-select-sm mb-2" id="${p}_plus_enc_val">
+                            <option value="">Seleccionar SI / NO...</option>
+                            <option value="1">SI</option>
+                            <option value="0">NO</option>
+                        </select>
+                        <label class="form-label small mb-1">Fecha vencimiento (opc.)</label>
+                        <input type="date" class="form-control form-control-sm" id="${p}_plus_enc_hasta">
+                        <small class="text-muted">Si se deja vacía, es sin vencimiento.</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Plus Sub-Encargada -->
+            <div class="col-md-4">
+                <div class="border rounded p-3 h-100 bg-light-subtle">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="${p}_plus_sub_chk" onchange="toggleItemChecklist('${p}_plus_sub')">
+                        <label class="form-check-label fw-bold" for="${p}_plus_sub_chk">Plus Sub-Encargada</label>
+                    </div>
+                    <div id="${p}_plus_sub_fields" style="display:none;">
+                        <select class="form-select form-select-sm mb-2" id="${p}_plus_sub_val">
+                            <option value="">Seleccionar SI / NO...</option>
+                            <option value="1">SI</option>
+                            <option value="0">NO</option>
+                        </select>
+                        <small class="text-info d-block mb-1"><i class="fas fa-info-circle me-1"></i>Equivale al Plus de Caja.</small>
+                        <label class="form-label small mb-1">Fecha vencimiento (opc.)</label>
+                        <input type="date" class="form-control form-control-sm" id="${p}_plus_sub_hasta">
+                        <small class="text-muted">Si se deja vacía, es sin vencimiento.</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Plus de Caja -->
+            <div class="col-md-4">
+                <div class="border rounded p-3 h-100 bg-light-subtle">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="${p}_plus_caja_chk" onchange="toggleItemChecklist('${p}_plus_caja')">
+                        <label class="form-check-label fw-bold" for="${p}_plus_caja_chk">Plus de Caja</label>
+                    </div>
+                    <div id="${p}_plus_caja_fields" style="display:none;">
+                        <select class="form-select form-select-sm mb-2" id="${p}_plus_caja_val">
+                            <option value="">Seleccionar tipo...</option>
+                            <option value="recibo">Recibo</option>
+                            <option value="premio">Premio</option>
+                        </select>
+                        <label class="form-label small mb-1">Fecha vencimiento (opc.)</label>
+                        <input type="date" class="form-control form-control-sm" id="${p}_plus_caja_hasta">
+                        <small class="text-muted">Si se deja vacía, es sin vencimiento.</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comisiones Individual -->
+            <div class="col-12">
+                <div class="border rounded p-3 bg-light-subtle">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" id="${p}_com_ind_chk" onchange="toggleItemChecklist('${p}_com_ind')">
+                            <label class="form-check-label fw-bold" for="${p}_com_ind_chk">Comisiones Individual</label>
+                        </div>
+                        <small class="text-muted">Porcentaje simple o por sucursales PROPIOS (Supervisoras)</small>
+                    </div>
+                    <div id="${p}_com_ind_fields" style="display:none;">
+                        <div class="row g-2 align-items-end mb-2">
+                            <div class="col-md-4">
+                                <label class="form-label small mb-1">Modalidad</label>
+                                <select class="form-select form-select-sm" id="${p}_com_ind_modo" onchange="toggleModoComIndChecklist('${etapa}')">
+                                    <option value="simple">Porcentaje único (Vendedora / Encargada)</option>
+                                    <option value="sucursales">Por sucursales PROPIOS (Supervisora)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4" id="${p}_com_ind_simple_wrap">
+                                <label class="form-label small mb-1">Porcentaje (%)</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" class="form-control" id="${p}_com_ind_pct" step="0.01" min="0.01" max="100" placeholder="Ej: 1.00">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="${p}_com_ind_sucursales_wrap" style="display:none;">
+                            <div class="input-group input-group-sm mb-2">
+                                <select class="form-select" id="${p}_com_ind_sucursal_select">
+                                    <option value="">Seleccionar sucursal PROPIOS...</option>
+                                </select>
+                                <button type="button" class="btn btn-outline-primary" id="${p}_btn_agregar_suc">
+                                    <i class="fas fa-plus me-1"></i>Agregar sucursal
+                                </button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered bg-white mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Sucursal (PROPIOS)</th>
+                                            <th style="width:130px;">% Comisión</th>
+                                            <th style="width:90px;" class="text-center">¿Tope?</th>
+                                            <th style="width:130px;">% Post-Tope</th>
+                                            <th style="width:60px;" class="text-center">Quitar</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="${p}_tbody_com_ind">
+                                        <tr class="fila-vacia-comision">
+                                            <td colspan="5" class="text-center text-muted py-2">Agregue al menos una sucursal PROPIOS</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comisiones Local -->
+            <div class="col-md-6">
+                <div class="border rounded p-3 h-100 bg-light-subtle">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="${p}_com_local_chk" onchange="toggleItemChecklist('${p}_com_local')">
+                        <label class="form-check-label fw-bold" for="${p}_com_local_chk">Comisiones Local</label>
+                    </div>
+                    <div id="${p}_com_local_fields" style="display:none;">
+                        <select class="form-select form-select-sm mb-2" id="${p}_com_local_tope" onchange="toggleTopeComLocalChecklist('${etapa}')">
+                            <option value="">Seleccionar si tiene tope...</option>
+                            <option value="1">Con Tope</option>
+                            <option value="0">Sin Tope</option>
+                        </select>
+                        <div id="${p}_com_local_contope_wrap" style="display:none;">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label small mb-1">% Antes tope</label>
+                                    <input type="number" class="form-control form-control-sm" id="${p}_com_local_p1" step="0.05" min="0.05" max="100" placeholder="0.30 - 1.00">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small mb-1">% Post-tope</label>
+                                    <input type="number" class="form-control form-control-sm" id="${p}_com_local_p2" step="0.05" min="0.05" max="100" placeholder="0.15 - 0.50">
+                                </div>
+                            </div>
+                            <small class="text-muted d-block mt-1">
+                                <i class="fas fa-info-circle me-1"></i>Guía orientativa: 0,30%-1,00% y 0,15%-0,50% · Rango de 0,05%.
+                            </small>
+                        </div>
+                        <div id="${p}_com_local_sintope_wrap" style="display:none;">
+                            <label class="form-label small mb-1">% Único sobre local</label>
+                            <input type="number" class="form-control form-control-sm" id="${p}_com_local_pu" step="0.05" min="0.05" max="100" placeholder="Ej: 0.50">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Premios Obj Loc -->
+            <div class="col-md-6">
+                <div class="border rounded p-3 h-100 bg-light-subtle">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="${p}_premio_loc_chk" onchange="toggleItemChecklist('${p}_premio_loc')">
+                        <label class="form-check-label fw-bold" for="${p}_premio_loc_chk">Premios Obj Loc</label>
+                    </div>
+                    <div id="${p}_premio_loc_fields" style="display:none;">
+                        <small class="text-muted d-block mb-2">Categoría aplicable para el empleado:</small>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="${p}_premio_loc_rol" id="${p}_premio_vend" value="Vendedora">
+                            <label class="form-check-label" for="${p}_premio_vend">Vendedora</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="${p}_premio_loc_rol" id="${p}_premio_enc" value="Encargada">
+                            <label class="form-check-label" for="${p}_premio_enc">Encargada</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Premio Ajuste Gral -->
+            <div class="col-md-6">
+                <div class="border rounded p-3 h-100 bg-light-subtle">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="${p}_ajuste_gral_chk" onchange="toggleItemChecklist('${p}_ajuste_gral')">
+                        <label class="form-check-label fw-bold" for="${p}_ajuste_gral_chk">Premio Ajuste Gral.</label>
+                    </div>
+                    <div id="${p}_ajuste_gral_fields" style="display:none;">
+                        <select class="form-select form-select-sm mb-2" id="${p}_ajuste_gral_val">
+                            <option value="">Seleccionar SI / NO...</option>
+                            <option value="1">SI</option>
+                            <option value="0">NO</option>
+                        </select>
+                        <label class="form-label small mb-1">Importe (opcional)</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="${p}_ajuste_gral_imp" step="0.01" min="0" placeholder="Opcional">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sueldo Básico -->
+            <div class="col-md-6">
+                <div class="border rounded p-3 h-100 bg-light-subtle">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="${p}_sueldo_basico_chk" onchange="toggleItemChecklist('${p}_sueldo_basico')">
+                        <label class="form-check-label fw-bold" for="${p}_sueldo_basico_chk">Sueldo Básico (Escala)</label>
+                    </div>
+                    <div id="${p}_sueldo_basico_fields" style="display:none;">
+                        <small class="text-muted d-block mb-2">Escala salarial aplicable:</small>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="${p}_sueldo_basico_esc" id="${p}_basico_vend" value="Vendedora">
+                            <label class="form-check-label" for="${p}_basico_vend">Vendedora</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="${p}_sueldo_basico_esc" id="${p}_basico_enc" value="Encargada">
+                            <label class="form-check-label" for="${p}_basico_enc">Encargada</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function toggleItemChecklist(baseId) {
+    const chk = document.getElementById(`${baseId}_chk`);
+    const fields = document.getElementById(`${baseId}_fields`);
+    if (fields) {
+        fields.style.display = (chk && chk.checked) ? 'block' : 'none';
+    }
+}
+
+function toggleModoComIndChecklist(etapa) {
+    const modo = document.getElementById(`cl_${etapa}_com_ind_modo`)?.value || 'simple';
+    const simpleWrap = document.getElementById(`cl_${etapa}_com_ind_simple_wrap`);
+    const sucWrap = document.getElementById(`cl_${etapa}_com_ind_sucursales_wrap`);
+    if (simpleWrap) simpleWrap.style.display = modo === 'simple' ? 'block' : 'none';
+    if (sucWrap) sucWrap.style.display = modo === 'sucursales' ? 'block' : 'none';
+}
+
+function toggleTopeComLocalChecklist(etapa) {
+    const val = document.getElementById(`cl_${etapa}_com_local_tope`)?.value || '';
+    const conWrap = document.getElementById(`cl_${etapa}_com_local_contope_wrap`);
+    const sinWrap = document.getElementById(`cl_${etapa}_com_local_sintope_wrap`);
+    if (conWrap) conWrap.style.display = val === '1' ? 'block' : 'none';
+    if (sinWrap) sinWrap.style.display = val === '0' ? 'block' : 'none';
+}
+
+function resetearChecklistMultiple() {
+    if (window.modoActual === 'multiple') {
+        inicializarChecklistMultiple();
     }
 }
 
 /**
- * Configurar Plus de Sub-Encargada en modo múltiple
+ * Recopilar y validar todas las novedades marcadas en una etapa del checklist
  */
-/**
- * Configurar Comisión sobre Local en modo múltiple
- */
-function configurarComisionLocalMultiple(novedadId) {
-    const tieneTopeSelect = document.getElementById(`tiene_tope_local_${novedadId}`);
-    const campoSinTope = document.getElementById(`campos_sin_tope_local_${novedadId}`);
-    const campoConTope = document.getElementById(`campos_con_tope_local_${novedadId}`);
-    
-    if (tieneTopeSelect && campoSinTope && campoConTope) {
-        tieneTopeSelect.addEventListener('change', function() {
-            if (this.value === '0') {
-                // Sin tope
-                campoSinTope.style.display = 'block';
-                campoConTope.style.display = 'none';
-                const inputUnico = document.getElementById(`porcentaje_unico_local_${novedadId}`);
-                const input1 = document.getElementById(`porcentaje_1_local_${novedadId}`);
-                const input2 = document.getElementById(`porcentaje_2_local_${novedadId}`);
-                
-                if (inputUnico) inputUnico.required = true;
-                if (input1) input1.required = false;
-                if (input2) input2.required = false;
-            } else if (this.value === '1') {
-                // Con tope
-                campoSinTope.style.display = 'none';
-                campoConTope.style.display = 'block';
-                const inputUnico = document.getElementById(`porcentaje_unico_local_${novedadId}`);
-                const input1 = document.getElementById(`porcentaje_1_local_${novedadId}`);
-                const input2 = document.getElementById(`porcentaje_2_local_${novedadId}`);
-                
-                if (inputUnico) inputUnico.required = false;
-                if (input1) input1.required = true;
-                if (input2) input2.required = true;
-            } else {
-                // No seleccionado
-                campoSinTope.style.display = 'none';
-                campoConTope.style.display = 'none';
-            }
-        });
-    }
-}
+function recopilarEtapaChecklist(etapa, ctx) {
+    const p = `cl_${etapa}`;
+    const labelEtapa = etapa === 'prueba' ? 'Durante la Prueba' : 'Confirmación';
+    const fechaVigencia = etapa === 'prueba'
+        ? (document.getElementById('cl_fecha_inicio')?.value || '')
+        : (document.getElementById('cl_confirmacion_fecha')?.value || '');
 
-/**
- * Configuraciones específicas para tipos complejos en modo múltiple
- */
-function configurarPlusCajaMultiple(novedadId) {
-    const selectTipo = document.getElementById(`tipo_plus_caja_${novedadId}`);
-    const campoImporte = document.getElementById(`campo_importe_plus_caja_${novedadId}`);
-    
-    if (selectTipo && campoImporte) {
-        selectTipo.addEventListener('change', function() {
-            const inputImporte = document.getElementById(`importe_plus_caja_${novedadId}`);
-            if (this.value === 'premio') {
-                campoImporte.style.display = 'block';
-                if (inputImporte) inputImporte.setAttribute('required', 'required');
-            } else {
-                campoImporte.style.display = 'none';
-                if (inputImporte) inputImporte.removeAttribute('required');
-            }
-        });
-    }
-}
+    const errores = [];
+    const novedades = [];
 
-function configurarPlusSubEncargadaMultiple(novedadId) {
-    const selectTieneImporte = document.getElementById(`tiene_importe_sub_${novedadId}`);
-    const campoImporte = document.getElementById(`campo_importe_sub_encargada_${novedadId}`);
-    
-    if (selectTieneImporte && campoImporte) {
-        selectTieneImporte.addEventListener('change', function() {
-            const inputImporte = document.getElementById(`importe_sub_encargada_${novedadId}`);
-            if (this.value === '1') {
-                campoImporte.style.display = 'block';
-                if (inputImporte) inputImporte.setAttribute('required', 'required');
-            } else {
-                campoImporte.style.display = 'none';
-                if (inputImporte) inputImporte.removeAttribute('required');
-            }
-        });
+    if (!fechaVigencia) {
+        errores.push(`La fecha de vigencia para "${labelEtapa}" es obligatoria`);
+        return { errores, novedades };
     }
-}
 
-function configurarPlusEncargadaMultiple(novedadId) {
-    const selectTieneImporte = document.getElementById(`tiene_importe_enc_${novedadId}`);
-    const campoImporte = document.getElementById(`campo_importe_encargada_${novedadId}`);
-    
-    if (selectTieneImporte && campoImporte) {
-        selectTieneImporte.addEventListener('change', function() {
-            const inputImporte = document.getElementById(`importe_encargada_${novedadId}`);
-            if (this.value === '1') {
-                campoImporte.style.display = 'block';
-                if (inputImporte) inputImporte.setAttribute('required', 'required');
-            } else {
-                campoImporte.style.display = 'none';
-                if (inputImporte) inputImporte.removeAttribute('required');
-            }
-        });
+    const baseNovedad = (tipoNovedad) => ({
+        legajo: ctx.legajo,
+        nombre: ctx.nombre,
+        apellido: ctx.apellido,
+        tipo_novedad: tipoNovedad,
+        fecha_vigencia: fechaVigencia,
+        periodo_mes: ctx.periodoMes,
+        periodo_anio: ctx.periodoAnio,
+        etapa_multiple: etapa,
+        observaciones: ctx.observaciones
+    });
+
+    // 1. Cambio de Sucursal
+    if (document.getElementById(`${p}_sucursal_chk`)?.checked) {
+        const dest = (document.getElementById('cl_local_destino')?.value || '').trim();
+        const fh = (document.getElementById(`${p}_sucursal_hasta`)?.value || '').trim() || null;
+        if (!dest) {
+            errores.push(`[${labelEtapa}] Seleccione el "Local destino" en la Propuesta para Cambio de Sucursal`);
+        } else if (fh && fh < fechaVigencia) {
+            errores.push(`[${labelEtapa}] La fecha de vencimiento de Cambio de Sucursal no puede ser anterior a la vigencia`);
+        } else {
+            const nov = baseNovedad(1);
+            nov.nueva_sucursal = dest;
+            nov.sucursal_actual = ctx.sucursalNumero || '';
+            nov.fecha_vigencia_hasta = fh;
+            novedades.push(nov);
+        }
     }
-}
 
-function configurarComisionLocalMultiple(novedadId) {
-    const selectTieneTope = document.getElementById(`tiene_tope_local_${novedadId}`);
-    const camposSinTope = document.getElementById(`campos_sin_tope_local_${novedadId}`);
-    const camposConTope = document.getElementById(`campos_con_tope_local_${novedadId}`);
-    
-    if (selectTieneTope) {
-        selectTieneTope.addEventListener('change', function() {
-            if (this.value === '0') { // Sin tope
-                if (camposSinTope) camposSinTope.style.display = 'block';
-                if (camposConTope) camposConTope.style.display = 'none';
-            } else if (this.value === '1') { // Con tope
-                if (camposSinTope) camposSinTope.style.display = 'none';
-                if (camposConTope) camposConTope.style.display = 'block';
-            } else {
-                if (camposSinTope) camposSinTope.style.display = 'none';
-                if (camposConTope) camposConTope.style.display = 'none';
-            }
-        });
+    // 53. Reemplazo (solo Prueba)
+    if (etapa === 'prueba' && document.getElementById(`${p}_reemplazo_chk`)?.checked) {
+        const puestoPrueba = (document.getElementById('cl_puesto_prueba')?.value || '').trim();
+        const fechaFin = (document.getElementById('cl_fecha_fin')?.value || '').trim();
+        if (!puestoPrueba) {
+            errores.push(`[${labelEtapa}] Seleccione el "Puesto a prueba" en la Propuesta para Reemplazo`);
+        }
+        if (!fechaFin) {
+            errores.push(`[${labelEtapa}] Complete la "Fecha de finalización" en la Propuesta para Reemplazo`);
+        } else if (fechaFin < fechaVigencia) {
+            errores.push(`[${labelEtapa}] La fecha de finalización no puede ser anterior a la fecha de inicio`);
+        }
+        if (puestoPrueba && fechaFin && fechaFin >= fechaVigencia) {
+            const nov = baseNovedad(53);
+            nov.puesto = puestoPrueba;
+            nov.tipo_reemplazo = 'temporario';
+            nov.fecha_vigencia_hasta = fechaFin;
+            novedades.push(nov);
+        }
     }
-}
 
-function configurarTipoPuestoMultiple(novedadId) {
-    const radioPermanente = document.getElementById(`tipo_puesto_permanente_${novedadId}`);
-    const radioTemporario = document.getElementById(`tipo_puesto_temporario_${novedadId}`);
-    const campoFechaFin = document.getElementById(`campo_fecha_fin_${novedadId}`);
-    const fechaHastaCampo = document.getElementById(`fecha_vigencia_hasta_puesto_${novedadId}`);
-    
-    function manejarCambioTipoPuesto() {
-        if (radioTemporario && radioTemporario.checked) {
-            // Mostrar campo de fecha de fin para temporario
-            if (campoFechaFin) {
-                campoFechaFin.style.display = 'block';
-            }
-            if (fechaHastaCampo) {
-                fechaHastaCampo.setAttribute('required', 'required');
+    // 2. Nuevo Puesto (solo Confirmación)
+    if (etapa === 'confirmacion' && document.getElementById(`${p}_puesto_chk`)?.checked) {
+        const puestoConf = (document.getElementById('cl_confirmacion_puesto')?.value || '').trim();
+        const convenioConf = (document.getElementById('cl_confirmacion_convenio')?.value || '').trim();
+        if (!puestoConf) errores.push(`[${labelEtapa}] Seleccione el Nuevo Puesto`);
+        if (!convenioConf) errores.push(`[${labelEtapa}] Seleccione el Convenio (Comercio / FC)`);
+        if (puestoConf && convenioConf) {
+            const nov = baseNovedad(2);
+            nov.puesto = puestoConf;
+            nov.tipo_nuevo_puesto = 'permanente';
+            nov.convenio = convenioConf;
+            novedades.push(nov);
+        }
+    }
+
+    // 34. Plus Encargada (SI/NO)
+    if (document.getElementById(`${p}_plus_enc_chk`)?.checked) {
+        const val = document.getElementById(`${p}_plus_enc_val`)?.value;
+        const fh = (document.getElementById(`${p}_plus_enc_hasta`)?.value || '').trim() || null;
+        if (val !== '1' && val !== '0') {
+            errores.push(`[${labelEtapa}] Indique SI o NO en Plus Encargada`);
+        } else if (fh && fh < fechaVigencia) {
+            errores.push(`[${labelEtapa}] Fecha vencimiento inválida en Plus Encargada`);
+        } else {
+            const nov = baseNovedad(34);
+            nov.aplica_plus = val;
+            nov.fecha_vigencia_hasta = fh;
+            novedades.push(nov);
+        }
+    }
+
+    // 33. Plus Sub-Encargada (SI/NO)
+    if (document.getElementById(`${p}_plus_sub_chk`)?.checked) {
+        const val = document.getElementById(`${p}_plus_sub_val`)?.value;
+        const fh = (document.getElementById(`${p}_plus_sub_hasta`)?.value || '').trim() || null;
+        if (val !== '1' && val !== '0') {
+            errores.push(`[${labelEtapa}] Indique SI o NO en Plus Sub-Encargada`);
+        } else if (fh && fh < fechaVigencia) {
+            errores.push(`[${labelEtapa}] Fecha vencimiento inválida en Plus Sub-Encargada`);
+        } else {
+            const nov = baseNovedad(33);
+            nov.aplica_plus = val;
+            nov.fecha_vigencia_hasta = fh;
+            novedades.push(nov);
+        }
+    }
+
+    // 32. Plus de Caja (Recibo / Premio, sin importe)
+    if (document.getElementById(`${p}_plus_caja_chk`)?.checked) {
+        const val = document.getElementById(`${p}_plus_caja_val`)?.value;
+        const fh = (document.getElementById(`${p}_plus_caja_hasta`)?.value || '').trim() || null;
+        if (!val) {
+            errores.push(`[${labelEtapa}] Seleccione Recibo o Premio en Plus de Caja`);
+        } else if (fh && fh < fechaVigencia) {
+            errores.push(`[${labelEtapa}] Fecha vencimiento inválida en Plus de Caja`);
+        } else {
+            const nov = baseNovedad(32);
+            nov.tipo_plus_caja = val;
+            nov.fecha_vigencia_hasta = fh;
+            novedades.push(nov);
+        }
+    }
+
+    // 36. Comisiones Individual
+    if (document.getElementById(`${p}_com_ind_chk`)?.checked) {
+        const modo = document.getElementById(`${p}_com_ind_modo`)?.value || 'simple';
+        const nov = baseNovedad(36);
+        nov.tipo_comision = 'individual';
+        if (modo === 'simple') {
+            const pct = parseFloat(document.getElementById(`${p}_com_ind_pct`)?.value || '0');
+            if (!pct || pct <= 0 || pct > 100) {
+                errores.push(`[${labelEtapa}] Ingrese un porcentaje válido en Comisiones Individual`);
+            } else {
+                nov.porcentaje_individual = pct;
+                novedades.push(nov);
             }
         } else {
-            // Ocultar campo de fecha de fin para permanente
-            if (campoFechaFin) {
-                campoFechaFin.style.display = 'none';
+            const res = recopilarSucursalesComision(etapa, true);
+            if (!res.valido) {
+                res.errores.forEach(e => errores.push(`[${labelEtapa}] ${e}`));
+            } else {
+                nov.comision_sucursales = res.items;
+                novedades.push(nov);
             }
-            if (fechaHastaCampo) {
-                fechaHastaCampo.removeAttribute('required');
-                fechaHastaCampo.value = '';
+        }
+    }
+
+    // 37. Comisiones Local
+    if (document.getElementById(`${p}_com_local_chk`)?.checked) {
+        const top = document.getElementById(`${p}_com_local_tope`)?.value;
+        const nov = baseNovedad(37);
+        nov.tipo_comision = 'local';
+        if (top === '1') {
+            const p1 = parseFloat(document.getElementById(`${p}_com_local_p1`)?.value || '0');
+            const p2 = parseFloat(document.getElementById(`${p}_com_local_p2`)?.value || '0');
+            if (!p1 || p1 <= 0 || p1 > 100 || !p2 || p2 <= 0 || p2 > 100) {
+                errores.push(`[${labelEtapa}] Ingrese ambos porcentajes (Con Tope) en Comisiones Local`);
+            } else {
+                nov.tiene_tope = true;
+                nov.porcentaje_1 = p1;
+                nov.porcentaje_2 = p2;
+                novedades.push(nov);
+            }
+        } else if (top === '0') {
+            const pu = parseFloat(document.getElementById(`${p}_com_local_pu`)?.value || '0');
+            if (!pu || pu <= 0 || pu > 100) {
+                errores.push(`[${labelEtapa}] Ingrese el porcentaje único en Comisiones Local`);
+            } else {
+                nov.tiene_tope = false;
+                nov.porcentaje_unico = pu;
+                novedades.push(nov);
+            }
+        } else {
+            errores.push(`[${labelEtapa}] Seleccione Con Tope o Sin Tope en Comisiones Local`);
+        }
+    }
+
+    // 35. Premios Obj Loc (por empleado: Vendedora / Encargada)
+    if (document.getElementById(`${p}_premio_loc_chk`)?.checked) {
+        const rolEl = document.querySelector(`input[name="${p}_premio_loc_rol"]:checked`);
+        if (!rolEl) {
+            errores.push(`[${labelEtapa}] Seleccione Vendedora o Encargada en Premios Obj Loc`);
+        } else {
+            const nov = baseNovedad(35);
+            nov.es_global = 0;
+            nov.aplica_vendedora = rolEl.value === 'Vendedora' ? 1 : 0;
+            nov.aplica_encargada = rolEl.value === 'Encargada' ? 1 : 0;
+            novedades.push(nov);
+        }
+    }
+
+    // 38. Premio Ajuste General (SI/NO + importe opcional)
+    if (document.getElementById(`${p}_ajuste_gral_chk`)?.checked) {
+        const val = document.getElementById(`${p}_ajuste_gral_val`)?.value;
+        const impRaw = (document.getElementById(`${p}_ajuste_gral_imp`)?.value || '').trim();
+        if (val !== '1' && val !== '0') {
+            errores.push(`[${labelEtapa}] Indique SI o NO en Premio Ajuste Gral.`);
+        } else {
+            const nov = baseNovedad(38);
+            nov.aplica_plus = val;
+            if (impRaw !== '') {
+                const imp = parseFloat(impRaw);
+                if (isNaN(imp) || imp <= 0) {
+                    errores.push(`[${labelEtapa}] Si indica importe en Premio Ajuste Gral., debe ser mayor a 0`);
+                } else {
+                    nov.importe = imp;
+                }
+            }
+            if (errores.length === 0 || nov.aplica_plus !== undefined) {
+                novedades.push(nov);
             }
         }
     }
-    
-    // Agregar event listeners
-    if (radioPermanente) {
-        radioPermanente.addEventListener('change', manejarCambioTipoPuesto);
-    }
-    if (radioTemporario) {
-        radioTemporario.addEventListener('change', manejarCambioTipoPuesto);
-    }
-    
-    // Configurar estado inicial (permanente por defecto)
-    if (radioPermanente) {
-        radioPermanente.checked = true;
-        manejarCambioTipoPuesto();
-    }
-}
 
-/**
- * Cargar puestos en select del modo múltiple
- */
-async function cargarPuestosEnSelectMultiple(selectId) {
-    try {
-        const puestos = await NovedadesApp.request('get_puestos');
-        const select = document.getElementById(selectId);
-        
-        if (select && puestos) {
-            select.innerHTML = '<option value="">Seleccione nuevo puesto...</option>';
-            puestos.forEach(puesto => {
-                // Usar nombre_puesto como value para mantener consistencia con modo simple
-                select.innerHTML += `<option value="${puesto.nombre_puesto}">${puesto.nombre_puesto}</option>`;
-            });
-            console.log(`✅ Puestos cargados en ${selectId}:`, puestos.length);
+    // 54. Sueldo Básico (escala Vendedora / Encargada)
+    if (document.getElementById(`${p}_sueldo_basico_chk`)?.checked) {
+        const escEl = document.querySelector(`input[name="${p}_sueldo_basico_esc"]:checked`);
+        if (!escEl) {
+            errores.push(`[${labelEtapa}] Seleccione Vendedora o Encargada en Sueldo Básico`);
+        } else {
+            const nov = baseNovedad(54);
+            nov.tipo_aumento = 'basico';
+            nov.escala_sueldo_basico = escEl.value;
+            novedades.push(nov);
         }
-    } catch (error) {
-        console.error('Error cargando puestos:', error);
     }
+
+    return { errores, novedades };
 }
 
-/**
- * Cargar sucursales en select del modo múltiple
- */
-async function cargarSucursalesEnSelectMultiple(selectId) {
-    try {
-        const sucursales = await NovedadesApp.request('get_sucursales_con_casa_central');
-        const select = document.getElementById(selectId);
-        
-        if (select && sucursales) {
-            select.innerHTML = '<option value="">Seleccione nueva sucursal...</option>';
-            sucursales.forEach(sucursal => {
-                select.innerHTML += `<option value="${sucursal.numero}">${sucursal.descripcion}</option>`;
-            });
-            console.log(`✅ Sucursales cargadas en ${selectId}:`, sucursales.length);
-        }
-    } catch (error) {
-        console.error(`Error cargando sucursales en ${selectId}:`, error);
-    }
-}
-
-/**
- * Modificar función de envío para manejar modo múltiple
- */
 async function enviarFormularioMultiple(event) {
     event.preventDefault();
-    
-    console.log('🚀 Iniciando envío del formulario en modo:', window.modoActual);
-    
     if (window.modoActual === 'unica') {
-        // Usar la función original
         return await enviarFormulario(event);
     } else if (window.modoActual === 'multiple') {
         return await enviarFormularioModoMultiple();
     }
 }
 
-/**
- * Enviar formulario en modo múltiple
- */
 async function enviarFormularioModoMultiple() {
-    console.log('📚 Enviando formulario en modo múltiple');
-    
-    // Validar datos globales
-    if (!validarDatosGlobales()) {
-        NovedadesApp.mostrarError('Complete los datos globales obligatorios');
+    // 1. Validar empleado y período global
+    const legajo = (document.getElementById('legajo')?.value || '').trim();
+    const periodoMes = parseInt(document.getElementById('periodo_mes_global')?.value || '0', 10);
+    const periodoAnio = parseInt(document.getElementById('periodo_anio_global')?.value || '0', 10);
+    const emp = window.NovedadesApp?.empleadoSeleccionado;
+
+    const errores = [];
+    if (!legajo || !emp || !emp.nombre || !emp.apellido) {
+        errores.push('Debe seleccionar un empleado');
+        document.getElementById('empleado-select')?.classList.add('is-invalid');
+    }
+    if (!periodoMes || !periodoAnio) {
+        errores.push('Debe seleccionar el período (mes y año)');
+    }
+
+    const incPrueba = document.getElementById('cl_incluir_prueba')?.checked;
+    const incConf = document.getElementById('cl_incluir_confirmacion')?.checked;
+    if (!incPrueba && !incConf) {
+        errores.push('Debe habilitar al menos una etapa (Durante la Prueba o Confirmación)');
+    }
+
+    const ctx = {
+        legajo,
+        nombre: emp?.nombre || '',
+        apellido: emp?.apellido || '',
+        sucursalNumero: emp?.sucursal_numero || '',
+        periodoMes,
+        periodoAnio,
+        observaciones: (document.getElementById('cl_observaciones')?.value || '').trim()
+    };
+
+    const novedades = [];
+    if (incPrueba) {
+        const resP = recopilarEtapaChecklist('prueba', ctx);
+        errores.push(...resP.errores);
+        novedades.push(...resP.novedades);
+    }
+    if (incConf) {
+        const resC = recopilarEtapaChecklist('confirmacion', ctx);
+        errores.push(...resC.errores);
+        novedades.push(...resC.novedades);
+    }
+
+    if (errores.length > 0) {
+        NovedadesApp.mostrarError(errores.join('<br>'));
         return;
     }
-    
-    // Validar fechas individuales
-    if (!validarFechasIndividuales()) {
-        NovedadesApp.mostrarError('Debe especificar fechas de vigencia para todas las novedades con fecha personalizada');
-        return;
-    }
-    
-    // Recopilar y validar todas las novedades
-    const novedades = recopilarNovedadesMultiples();
-    
+
     if (novedades.length === 0) {
-        NovedadesApp.mostrarError('Debe agregar al menos una novedad');
+        NovedadesApp.mostrarError('Marque al menos un concepto del checklist para generar novedades');
         return;
     }
-    
-    // Mostrar loading
+
     const btnGuardar = document.getElementById('btn-guardar');
     const textoOriginal = btnGuardar.innerHTML;
     btnGuardar.disabled = true;
-    btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Guardando...';
-    
+    btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Guardando lote...';
+
     try {
-        // Enviar cada novedad
-        for (const novedad of novedades) {
-            console.log('🚀 Enviando novedad con período:', {
-                tipo_novedad: novedad.tipo_novedad,
-                periodo_mes: novedad.periodo_mes,
-                periodo_anio: novedad.periodo_anio,
-                legajo: novedad.legajo
-            });
-            await NovedadesApp.request('crear_novedad', novedad, 'POST');
-        }
-        
-        // Mostrar modal de confirmación
+        await NovedadesApp.request('crear_novedades_lote', { novedades }, 'POST');
+
         const modal = new bootstrap.Modal(document.getElementById('modalConfirmacion'));
         modal.show();
-        
-        // Limpiar formulario
         limpiarFormularioMultiple();
-        
     } catch (error) {
-        console.error('Error al guardar novedades:', error);
-        NovedadesApp.mostrarError('Error al guardar las novedades');
+        console.error('Error al guardar lote de novedades:', error);
+        NovedadesApp.mostrarError(error.message || 'Error al guardar las novedades');
     } finally {
-        // Restaurar botón
         btnGuardar.disabled = false;
         btnGuardar.innerHTML = textoOriginal;
     }
 }
 
-/**
- * Validar datos globales del modo múltiple
- */
-function validarDatosGlobales() {
-    const campos = ['empleado-select', 'periodo_mes_global', 'periodo_anio_global', 'fecha_vigencia_global'];
-    let valido = true;
-    
-    campos.forEach(campoId => {
-        const campo = document.getElementById(campoId);
-        if (!campo || !campo.value.trim()) {
-            if (campo) campo.classList.add('is-invalid');
-            valido = false;
-        } else {
-            campo.classList.remove('is-invalid');
-            campo.classList.add('is-valid');
-        }
-    });
-    
-    return valido;
-}
-
-/**
- * Validar fechas individuales en modo múltiple
- */
-function validarFechasIndividuales() {
-    let valido = true;
-    const cards = document.querySelectorAll('.novedad-card');
-    
-    cards.forEach(card => {
-        const novedadId = card.getAttribute('data-novedad-id');
-        const checkbox = document.getElementById(`usar_fecha_global_${novedadId}`);
-        const fechaIndividual = document.getElementById(`fecha_vigencia_individual_${novedadId}`);
-        
-        if (!checkbox || !fechaIndividual) return;
-        
-        // Si NO usa fecha global, validar que ingresó fecha personalizada
-        if (!checkbox.checked) {
-            if (!fechaIndividual.value || fechaIndividual.value.trim() === '') {
-                fechaIndividual.classList.add('is-invalid');
-                valido = false;
-            } else {
-                fechaIndividual.classList.remove('is-invalid');
-                fechaIndividual.classList.add('is-valid');
-            }
-        } else {
-            // Si usa fecha global, limpiar validación de fecha individual
-            fechaIndividual.classList.remove('is-invalid', 'is-valid');
-        }
-    });
-    
-    return valido;
-}
-
-/**
- * Recopilar todas las novedades del modo múltiple
- */
-function recopilarNovedadesMultiples() {
-    const novedades = [];
-    const cards = document.querySelectorAll('.novedad-card');
-    
-    // Datos globales
-    const datosGlobales = {
-        legajo: document.getElementById('legajo').value,
-        nombre: window.NovedadesApp?.empleadoSeleccionado?.nombre || '',
-        apellido: window.NovedadesApp?.empleadoSeleccionado?.apellido || '',
-        periodo_mes: document.getElementById('periodo_mes_global').value,
-        periodo_anio: document.getElementById('periodo_anio_global').value,
-        fecha_vigencia: document.getElementById('fecha_vigencia_global').value
-    };
-    
-    // Log para debugging del período
-    console.log('🗓️ Datos globales recopilados:', {
-        periodo_mes: datosGlobales.periodo_mes,
-        periodo_anio: datosGlobales.periodo_anio,
-        fecha_vigencia: datosGlobales.fecha_vigencia
-    });
-    
-    cards.forEach(card => {
-        const novedadId = card.getAttribute('data-novedad-id');
-        const tipoNovedad = document.getElementById(`tipo_novedad_${novedadId}`)?.value;
-        
-        if (tipoNovedad) {
-            // Verificar si usa fecha global o individual
-            const usarFechaGlobal = document.getElementById(`usar_fecha_global_${novedadId}`)?.checked ?? true;
-            let fechaVigencia;
-            
-            if (usarFechaGlobal) {
-                // Usar fecha global
-                fechaVigencia = datosGlobales.fecha_vigencia;
-            } else {
-                // Usar fecha individual
-                fechaVigencia = document.getElementById(`fecha_vigencia_individual_${novedadId}`)?.value;
-            }
-            
-            const novedad = {
-                ...datosGlobales,
-                fecha_vigencia: fechaVigencia, // Sobrescribir con la fecha correspondiente
-                tipo_novedad: parseInt(tipoNovedad),
-                observaciones: document.getElementById(`observaciones_${novedadId}`)?.value || '',
-                usar_fecha_global: usarFechaGlobal // Para tracking/logging
-            };
-            
-            // Agregar campos específicos según el tipo
-            agregarCamposEspecificosNovedad(novedad, tipoNovedad, novedadId);
-            
-            novedades.push(novedad);
-        }
-    });
-    
-    return novedades;
-}
-
-/**
- * Agregar campos específicos según el tipo de novedad
- */
-function agregarCamposEspecificosNovedad(novedad, tipoNovedad, novedadId) {
-    switch (parseInt(tipoNovedad)) {
-        case 1: // Cambio de sucursal
-            novedad.nueva_sucursal = document.getElementById(`nueva_sucursal_${novedadId}`)?.value;
-            // También agregar campo compatible
-            novedad.sucursal_nueva_id = novedad.nueva_sucursal;
-            // Agregar sucursal actual para las observaciones (usar número, no descripción)
-            const empleadoSeleccionado = window.NovedadesApp?.empleadoSeleccionado;
-            if (empleadoSeleccionado && empleadoSeleccionado.sucursal_numero) {
-                novedad.sucursal_actual = empleadoSeleccionado.sucursal_numero;
-            }
-            break;
-        case 2: // Nuevo puesto
-            novedad.puesto = document.getElementById(`nuevo_puesto_${novedadId}`)?.value;
-            novedad.tipo_nuevo_puesto = document.querySelector(`input[name="tipo_nuevo_puesto_${novedadId}"]:checked`)?.value;
-            if (novedad.tipo_nuevo_puesto === 'temporario') {
-                novedad.fecha_vigencia_hasta = document.getElementById(`fecha_vigencia_hasta_puesto_${novedadId}`)?.value;
-            }
-            break;
-        case 3: // Nuevo salario
-            novedad.importe = document.getElementById(`importe_salario_${novedadId}`)?.value;
-            break;
-        case 4: // Ajuste premios
-            novedad.importe = document.getElementById(`importe_premios_${novedadId}`)?.value;
-            break;
-        case 5: // Horas extras
-            novedad.cantidad_horas = document.getElementById(`cantidad_horas_extras_${novedadId}`)?.value;
-            break;
-        case 6: // Horas adicionales
-            novedad.cantidad_horas = document.getElementById(`cantidad_horas_adicionales_${novedadId}`)?.value;
-            break;
-        case 7: // Permisos
-            novedad.fecha_permiso = document.getElementById(`fecha_permiso_${novedadId}`)?.value;
-            const compensaValue = document.getElementById(`compensa_${novedadId}`)?.value;
-            // Convertir igual que en modo simple
-            novedad.compensa = compensaValue === '1';
-            break;
-        case 8: // Cortes
-            novedad.cantidad_cortes = document.getElementById(`cantidad_cortes_${novedadId}`)?.value;
-            break;
-        case 9: // Producción 25%
-            novedad.cantidad_unidades = document.getElementById(`cantidad_unidades_25_${novedadId}`)?.value;
-            break;
-        case 10: // Producción 50%
-            novedad.cantidad_unidades = document.getElementById(`cantidad_unidades_50_${novedadId}`)?.value;
-            break;
-        case 11: // Producción 100%
-            novedad.cantidad_unidades = document.getElementById(`cantidad_unidades_100_${novedadId}`)?.value;
-            break;
-        case 12: // Plus de caja
-        case 32:
-            novedad.tipo_plus_caja = document.getElementById(`tipo_plus_caja_${novedadId}`)?.value;
-            const importePlusCaja = document.getElementById(`importe_plus_caja_${novedadId}`)?.value;
-            if (importePlusCaja) {
-                novedad.importe = importePlusCaja;
-            }
-            break;
-        case 13: // Plus de Sub-Encargada
-        case 33:
-            const tieneImporteSub = document.getElementById(`tiene_importe_sub_${novedadId}`)?.value;
-            // Normalizar el nombre del campo para que coincida con el backend
-            novedad.tiene_importe = tieneImporteSub;
-            // Solo agregar importe si tiene_importe es '1'
-            if (tieneImporteSub === '1') {
-                const importeSubEnc = document.getElementById(`importe_sub_encargada_${novedadId}`)?.value;
-                if (importeSubEnc) {
-                    novedad.importe = importeSubEnc;
-                }
-            }
-            break;
-        case 14: // Plus de Encargada
-        case 34:
-            const tieneImporteEnc = document.getElementById(`tiene_importe_enc_${novedadId}`)?.value;
-            // Normalizar el nombre del campo para que coincida con el backend
-            novedad.tiene_importe = tieneImporteEnc;
-            // Solo agregar importe si tiene_importe es '1'
-            if (tieneImporteEnc === '1') {
-                const importeEnc = document.getElementById(`importe_encargada_${novedadId}`)?.value;
-                if (importeEnc) {
-                    novedad.importe = importeEnc;
-                }
-            }
-            break;
-        case 15: // Premio Local
-        case 35:
-            novedad.importe = document.getElementById(`importe_premio_local_${novedadId}`)?.value;
-            novedad.aplica_vendedora = document.getElementById(`aplica_vendedora_${novedadId}`)?.checked ? 1 : 0;
-            novedad.aplica_sub_encargada = document.getElementById(`aplica_sub_encargada_${novedadId}`)?.checked ? 1 : 0;
-            break;
-        case 16: // Comisión Individual
-        case 36:
-            novedad.porcentaje_individual = document.getElementById(`porcentaje_individual_${novedadId}`)?.value;
-            break;
-        case 17: // Comisión sobre Local
-        case 37:
-            const tieneTopeLocal = document.getElementById(`tiene_tope_local_${novedadId}`)?.value;
-            // Normalizar el nombre del campo para que coincida con el backend
-            novedad.tiene_tope = tieneTopeLocal;
-            
-            if (tieneTopeLocal === '0') {
-                const porcentajeUnico = document.getElementById(`porcentaje_unico_local_${novedadId}`)?.value;
-                // Normalizar el nombre del campo para que coincida con el backend
-                novedad.porcentaje_unico = porcentajeUnico;
-            } else if (tieneTopeLocal === '1') {
-                const porcentaje1 = document.getElementById(`porcentaje_1_local_${novedadId}`)?.value;
-                const porcentaje2 = document.getElementById(`porcentaje_2_local_${novedadId}`)?.value;
-                // Normalizar los nombres de los campos para que coincidan con el backend
-                novedad.porcentaje_1 = porcentaje1;
-                novedad.porcentaje_2 = porcentaje2;
-            }
-            break;
-        case 18: // Premios - Ajuste General
-        case 38:
-            novedad.importe = document.getElementById(`importe_ajuste_general_${novedadId}`)?.value;
-            break;
-        case 53: // Reemplazo
-            novedad.puesto = document.getElementById(`puesto_reemplazo_${novedadId}`)?.value;
-            novedad.tipo_reemplazo = document.querySelector(`input[name="tipo_reemplazo_${novedadId}"]:checked`)?.value;
-            if (novedad.tipo_reemplazo === 'temporario') {
-                novedad.fecha_vigencia_hasta = document.getElementById(`fecha_vigencia_hasta_reemplazo_${novedadId}`)?.value;
-            }
-            break;
-        case 54: // Aumento Salarial
-            novedad.tipo_aumento = document.querySelector(`input[name="tipo_aumento_${novedadId}"]:checked`)?.value;
-            if (novedad.tipo_aumento === 'porcentaje') {
-                novedad.porcentaje_1 = document.getElementById(`porcentaje_aumento_${novedadId}`)?.value;
-            } else if (novedad.tipo_aumento === 'monto') {
-                novedad.valor_numerico = document.getElementById(`monto_aumento_${novedadId}`)?.value;
-            }
-            break;
-        // Agregar más casos según necesidad
-    }
-}
-
-/**
- * Limpiar formulario en modo múltiple
- */
 function limpiarFormularioMultiple() {
-    // Resetear variables globales
     window.contadorNovedades = 0;
     window.novedadesData = [];
     window.modoActual = null;
-    
-    // Ocultar indicador de modo
+
     const indicator = document.getElementById('modo-activo-indicator');
-    if (indicator) {
-        indicator.style.display = 'none';
+    if (indicator) indicator.style.display = 'none';
+
+    const multCont = document.getElementById('novedades-multiples-container');
+    if (multCont) multCont.style.display = 'none';
+
+    const cfgGlobal = document.getElementById('configuracion-global-section');
+    if (cfgGlobal) cfgGlobal.style.display = 'none';
+
+    const modoSection = document.getElementById('modo-carga-section');
+    if (modoSection) modoSection.style.display = 'block';
+
+    const form = document.getElementById('form-novedad');
+    if (form) {
+        form.style.display = 'none';
+        form.reset();
     }
-    
-    // Limpiar contenedor de cards
-    document.getElementById('novedades-cards-container').innerHTML = '';
-    
-    // Mostrar sección de selección de modo
-    document.getElementById('modo-carga-section').style.display = 'block';
-    document.getElementById('form-novedad').style.display = 'none';
-    
-    // Limpiar formulario
-    document.getElementById('form-novedad').reset();
-    
-    if (typeof $ !== 'undefined') {
-        // Limpiar select de empleados
-        if ($('#empleado-select').length) {
-            $('#empleado-select').val(null).trigger('change');
-        }
-        
-        // Limpiar select de tipos de novedad (modo único)
-        if ($('#tipo_novedad').length && $('#tipo_novedad').hasClass('select2-hidden-accessible')) {
-            $('#tipo_novedad').val(null).trigger('change');
-        }
-        
-        // Limpiar selects de tipos de novedad (modo múltiple)
-        $('.tipo-novedad-multiple').each(function() {
-            if ($(this).hasClass('select2-hidden-accessible')) {
-                $(this).val(null).trigger('change');
-            }
-        });
+
+    if (typeof $ !== 'undefined' && $('#empleado-select').length) {
+        $('#empleado-select').val(null).trigger('change');
     }
-    
+
     if (typeof NovedadesApp !== 'undefined') {
         NovedadesApp.empleadoSeleccionado = null;
     }
@@ -4562,191 +3347,136 @@ function validarPeriodoAplicacionFormulario() {
     };
 }
 
+
 // Inicializar cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', function() {
     initializarModosCarga();
-    
-    // Modificar el event listener del formulario
+
     const form = document.getElementById('form-novedad');
     if (form) {
-        form.removeEventListener('submit', enviarFormulario); // Remover el original si existe
+        form.removeEventListener('submit', enviarFormulario);
         form.addEventListener('submit', enviarFormularioMultiple);
     }
 });
 
-// Hacer funciones disponibles globalmente
 window.initializarModosCarga = initializarModosCarga;
 window.seleccionarModoCarga = seleccionarModoCarga;
-window.agregarNuevaNovedadCard = agregarNuevaNovedadCard;
-window.eliminarNovedadCard = eliminarNovedadCard;
+window.resetearChecklistMultiple = resetearChecklistMultiple;
 
 /**
  * Funcionalidad del botón de información de tipo de novedad
  */
-
-// Objeto con información de cada tipo de novedad (para futuras actualizaciones)
 const tiposNovedadInfo = {
     1: {
-        nombre: "Cambio de Centro de Costos",
-        descripcion: "Información sobre cambio de centro de costos será agregada próximamente."
+        nombre: "Cambio de Sucursal / Centro de Costos",
+        descripcion: "Registra el traslado a otra sucursal con fecha de vigencia y fecha de vencimiento opcional."
     },
     2: {
         nombre: "Nuevo Puesto",
-        descripcion: "Información sobre cambio de puesto será agregada próximamente."
-    },
-    3: {
-        nombre: "Nuevo Salario Neto",
-        descripcion: "Información sobre ajuste de salario neto será agregada próximamente."
+        descripcion: "Modifica el puesto habitual del empleado (permanente o temporario). Los puestos se obtienen desde Tango."
     },
     4: {
         nombre: "Ajuste de Premios",
-        descripcion: "Información sobre ajuste de premios será agregada próximamente."
+        descripcion: "Registra un ajuste de premios en el período indicado (el importe puede dejarse vacío)."
     },
     5: {
         nombre: "Horas Extras",
-        descripcion: "Información sobre horas extras será agregada próximamente."
+        descripcion: "Informa cantidad de horas extras trabajadas con su fecha de vigencia."
     },
     6: {
         nombre: "Horas Adicionales",
-        descripcion: "Información sobre horas adicionales será agregada próximamente."
+        descripcion: "Informa cantidad de horas adicionales trabajadas con su fecha de vigencia."
     },
     7: {
         nombre: "Permisos",
-        descripcion: "Información sobre permisos será agregada próximamente."
+        descripcion: "Registra un día de permiso especificando si compensa o no."
     },
-    8: {
-        nombre: "Cortes",
-        descripcion: "Información sobre cortes será agregada próximamente."
-    },
-    9: {
-        nombre: "Producción 25%",
-        descripcion: "Información sobre producción 25% será agregada próximamente."
-    },
-    10: {
-        nombre: "Producción 50%",
-        descripcion: "Información sobre producción 50% será agregada próximamente."
-    },
-    11: {
-        nombre: "Producción 100%",
-        descripción: "Información sobre producción 100% será agregada próximamente."
-    },
-    12: {
+    32: {
         nombre: "Plus de Caja",
-        descripcion: "Información sobre plus de caja será agregada próximamente."
+        descripcion: "Asigna el tipo de Plus de Caja (Recibo o Premio), sin importe y con fecha de vencimiento opcional."
     },
-    13: {
+    33: {
         nombre: "Plus de Sub-Encargada",
-        descripcion: "Información sobre plus de sub-encargada será agregada próximamente."
+        descripcion: "Indica SI o NO aplica Plus de Sub-Encargada (equivale al Plus de Caja), con vencimiento opcional."
     },
-    14: {
+    34: {
         nombre: "Plus de Encargada",
-        descripcion: "Información sobre plus de encargada será agregada próximamente."
+        descripcion: "Indica SI o NO aplica Plus de Encargada, con fecha de vencimiento opcional."
     },
-    15: {
+    35: {
         nombre: "Premio Local",
-        descripcion: "Información sobre premio local será agregada próximamente."
+        descripcion: "Define la escala general de premios para todos los locales en 3 niveles (1ro en ranking, Cumple objetivo, 1ro que no llega) para Encargada/Sub y Vendedora."
     },
-    16: {
+    36: {
         nombre: "Comisión Individual",
-        descripcion: "Información sobre comisión individual será agregada próximamente."
+        descripcion: "Configura comisiones individuales para Supervisoras sobre múltiples sucursales PROPIOS con porcentaje y tope opcional por sucursal."
     },
-    17: {
+    37: {
         nombre: "Comisión sobre Local",
-        descripcion: "Información sobre comisión sobre local será agregada próximamente."
+        descripcion: "Configura comisión sobre ventas del local, con o sin tope."
     },
-    18: {
-        nombre: "Comisión sobre Región",
-        descripcion: "Información sobre comisión sobre región será agregada próximamente."
+    38: {
+        nombre: "Premios - Ajuste General",
+        descripcion: "Registra un ajuste general de premios (importe no obligatorio)."
+    },
+    53: {
+        nombre: "Reemplazo",
+        descripcion: "Registra reemplazo de puesto (permanente o temporario con fecha fin)."
+    },
+    54: {
+        nombre: "Aumento Salarial",
+        descripcion: "Registra un aumento salarial por porcentaje o monto fijo."
     }
 };
 
-/**
- * Mostrar/ocultar botón de información según selección de tipo - VERSIÓN ROBUSTA
- */
 function toggleInfoButton(selectElement, mode) {
     try {
-        if (!selectElement) {
-            console.warn('⚠️ toggleInfoButton: selectElement no proporcionado');
-            return;
-        }
-        
+        if (!selectElement) return;
         const selectedValue = selectElement.value;
         const infoBtn = document.getElementById(`infoBtn-${mode}`);
-        
-        console.log('🔄 toggleInfoButton llamado:', {
-            mode: mode,
-            selectedValue: selectedValue,
-            btnFound: !!infoBtn
-        });
-        
-        if (infoBtn) {
-            if (selectedValue && selectedValue !== '') {
-                infoBtn.classList.add('active');
-                
-                // FORZAR TODOS LOS ESTILOS VIA JAVASCRIPT
-                infoBtn.style.position = 'absolute';
-                infoBtn.style.top = '8px';
-                infoBtn.style.right = '8px';
-                infoBtn.style.width = '30px';
-                infoBtn.style.height = '30px';
-                infoBtn.style.borderRadius = '50%';
-                infoBtn.style.border = 'none';
-                infoBtn.style.background = 'linear-gradient(135deg, #0d6efd, #4285f4)';
-                infoBtn.style.color = 'white';
-                infoBtn.style.display = 'flex';
-                infoBtn.style.alignItems = 'center';
-                infoBtn.style.justifyContent = 'center';
-                infoBtn.style.fontSize = '0.8rem';
-                infoBtn.style.cursor = 'pointer';
-                infoBtn.style.zIndex = '100'; // Z-index bajo para no interferir con modales (Bootstrap modales usan 1000+)
-                infoBtn.style.boxShadow = '0 3px 10px rgba(13, 110, 253, 0.4)';
-                infoBtn.style.fontWeight = '600';
-                infoBtn.style.visibility = 'visible';
-                infoBtn.style.opacity = '1';
-                
-                // Asegurar que el contenedor padre tenga position relative
-                const parentContainer = selectElement.closest('.position-relative') || 
-                                     selectElement.closest('.col-md-8') || 
-                                     selectElement.parentElement;
-                if (parentContainer) {
-                    parentContainer.style.position = 'relative';
-                }
-                
-                console.log('✅ Botón de info activado para modo:', mode);
-                
-                // Verificar si el botón es realmente visible
-                setTimeout(() => {
-                    const computedStyle = window.getComputedStyle(infoBtn);
-                    console.log('🔍 Estilos computados del botón:', {
-                        display: computedStyle.display,
-                        visibility: computedStyle.visibility,
-                        opacity: computedStyle.opacity,
-                        position: computedStyle.position,
-                        zIndex: computedStyle.zIndex
-                    });
-                }, 100);
-                
-            } else {
-                infoBtn.classList.remove('active');
-                infoBtn.style.display = 'none';
-                infoBtn.style.visibility = 'hidden';
-                infoBtn.style.opacity = '0';
-                console.log('❌ Botón de info desactivado para modo:', mode);
+        if (!infoBtn) return;
+
+        if (selectedValue && selectedValue !== '') {
+            infoBtn.classList.add('active');
+            infoBtn.style.position = 'absolute';
+            infoBtn.style.top = '8px';
+            infoBtn.style.right = '8px';
+            infoBtn.style.width = '30px';
+            infoBtn.style.height = '30px';
+            infoBtn.style.borderRadius = '50%';
+            infoBtn.style.border = 'none';
+            infoBtn.style.background = 'linear-gradient(135deg, #0d6efd, #4285f4)';
+            infoBtn.style.color = 'white';
+            infoBtn.style.display = 'flex';
+            infoBtn.style.alignItems = 'center';
+            infoBtn.style.justifyContent = 'center';
+            infoBtn.style.fontSize = '0.8rem';
+            infoBtn.style.cursor = 'pointer';
+            infoBtn.style.zIndex = '100';
+            infoBtn.style.boxShadow = '0 3px 10px rgba(13, 110, 253, 0.4)';
+            infoBtn.style.fontWeight = '600';
+            infoBtn.style.visibility = 'visible';
+            infoBtn.style.opacity = '1';
+
+            const parentContainer = selectElement.closest('.position-relative') ||
+                selectElement.closest('.col-md-8') ||
+                selectElement.parentElement;
+            if (parentContainer) {
+                parentContainer.style.position = 'relative';
             }
         } else {
-            console.warn(`⚠️ Botón de info no encontrado para modo: ${mode}`);
+            infoBtn.classList.remove('active');
+            infoBtn.style.display = 'none';
+            infoBtn.style.visibility = 'hidden';
+            infoBtn.style.opacity = '0';
         }
     } catch (error) {
-        console.error('❌ Error en toggleInfoButton:', error);
+        console.error('Error en toggleInfoButton:', error);
     }
 }
 
-/**
- * Mostrar modal con información del tipo de novedad
- */
 function mostrarInfoTipoNovedad(mode) {
     let tipoSeleccionado;
-    
     if (mode === 'unica') {
         const selectUnica = document.getElementById('tipo_novedad');
         tipoSeleccionado = selectUnica ? selectUnica.value : null;
@@ -4754,130 +3484,34 @@ function mostrarInfoTipoNovedad(mode) {
         const selectMultiple = document.getElementById(`tipo_novedad_${mode}`);
         tipoSeleccionado = selectMultiple ? selectMultiple.value : null;
     }
-    
+
     if (!tipoSeleccionado || tipoSeleccionado === '') {
-        mostrarAlerta('Por favor, seleccione un tipo de novedad primero.', 'warning');
+        if (typeof NovedadesApp !== 'undefined' && NovedadesApp.mostrarError) {
+            NovedadesApp.mostrarError('Por favor, seleccione un tipo de novedad primero.');
+        }
         return;
     }
-    
-    // Obtener información del tipo
+
     const infoTipo = tiposNovedadInfo[tipoSeleccionado];
-    
-    // Actualizar contenido del modal
-    const modalTitulo = document.getElementById('modalTipoNovedadInfoLabel');
     const tipoNombre = document.getElementById('tipoNovedadNombre');
     const tipoDescripcion = document.getElementById('tipoNovedadDescripcion');
-    
-    if (modalTitulo) {
-        modalTitulo.innerHTML = `
-            <i class="fas fa-info-circle me-2"></i>
-            Información del Tipo de Novedad
-        `;
+
+    if (tipoNombre) {
+        tipoNombre.textContent = infoTipo ? infoTipo.nombre : `Tipo de Novedad #${tipoSeleccionado}`;
     }
-    
-    if (tipoNombre && infoTipo) {
-        tipoNombre.textContent = infoTipo.nombre;
-    }
-    
+
     if (tipoDescripcion) {
         tipoDescripcion.innerHTML = `
-            <div class="info-content-placeholder">
-                <i class="fas fa-edit fa-2x mb-3 d-block"></i>
-                <p class="mb-2"><strong>Información no disponible</strong></p>
-                <p class="mb-0">${infoTipo ? infoTipo.descripcion : 'El contenido para este tipo de novedad será agregado próximamente.'}</p>
-                <small class="text-muted d-block mt-2">Espacio reservado para información detallada sobre este tipo de novedad.</small>
+            <div class="p-3 bg-light rounded border">
+                <p class="mb-0">${infoTipo ? infoTipo.descripcion : 'Sin descripción adicional.'}</p>
             </div>
         `;
     }
-    
-    // Mostrar modal
+
     const modal = new bootstrap.Modal(document.getElementById('modalTipoNovedadInfo'));
     modal.show();
 }
 
-/**
- * Toggle fecha fin para reemplazo en modo múltiple
- */
-function toggleFechaFinReemplazoMultiple(novedadId) {
-    const radioTemporario = document.getElementById(`tipo_reemplazo_temporario_${novedadId}`);
-    const campoFechaFin = document.getElementById(`campo_fecha_fin_reemplazo_${novedadId}`);
-    const fechaFinInput = document.getElementById(`fecha_vigencia_hasta_reemplazo_${novedadId}`);
-    
-    console.log('🔄 toggleFechaFinReemplazoMultiple ejecutado para', novedadId);
-    
-    if (radioTemporario && radioTemporario.checked) {
-        // Mostrar campo de fecha de fin
-        if (campoFechaFin) {
-            campoFechaFin.style.display = 'block';
-            console.log('✅ Campo fecha fin reemplazo múltiple mostrado');
-        }
-        if (fechaFinInput) {
-            fechaFinInput.setAttribute('required', 'required');
-        }
-    } else {
-        // Ocultar campo de fecha de fin
-        if (campoFechaFin) {
-            campoFechaFin.style.display = 'none';
-            console.log('🔒 Campo fecha fin reemplazo múltiple ocultado');
-        }
-        if (fechaFinInput) {
-            fechaFinInput.removeAttribute('required');
-            fechaFinInput.value = '';
-        }
-    }
-}
-
-/**
- * Toggle tipo de aumento en modo múltiple
- */
-function toggleTipoAumentoMultiple(novedadId) {
-    const radioPorcentaje = document.getElementById(`tipo_aumento_porcentaje_${novedadId}`);
-    const radioMonto = document.getElementById(`tipo_aumento_monto_${novedadId}`);
-    const campoPorcentaje = document.getElementById(`campo_porcentaje_aumento_${novedadId}`);
-    const campoMonto = document.getElementById(`campo_monto_aumento_${novedadId}`);
-    const inputPorcentaje = document.getElementById(`porcentaje_aumento_${novedadId}`);
-    const inputMonto = document.getElementById(`monto_aumento_${novedadId}`);
-    
-    console.log('🔄 toggleTipoAumentoMultiple ejecutado para', novedadId);
-    
-    if (radioPorcentaje && radioPorcentaje.checked) {
-        // Mostrar campo porcentaje, ocultar monto
-        if (campoPorcentaje) {
-            campoPorcentaje.style.display = 'block';
-            console.log('✅ Campo porcentaje múltiple mostrado');
-        }
-        if (campoMonto) {
-            campoMonto.style.display = 'none';
-            console.log('🔒 Campo monto múltiple ocultado');
-        }
-        if (inputPorcentaje) {
-            inputPorcentaje.setAttribute('required', 'required');
-        }
-        if (inputMonto) {
-            inputMonto.removeAttribute('required');
-            inputMonto.value = '';
-        }
-    } else if (radioMonto && radioMonto.checked) {
-        // Mostrar campo monto, ocultar porcentaje
-        if (campoMonto) {
-            campoMonto.style.display = 'block';
-            console.log('✅ Campo monto múltiple mostrado');
-        }
-        if (campoPorcentaje) {
-            campoPorcentaje.style.display = 'none';
-            console.log('🔒 Campo porcentaje múltiple ocultado');
-        }
-        if (inputMonto) {
-            inputMonto.setAttribute('required', 'required');
-        }
-        if (inputPorcentaje) {
-            inputPorcentaje.removeAttribute('required');
-            inputPorcentaje.value = '';
-        }
-    }
-}
-
-// Hacer funciones disponibles globalmente
 window.mostrarInfoTipoNovedad = mostrarInfoTipoNovedad;
 window.toggleInfoButton = toggleInfoButton;
 window.limpiarFormularioMultiple = limpiarFormularioMultiple;

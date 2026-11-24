@@ -111,12 +111,10 @@ class GestionTiposApp {
             <td class="text-center">
                 <small class="text-muted">${tipo.corte || '-'}</small>
             </td>
-            <td>
-                <div class="btn-group" role="group">
-                    <button class="btn btn-outline-primary btn-action" onclick="app.editarTipo(${tipo.id})" title="Editar">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                </div>
+            <td class="text-center">
+                <button class="btn btn-outline-primary btn-action" onclick="app.editarTipo(${tipo.id})" title="Editar">
+                    <i class="fas fa-edit"></i>
+                </button>
             </td>
         `;
 

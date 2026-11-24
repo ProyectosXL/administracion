@@ -30,29 +30,6 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
     <!-- Contenedor de alertas -->
     <div id="alertas-container" class="container mt-3"></div>
 
-    <!-- Header de la página -->
-    <div class="page-header">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h1>
-                        <i class="fas fa-plus-circle me-3"></i>
-                        Nueva Novedad
-                    </h1>
-                    <p class="lead mb-0">
-                        Registre una nueva novedad para liquidación de sueldos
-                    </p>
-                </div>
-                <div class="col-md-4 text-end">
-                    <span class="periodo-badge">
-                        <i class="fas fa-calendar-alt me-2"></i>
-                        <?php echo $periodoInfo['badge']; ?>
-                    </span>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Indicador de modo activo -->
     <div id="modo-activo-indicator" class="modo-activo-indicator" style="display: none;">
         <i class="fas fa-info-circle me-2"></i>
@@ -60,7 +37,13 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
     </div>
 
     <!-- Contenido principal -->
-    <div class="container">
+    <div class="container pb-5">
+        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+            <div>
+                <h4 class="mb-0 fw-bold text-dark"><i class="fas fa-plus-circle text-primary me-2"></i>Nueva Novedad</h4>
+                <small class="text-muted">Registre novedades individuales o mediante checklist múltiple</small>
+            </div>
+        </div>
         <!-- Sección: Modo de Carga -->
         <div class="form-section" id="modo-carga-section">
             <h5>
@@ -105,7 +88,7 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
             </div>
             
             <!-- Sección: Datos del Empleado -->
-            <div class="form-section">
+            <div class="form-section" id="datos-empleado-section">
                 <h5>
                     <i class="fas fa-user me-2"></i>
                     Datos del Empleado
@@ -123,6 +106,10 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                         <div class="invalid-feedback">
                             Debe seleccionar un empleado
                         </div>
+                        <div class="form-text text-muted" id="empleado-ayuda-global">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Para <strong>Premio Local</strong> (escala global para todos los locales), no es necesario elegir empleado.
+                        </div>
                     </div>
                 </div>
 
@@ -136,6 +123,14 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                         </div>
                         <input type="hidden" id="centro_costos" name="centro_costos">
                     </div>
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            <i class="fas fa-briefcase me-2"></i>Posición Actual (Tango)
+                        </label>
+                        <div class="form-control-plaintext" id="empleado-puesto-actual">
+                            Seleccione un empleado para ver su posición actual
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -143,12 +138,11 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
             <div class="form-section" id="configuracion-global-section" style="display: none;">
                 <h5>
                     <i class="fas fa-cog me-2"></i>
-                    Configuración Global
-                    <small class="text-muted">(Aplicable a todas las novedades)</small>
+                    Período de Aplicación (Carga Múltiple)
                 </h5>
                 
                 <div class="row">
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label for="periodo_mes_global" class="form-label">
                             Período - Mes <span class="required">*</span>
                         </label>
@@ -159,7 +153,7 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                             El mes es obligatorio para el modo múltiple
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label for="periodo_anio_global" class="form-label">
                             Período - Año <span class="required">*</span>
                         </label>
@@ -168,15 +162,6 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                         </select>
                         <div class="invalid-feedback">
                             El año es obligatorio para el modo múltiple
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="fecha_vigencia_global" class="form-label">
-                            Fecha de entrada en vigencia <span class="required">*</span>
-                        </label>
-                        <input type="date" class="form-control" id="fecha_vigencia_global" name="fecha_vigencia_global">
-                        <div class="invalid-feedback">
-                            La fecha de vigencia es obligatoria para el modo múltiple
                         </div>
                     </div>
                 </div>
@@ -222,24 +207,96 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                 </div>
             </div>
 
-            <!-- Contenedor de Novedades Múltiples -->
+            <!-- Contenedor de Novedades Múltiples (Checklist Predeterminado) -->
             <div id="novedades-multiples-container" style="display: none;">
+                <!-- Propuesta / Datos de Movimiento -->
                 <div class="form-section">
+                    <h5>
+                        <i class="fas fa-clipboard-list me-2"></i>
+                        Propuesta de Movimiento / Cambio de Condiciones
+                    </h5>
+                    <div class="alert alert-info py-2 mb-3">
+                        <i class="fas fa-check-double me-2"></i>
+                        Complete este checklist predeterminado para registrar todos los conceptos aplicables sin omitir ninguno. Los campos marcados como <strong>No aplica</strong> no generarán novedad.
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Local origen <small class="text-muted">(viene de Tango)</small></label>
+                            <input type="text" class="form-control bg-light" id="cl_local_origen" readonly placeholder="Seleccione un empleado...">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="cl_local_destino" class="form-label">Local destino <small class="text-muted">(si cambia de sucursal)</small></label>
+                            <select class="form-select" id="cl_local_destino">
+                                <option value="">Sin cambio de sucursal</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Posición actual <small class="text-muted">(viene de Tango)</small></label>
+                            <input type="text" class="form-control bg-light" id="cl_posicion_actual" readonly placeholder="Seleccione un empleado...">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="cl_puesto_prueba" class="form-label">Puesto a prueba</label>
+                            <select class="form-select" id="cl_puesto_prueba">
+                                <option value="">No aplica / Sin período a prueba</option>
+                                <option value="CAJERA">Cajera</option>
+                                <option value="SUB ENCARGADA">Sub Encargada</option>
+                                <option value="ENCARGADA">Encargada</option>
+                                <option value="SUPERVISORA">Supervisora</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="cl_fecha_inicio" class="form-label">Fecha de inicio <span class="required">*</span></label>
+                            <input type="date" class="form-control" id="cl_fecha_inicio">
+                            <div class="invalid-feedback">La fecha de inicio es obligatoria</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="cl_fecha_fin" class="form-label">
+                                Fecha de finalización <span class="text-muted" id="cl_fecha_fin_hint">(obligatoria si tiene puesto a prueba)</span>
+                            </label>
+                            <input type="date" class="form-control" id="cl_fecha_fin">
+                            <div class="invalid-feedback">La fecha de finalización es obligatoria cuando hay puesto a prueba</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bloque: DURANTE LA PRUEBA -->
+                <div class="form-section border-start border-4 border-warning">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5>
-                            <i class="fas fa-layer-group me-2"></i>
-                            Novedades para el Empleado
+                        <h5 class="mb-0 text-warning-emphasis">
+                            <i class="fas fa-hourglass-half me-2"></i>
+                            DURANTE LA PRUEBA
                         </h5>
-                        <button type="button" class="btn btn-success" id="agregar-novedad-btn">
-                            <i class="fas fa-plus me-2"></i>
-                            Agregar otra novedad
-                        </button>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="cl_incluir_prueba" checked>
+                            <label class="form-check-label fw-semibold" for="cl_incluir_prueba">Incluir etapa de prueba</label>
+                        </div>
                     </div>
-                    
-                    <!-- Contenedor dinámico para las cards de novedades -->
-                    <div id="novedades-cards-container">
-                        <!-- Las cards se generarán dinámicamente aquí -->
+                    <div id="cl_bloque_prueba_body"></div>
+                </div>
+
+                <!-- Bloque: CONFIRMACIÓN -->
+                <div class="form-section border-start border-4 border-success">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0 text-success">
+                            <i class="fas fa-check-circle me-2"></i>
+                            CONFIRMACIÓN
+                        </h5>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="cl_incluir_confirmacion">
+                            <label class="form-check-label fw-semibold" for="cl_incluir_confirmacion">Incluir etapa de confirmación</label>
+                        </div>
                     </div>
+                    <div id="cl_bloque_confirmacion_body" style="display: none;"></div>
+                </div>
+
+                <!-- Observaciones del Checklist -->
+                <div class="form-section">
+                    <h5>
+                        <i class="fas fa-comment me-2"></i>
+                        Observaciones de la Propuesta
+                    </h5>
+                    <textarea class="form-control" id="cl_observaciones" rows="2" placeholder="Observaciones generales para las novedades generadas desde el checklist..."></textarea>
                 </div>
             </div>
 
@@ -260,7 +317,7 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                                 <input type="hidden" id="sucursal_actual" value="">
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label for="nueva_sucursal" class="form-label">
                                 Nueva Sucursal <span class="required">*</span>
                             </label>
@@ -271,13 +328,22 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                                 La nueva sucursal es obligatoria
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label for="fecha_vigencia_sucursal" class="form-label">
                                 Fecha de entrada en vigencia <span class="required">*</span>
                             </label>
                             <input type="date" class="form-control" id="fecha_vigencia_sucursal" name="fecha_vigencia">
                             <div class="invalid-feedback">
                                 La fecha de vigencia es obligatoria
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fecha_vigencia_hasta_sucursal" class="form-label">
+                                Fecha de vencimiento <small class="text-muted">(opcional)</small>
+                            </label>
+                            <input type="date" class="form-control" id="fecha_vigencia_hasta_sucursal" name="fecha_vigencia_hasta">
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>Si se deja vacía, se considera sin vencimiento.
                             </div>
                         </div>
                     </div>
@@ -322,38 +388,6 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                     </div>
                 </div>
 
-                <!-- 3. Nuevo salario neto -->
-                <div class="form-section campo-dinamico" id="config-nuevo-salario">
-                    <h5>
-                        <i class="fas fa-dollar-sign me-2"></i>
-                        Configuración: Nuevo Salario Neto
-                    </h5>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <label for="importe_salario" class="form-label">
-                                Importe <span class="required">*</span>
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text">$</span>
-                                <input type="number" class="form-control" id="importe_salario" 
-                                       name="importe" step="0.01" min="0" max="999999999999.99" placeholder="0.00">
-                            </div>
-                            <div class="invalid-feedback">
-                                El importe es obligatorio
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="fecha_vigencia_salario" class="form-label">
-                                Fecha de entrada en vigencia <span class="required">*</span>
-                            </label>
-                            <input type="date" class="form-control" id="fecha_vigencia_salario" name="fecha_vigencia">
-                            <div class="invalid-feedback">
-                                La fecha de vigencia es obligatoria
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- 4. Ajuste de premios -->
                 <div class="form-section campo-dinamico" id="config-ajuste-premios">
                     <h5>
@@ -363,16 +397,14 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                     <div class="row">
                         <div class="col-md-4">
                             <label for="importe_premios" class="form-label">
-                                Importe <span class="required">*</span>
+                                Importe <small class="text-muted">(opcional)</small>
                             </label>
                             <div class="input-group">
                                 <span class="input-group-text">$</span>
                                 <input type="number" class="form-control" id="importe_premios" 
-                                       name="importe" step="0.01" min="0" max="999999999999.99" placeholder="0.00">
+                                       name="importe" step="0.01" min="0" max="999999999999.99" placeholder="Opcional">
                             </div>
-                            <div class="invalid-feedback">
-                                El importe es obligatorio
-                            </div>
+                            <div class="form-text">No obligatorio si aún no cuenta con el importe actualizado.</div>
                         </div>
                         <div class="col-md-4">
                             <label for="fecha_vigencia_premios" class="form-label">
@@ -482,132 +514,7 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                     </div>
                 </div>
 
-                <!-- 8. Cortes -->
-                <div class="form-section campo-dinamico" id="config-cortes">
-                    <h5>
-                        <i class="fas fa-minus-circle me-2"></i>
-                        Configuración: Cortes
-                    </h5>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <label for="cantidad_cortes" class="form-label">
-                                Cantidad de cortes <span class="required">*</span>
-                            </label>
-                            <input type="number" class="form-control" id="cantidad_cortes" 
-                                   name="cantidad_cortes" min="1" placeholder="0">
-                            <div class="invalid-feedback">
-                                La cantidad de cortes es obligatoria
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="fecha_vigencia_cortes" class="form-label">
-                                Fecha de entrada en vigencia <span class="required">*</span>
-                            </label>
-                            <input type="date" class="form-control" id="fecha_vigencia_cortes" name="fecha_vigencia">
-                            <div class="invalid-feedback">
-                                La fecha de vigencia es obligatoria
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 9. Producción 25% -->
-                <div class="form-section campo-dinamico" id="config-produccion-25">
-                    <h5>
-                        <i class="fas fa-chart-bar me-2"></i>
-                        Configuración: Producción 25%
-                    </h5>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <label for="cantidad_unidades_25" class="form-label">
-                                Cantidad de unidades producidas <span class="required">*</span>
-                            </label>
-                            <div class="input-group">
-                                <input type="number" class="form-control" id="cantidad_unidades_25" 
-                                       name="cantidad_unidades" min="1" placeholder="0">
-                                <span class="input-group-text">un.</span>
-                            </div>
-                            <div class="invalid-feedback">
-                                La cantidad de unidades es obligatoria
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="fecha_vigencia_produccion_25" class="form-label">
-                                Fecha de entrada en vigencia <span class="required">*</span>
-                            </label>
-                            <input type="date" class="form-control" id="fecha_vigencia_produccion_25" name="fecha_vigencia">
-                            <div class="invalid-feedback">
-                                La fecha de vigencia es obligatoria
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 10. Producción 50% -->
-                <div class="form-section campo-dinamico" id="config-produccion-50">
-                    <h5>
-                        <i class="fas fa-chart-line me-2"></i>
-                        Configuración: Producción 50%
-                    </h5>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <label for="cantidad_unidades_50" class="form-label">
-                                Cantidad de unidades producidas <span class="required">*</span>
-                            </label>
-                            <div class="input-group">
-                                <input type="number" class="form-control" id="cantidad_unidades_50" 
-                                       name="cantidad_unidades" min="1" placeholder="0">
-                                <span class="input-group-text">un.</span>
-                            </div>
-                            <div class="invalid-feedback">
-                                La cantidad de unidades es obligatoria
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="fecha_vigencia_produccion_50" class="form-label">
-                                Fecha de entrada en vigencia <span class="required">*</span>
-                            </label>
-                            <input type="date" class="form-control" id="fecha_vigencia_produccion_50" name="fecha_vigencia">
-                            <div class="invalid-feedback">
-                                La fecha de vigencia es obligatoria
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 11. Producción 100% -->
-                <div class="form-section campo-dinamico" id="config-produccion-100">
-                    <h5>
-                        <i class="fas fa-chart-area me-2"></i>
-                        Configuración: Producción 100%
-                    </h5>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <label for="cantidad_unidades_100" class="form-label">
-                                Cantidad de unidades producidas <span class="required">*</span>
-                            </label>
-                            <div class="input-group">
-                                <input type="number" class="form-control" id="cantidad_unidades_100" 
-                                       name="cantidad_unidades" min="1" placeholder="0">
-                                <span class="input-group-text">un.</span>
-                            </div>
-                            <div class="invalid-feedback">
-                                La cantidad de unidades es obligatoria
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="fecha_vigencia_produccion_100" class="form-label">
-                                Fecha de entrada en vigencia <span class="required">*</span>
-                            </label>
-                            <input type="date" class="form-control" id="fecha_vigencia_produccion_100" name="fecha_vigencia">
-                            <div class="invalid-feedback">
-                                La fecha de vigencia es obligatoria
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 12. Plus de caja -->
+                <!-- 32. Plus de caja (sin importe, con vencimiento opcional) -->
                 <div class="form-section campo-dinamico" id="config-plus-caja">
                     <h5>
                         <i class="fas fa-cash-register me-2"></i>
@@ -627,19 +534,6 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                                 El tipo de plus es obligatorio
                             </div>
                         </div>
-                        <div class="col-md-4" id="campo_importe_plus_caja" style="display: none;">
-                            <label for="importe_plus_caja" class="form-label">
-                                Importe
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text">$</span>
-                                <input type="number" class="form-control" id="importe_plus_caja" 
-                                    name="importe" step="0.01" min="0" placeholder="0.00">
-                            </div>
-                            <div class="invalid-feedback">
-                                El importe es obligatorio
-                            </div>
-                        </div>
                         <div class="col-md-4">
                             <label for="fecha_vigencia_plus_caja" class="form-label">
                                 Fecha de entrada en vigencia <span class="required">*</span>
@@ -649,40 +543,40 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                                 La fecha de vigencia es obligatoria
                             </div>
                         </div>
+                        <div class="col-md-4">
+                            <label for="fecha_vigencia_hasta_plus_caja" class="form-label">
+                                Fecha de vencimiento <small class="text-muted">(opcional)</small>
+                            </label>
+                            <input type="date" class="form-control" id="fecha_vigencia_hasta_plus_caja" name="fecha_vigencia_hasta">
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>Si se deja vacía, se considera sin vencimiento.
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- 13. Plus de Sub-Encargada -->
+                <!-- 33. Plus de Sub-Encargada (SI/NO sin importe, con vencimiento opcional) -->
                 <div class="form-section campo-dinamico" id="config-plus-sub-encargada">
                     <h5>
                         <i class="fas fa-user-tie me-2"></i>
                         Configuración: Plus de Sub-Encargada
                     </h5>
+                    <div class="alert alert-info py-2 mb-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        El Plus de Sub-Encargada equivale al mismo importe vigente que el Plus de Caja; solo debe indicar si aplica (<strong>SI</strong> o <strong>NO</strong>).
+                    </div>
                     <div class="row">
                         <div class="col-md-4">
-                            <label for="tiene_importe_sub" class="form-label">
-                                ¿Tiene importe específico? <span class="required">*</span>
+                            <label for="aplica_plus_sub" class="form-label">
+                                ¿Aplica Plus de Sub-Encargada? <span class="required">*</span>
                             </label>
-                            <select class="form-select" id="tiene_importe_sub" name="tiene_importe">
+                            <select class="form-select" id="aplica_plus_sub" name="aplica_plus">
                                 <option value="">Seleccione...</option>
-                                <option value="1">Sí</option>
-                                <option value="0">No</option>
+                                <option value="1">SI</option>
+                                <option value="0">NO</option>
                             </select>
                             <div class="invalid-feedback">
-                                Debe indicar si tiene importe específico
-                            </div>
-                        </div>
-                        <div class="col-md-4" id="campo_importe_sub_encargada" style="display: none;">
-                            <label for="importe_sub_encargada" class="form-label">
-                                Importe <span class="required">*</span>
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text">$</span>
-                                <input type="number" class="form-control" id="importe_sub_encargada" 
-                                    name="importe" step="0.01" min="0" placeholder="0.00">
-                            </div>
-                            <div class="invalid-feedback">
-                                El importe es obligatorio
+                                Debe indicar SI o NO
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -694,10 +588,19 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                                 La fecha de vigencia es obligatoria
                             </div>
                         </div>
+                        <div class="col-md-4">
+                            <label for="fecha_vigencia_hasta_plus_sub" class="form-label">
+                                Fecha de vencimiento <small class="text-muted">(opcional)</small>
+                            </label>
+                            <input type="date" class="form-control" id="fecha_vigencia_hasta_plus_sub" name="fecha_vigencia_hasta">
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>Si se deja vacía, se considera sin vencimiento.
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- 14. Plus de Encargada -->
+                <!-- 34. Plus de Encargada (SI/NO sin importe, con vencimiento opcional) -->
                 <div class="form-section campo-dinamico" id="config-plus-encargada">
                     <h5>
                         <i class="fas fa-user-cog me-2"></i>
@@ -705,29 +608,16 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                     </h5>
                     <div class="row">
                         <div class="col-md-4">
-                            <label for="tiene_importe_enc" class="form-label">
-                                ¿Tiene importe específico? <span class="required">*</span>
+                            <label for="aplica_plus_enc" class="form-label">
+                                ¿Aplica Plus de Encargada? <span class="required">*</span>
                             </label>
-                            <select class="form-select" id="tiene_importe_enc" name="tiene_importe">
+                            <select class="form-select" id="aplica_plus_enc" name="aplica_plus">
                                 <option value="">Seleccione...</option>
-                                <option value="1">Sí</option>
-                                <option value="0">No</option>
+                                <option value="1">SI</option>
+                                <option value="0">NO</option>
                             </select>
                             <div class="invalid-feedback">
-                                Debe indicar si tiene importe específico
-                            </div>
-                        </div>
-                        <div class="col-md-4" id="campo_importe_encargada" style="display: none;">
-                            <label for="importe_encargada" class="form-label">
-                                Importe <span class="required">*</span>
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text">$</span>
-                                <input type="number" class="form-control" id="importe_encargada" 
-                                    name="importe" step="0.01" min="0" placeholder="0.00">
-                            </div>
-                            <div class="invalid-feedback">
-                                El importe es obligatorio
+                                Debe indicar SI o NO
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -739,29 +629,29 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                                 La fecha de vigencia es obligatoria
                             </div>
                         </div>
+                        <div class="col-md-4">
+                            <label for="fecha_vigencia_hasta_plus_enc" class="form-label">
+                                Fecha de vencimiento <small class="text-muted">(opcional)</small>
+                            </label>
+                            <input type="date" class="form-control" id="fecha_vigencia_hasta_plus_enc" name="fecha_vigencia_hasta">
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>Si se deja vacía, se considera sin vencimiento.
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- 15. Premio Local -->
+                <!-- 35. Premio Local (Escala global para todos los locales) -->
                 <div class="form-section campo-dinamico" id="config-premio-local">
                     <h5>
                         <i class="fas fa-trophy me-2"></i>
-                        Configuración: Premio Local
+                        Configuración: Premio Local (Escala para Todos los Locales)
                     </h5>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <label for="importe_premio_local" class="form-label">
-                                Importe del Premio <span class="required">*</span>
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text">$</span>
-                                <input type="number" class="form-control" id="importe_premio_local" 
-                                    name="importe" step="0.01" min="0" placeholder="0.00">
-                            </div>
-                            <div class="invalid-feedback">
-                                El importe del premio es obligatorio
-                            </div>
-                        </div>
+                    <div class="alert alert-primary py-2 mb-3">
+                        <i class="fas fa-store me-2"></i>
+                        Esta novedad actualiza los valores de la escala de <strong>Premio Local</strong> para <strong>todos los locales</strong> (no corresponde a un empleado individual). Todos los importes son obligatorios.
+                    </div>
+                    <div class="row mb-3">
                         <div class="col-md-4">
                             <label for="fecha_vigencia_premio_local" class="form-label">
                                 Fecha de entrada en vigencia <span class="required">*</span>
@@ -771,51 +661,97 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                                 La fecha de vigencia es obligatoria
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">
-                                Aplica a <span class="required">*</span>
-                            </label>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="aplica_vendedora" name="aplica_vendedora" value="1">
-                                <label class="form-check-label" for="aplica_vendedora">
-                                    <i class="fas fa-user me-2"></i>Vendedora
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="aplica_sub_encargada" name="aplica_sub_encargada" value="1">
-                                <label class="form-check-label" for="aplica_sub_encargada">
-                                    <i class="fas fa-user-tie me-2"></i>Sub-Encargada
-                                </label>
-                            </div>
-                            <div class="invalid-feedback">
-                                Debe seleccionar al menos una opción
-                            </div>
-                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Clase de Premio</th>
+                                    <th style="width: 240px;">Importe Encargada / Sub <span class="required">*</span></th>
+                                    <th style="width: 240px;">Importe Vendedora <span class="required">*</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <strong>1ro en el ranking al cierre del mes</strong>
+                                        <br><small class="text-muted">El primero del ranking una vez cerrado el mes</small>
+                                    </td>
+                                    <td>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" class="form-control" id="premio_1ro_enc_sub" step="0.01" min="0.01" placeholder="40000.00">
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" class="form-control" id="premio_1ro_vend" step="0.01" min="0.01" placeholder="20000.00">
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <strong>Cumple con el objetivo</strong>
+                                        <br><small class="text-muted">Los locales que cumplieron el objetivo (sin terminar primeros)</small>
+                                    </td>
+                                    <td>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" class="form-control" id="premio_cumple_enc_sub" step="0.01" min="0.01" placeholder="30000.00">
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" class="form-control" id="premio_cumple_vend" step="0.01" min="0.01" placeholder="15000.00">
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <strong>1ro en el ranking que NO llegó al objetivo</strong>
+                                        <br><small class="text-muted">El más cercano a cumplir el objetivo (cercano a 0%) que no llegó</small>
+                                    </td>
+                                    <td>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" class="form-control" id="premio_no_llega_enc_sub" step="0.01" min="0.01" placeholder="20000.00">
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" class="form-control" id="premio_no_llega_vend" step="0.01" min="0.01" placeholder="10000.00">
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
-                <!-- 16. Comisión Individual -->
+                <!-- 36. Comisión Individual (Supervisoras: múltiples sucursales PROPIOS + tope opcional) -->
                 <div class="form-section campo-dinamico" id="config-comision-individual">
                     <h5>
                         <i class="fas fa-percentage me-2"></i>
-                        Configuración: Comisión Individual
+                        Configuración: Comisiones Individuales (Supervisoras)
                     </h5>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <label for="porcentaje_individual" class="form-label">
-                                Porcentaje de Comisión <span class="required">*</span>
-                            </label>
+                    <div class="alert alert-info py-2 mb-3">
+                        <i class="fas fa-store-alt me-2"></i>
+                        Seleccione las sucursales <strong>PROPIOS</strong> correspondientes, indique el porcentaje para cada una y si posee tope con porcentaje post-tope. Se registrará una única novedad general con el detalle de las sucursales.
+                    </div>
+                    <div class="row g-3 mb-3 align-items-end">
+                        <div class="col-md-5">
+                            <label for="comision_ind_sucursal_select" class="form-label">Agregar Sucursal (PROPIOS)</label>
                             <div class="input-group">
-                                <input type="number" class="form-control" id="porcentaje_individual" 
-                                    name="porcentaje_individual" step="0.01" min="0.01" max="0.99" placeholder="0.15">
-                                <span class="input-group-text">%</span>
+                                <select class="form-select" id="comision_ind_sucursal_select">
+                                    <option value="">Seleccione sucursal...</option>
+                                </select>
+                                <button type="button" class="btn btn-primary" onclick="agregarSucursalComisionIndividual('unica')">
+                                    <i class="fas fa-plus me-1"></i>Agregar
+                                </button>
                             </div>
-                            <div class="invalid-feedback">
-                                El porcentaje de comisión es obligatorio
-                            </div>
-                            <small class="form-text text-muted">
-                                Ejemplo: 0.15 para 0.15%
-                            </small>
                         </div>
                         <div class="col-md-4">
                             <label for="fecha_vigencia_comision_individual" class="form-label">
@@ -827,9 +763,27 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                             </div>
                         </div>
                     </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle mb-0" id="tabla_comision_ind_unica">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Sucursal (PROPIOS)</th>
+                                    <th style="width: 170px;">Porcentaje (%) <span class="required">*</span></th>
+                                    <th style="width: 140px;">¿Tiene Tope?</th>
+                                    <th style="width: 180px;">% Post-Tope</th>
+                                    <th style="width: 70px;">Quitar</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody_comision_ind_unica">
+                                <tr class="text-muted text-center" id="empty_comision_ind_unica">
+                                    <td colspan="5">Agregue al menos una sucursal para configurar la comisión</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
-                <!-- 17. Comisión sobre el Local -->
+                <!-- 37. Comisión sobre el Local -->
                 <div class="form-section campo-dinamico" id="config-comision-local">
                     <h5>
                         <i class="fas fa-building me-2"></i>
@@ -868,7 +822,7 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                             </label>
                             <div class="input-group">
                                 <input type="number" class="form-control" id="porcentaje_unico_local" 
-                                    name="porcentaje_unico" step="0.01" min="0.01" max="0.99" placeholder="0.50">
+                                    name="porcentaje_unico" step="0.01" min="0.01" max="100" placeholder="0.50">
                                 <span class="input-group-text">%</span>
                             </div>
                             <small class="form-text text-muted">Ejemplo: 0.50 para 0.50%</small>
@@ -880,30 +834,30 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                     
                     <!-- Campos para con tope -->
                     <div class="row mt-3" id="campos_con_tope_local" style="display: none;">
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label for="porcentaje_1_local" class="form-label">
                                 Primer Porcentaje <span class="required">*</span>
                             </label>
                             <div class="input-group">
                                 <input type="number" class="form-control" id="porcentaje_1_local" 
-                                    name="porcentaje_1" step="0.01" min="0.01" max="0.99" placeholder="0.75">
+                                    name="porcentaje_1" step="0.01" min="0.01" max="100" placeholder="0.75">
                                 <span class="input-group-text">%</span>
                             </div>
-                            <small class="form-text text-muted">Ejemplo: 0.75 para 0.75%</small>
+                            <small class="form-text text-muted">Guía: Mín. 0,30% - Máx. 1,00% (incrementos de 0,05%)</small>
                             <div class="invalid-feedback">
                                 El porcentaje debe ser mayor a 0.01
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label for="porcentaje_2_local" class="form-label">
                                 Segundo Porcentaje <span class="required">*</span>
                             </label>
                             <div class="input-group">
                                 <input type="number" class="form-control" id="porcentaje_2_local" 
-                                    name="porcentaje_2" step="0.01" min="0.01" max="0.99" placeholder="0.25">
+                                    name="porcentaje_2" step="0.01" min="0.01" max="100" placeholder="0.25">
                                 <span class="input-group-text">%</span>
                             </div>
-                            <small class="form-text text-muted">Ejemplo: 0.25 para 0.25%</small>
+                            <small class="form-text text-muted">Guía: Mín. 0,15% - Máx. 0,50% (incrementos de 0,05%)</small>
                             <div class="invalid-feedback">
                                 El porcentaje debe ser mayor a 0.01
                             </div>
@@ -911,7 +865,7 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                     </div>
                 </div>
 
-                <!-- 18. Premios - Ajuste General -->
+                <!-- 38. Premios - Ajuste General (importe no obligatorio) -->
                 <div class="form-section campo-dinamico" id="config-premios-ajuste">
                     <h5>
                         <i class="fas fa-adjust me-2"></i>
@@ -920,16 +874,14 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                     <div class="row">
                         <div class="col-md-4">
                             <label for="importe_ajuste_general" class="form-label">
-                                Importe del Ajuste <span class="required">*</span>
+                                Importe del Ajuste <small class="text-muted">(opcional)</small>
                             </label>
                             <div class="input-group">
                                 <span class="input-group-text">$</span>
                                 <input type="number" class="form-control" id="importe_ajuste_general" 
-                                    name="importe" step="0.01" min="0" placeholder="0.00">
+                                    name="importe" step="0.01" min="0" placeholder="Opcional">
                             </div>
-                            <div class="invalid-feedback">
-                                El importe del ajuste es obligatorio
-                            </div>
+                            <div class="form-text">No obligatorio si aún no conoce el importe actualizado.</div>
                         </div>
                         <div class="col-md-4">
                             <label for="fecha_vigencia_ajuste" class="form-label">
@@ -988,56 +940,6 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                             <input type="date" class="form-control" id="fecha_vigencia_hasta_reemplazo" name="fecha_vigencia_hasta" required>
                             <div class="invalid-feedback">
                                 La fecha de fin es obligatoria para reemplazos
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 55. A prueba -->
-                <div class="form-section campo-dinamico" id="config-a-prueba">
-                    <h5>
-                        <i class="fas fa-user-clock me-2"></i>
-                        Configuración: A prueba
-                    </h5>
-                    <div class="row">
-                        <!-- Puesto Actual -->
-                        <div class="col-md-12 mb-3">
-                            <div class="alert alert-info" id="puesto-actual-info-a-prueba" style="display: none;">
-                                <i class="fas fa-info-circle me-2"></i>
-                                <strong>Puesto actual:</strong> <span id="puesto-actual-texto-a-prueba">-</span>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label for="puesto_a_prueba" class="form-label">
-                                Puesto de A prueba <span class="required">*</span>
-                            </label>
-                            <select class="form-select" id="puesto_a_prueba" name="puesto">
-                                <option value="">Buscar y seleccionar puesto...</option>
-                            </select>
-                            <div class="invalid-feedback">
-                                El puesto es obligatorio
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-3">
-                            <label for="fecha_vigencia_a_prueba" class="form-label">
-                                Fecha de inicio <span class="required">*</span>
-                            </label>
-                            <input type="date" class="form-control" id="fecha_vigencia_a_prueba" name="fecha_vigencia">
-                            <div class="invalid-feedback">
-                                La fecha de inicio es obligatoria
-                            </div>
-                        </div>
-                        
-                        <!-- Fecha de fin - siempre requerida para a prueba -->
-                        <div class="col-md-3" id="campo_fecha_fin_a_prueba">
-                            <label for="fecha_vigencia_hasta_a_prueba" class="form-label">
-                                Fecha de fin <span class="required">*</span>
-                            </label>
-                            <input type="date" class="form-control" id="fecha_vigencia_hasta_a_prueba" name="fecha_vigencia_hasta" required>
-                            <div class="invalid-feedback">
-                                La fecha de fin es obligatoria para a prueba
                             </div>
                         </div>
                     </div>
@@ -1476,13 +1378,15 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                         // Obtener NovedadesApp de forma segura
                         const app = getNovedadesApp();
                         
-                        // Guardar empleado seleccionado (incluyendo nombre y apellido para el backend)
+                        // Guardar empleado seleccionado (incluyendo nombre, apellido y puesto actual para el backend)
                         const empleadoData = {
                             legajo: data.legajo || data.id,
                             nombre: data.nombre || '',
                             apellido: data.apellido || '',
                             cod_centro_costos: data.cod_centro_costos || '',
-                            desc_centro_costos: data.desc_centro_costos || ''
+                            desc_centro_costos: data.desc_centro_costos || '',
+                            puesto_actual: data.puesto_actual || '',
+                            sucursal_numero: data.sucursal_numero || ''
                         };
                         
                         // Si nombre/apellido no vienen en el data, extraer del text
@@ -1500,16 +1404,22 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                                 const centroCostosDisplay = `${empleadoData.desc_centro_costos} (${empleadoData.cod_centro_costos})`;
                                 $('#empleado-centro-costos').text(centroCostosDisplay);
                                 $('#centro_costos').val(empleadoData.cod_centro_costos);
+                                $('#cl_local_origen').val(centroCostosDisplay);
                                 console.log('🏢 Centro de costos asignado:', centroCostosDisplay);
                             } else {
                                 $('#empleado-centro-costos').text('Centro de costos no definido');
                                 $('#centro_costos').val('');
+                                $('#cl_local_origen').val('');
                                 console.log('⚠️ Centro de costos no encontrado para el empleado');
                             }
                         } catch (ccError) {
                             console.error('❌ Error asignando centro de costos:', ccError);
                             $('#empleado-centro-costos').text('Error obteniendo centro de costos');
                         }
+
+                        // Mostrar puesto actual automáticamente
+                        $('#empleado-puesto-actual').text(empleadoData.puesto_actual || 'No definido');
+                        $('#cl_posicion_actual').val(empleadoData.puesto_actual || '');
                         
                         // Guardar empleado en la app
                         app.empleadoSeleccionado = empleadoData;
@@ -1543,6 +1453,9 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                     $('#legajo').val('');
                     $('#centro_costos').val('');
                     $('#empleado-centro-costos').text('Seleccione un empleado para ver su centro de costos');
+                    $('#empleado-puesto-actual').text('Seleccione un empleado para ver su puesto');
+                    $('#cl_local_origen').val('');
+                    $('#cl_posicion_actual').val('');
                     
                     $('#legajo').removeClass('is-valid is-invalid');
                     $(this).removeClass('is-valid is-invalid');
@@ -1551,7 +1464,7 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                     const app = getNovedadesApp();
                     if (app && app.hasOwnProperty('empleadoSeleccionado')) {
                         app.empleadoSeleccionado = null;
-                        console.log('🧹 Empleado y centro de costos limpiados');
+                        console.log('🧹 Empleado, puesto y centro de costos limpiados');
                     }
                 } catch (error) {
                     console.error('❌ Error en select2:clear:', error);
@@ -1663,108 +1576,6 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
             $('#puesto_reemplazo').on('select2:clear', function (e) {
                 $(this).removeClass('is-valid is-invalid');
             });
-
-            // Configurar Select2 para búsqueda de puestos de a prueba
-            $('#puesto_a_prueba').select2({
-                theme: 'bootstrap-5',
-                placeholder: 'Buscar puesto para a prueba...',
-                allowClear: true,
-                ajax: {
-                    url: 'controller/novedades_controller.php?action=buscar_puestos_select2',
-                    dataType: 'json',
-                    delay: 300,
-                    data: function (params) {
-                        return {
-                            q: params.term,
-                            limit: 20
-                        };
-                    },
-                    processResults: function (data) {
-                        if (data.success) {
-                            return {
-                                results: data.data
-                            };
-                        } else {
-                            console.error('Error en búsqueda de puestos de a prueba:', data.message);
-                            return {
-                                results: []
-                            };
-                        }
-                    },
-                    cache: true
-                },
-                minimumInputLength: 0,
-                language: {
-                    noResults: function () {
-                        return "No se encontraron puestos";
-                    },
-                    searching: function () {
-                        return "Buscando puestos...";
-                    }
-                }
-            });
-
-            // Manejar selección de puesto de a prueba
-            $('#puesto_a_prueba').on('select2:select', function (e) {
-                console.log('🎯 Puesto de a prueba seleccionado:', e.params.data);
-                $(this).removeClass('is-invalid').addClass('is-valid');
-            });
-
-            // Manejar limpieza de puesto de a prueba
-            $('#puesto_a_prueba').on('select2:clear', function (e) {
-                $(this).removeClass('is-valid is-invalid');
-            });
-
-            // Configurar Select2 para búsqueda de puestos de reemplazo
-            $('#puesto_reemplazo').select2({
-                theme: 'bootstrap-5',
-                placeholder: 'Buscar puesto de reemplazo...',
-                allowClear: true,
-                ajax: {
-                    url: 'controller/novedades_controller.php?action=buscar_puestos_select2',
-                    dataType: 'json',
-                    delay: 300,
-                    data: function (params) {
-                        return {
-                            q: params.term,
-                            limit: 20
-                        };
-                    },
-                    processResults: function (data) {
-                        if (data.success) {
-                            return {
-                                results: data.data
-                            };
-                        } else {
-                            console.error('Error en búsqueda de puestos:', data.message);
-                            return {
-                                results: []
-                            };
-                        }
-                    },
-                    cache: true
-                },
-                minimumInputLength: 0,
-                language: {
-                    noResults: function () {
-                        return "No se encontraron puestos";
-                    },
-                    searching: function () {
-                        return "Buscando puestos...";
-                    }
-                }
-            });
-
-            // Manejar selección de puesto de reemplazo
-            $('#puesto_reemplazo').on('select2:select', function (e) {
-                console.log('🎯 Puesto de reemplazo seleccionado:', e.params.data);
-                $(this).removeClass('is-invalid').addClass('is-valid');
-            });
-
-            // Manejar limpieza de puesto de reemplazo
-            $('#puesto_reemplazo').on('select2:clear', function (e) {
-                $(this).removeClass('is-valid is-invalid');
-            });
         });
 
         // Función para mostrar modal de confirmación de limpieza
@@ -1773,43 +1584,70 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
             modal.show();
         }
         
+        function _limpiarEstadoFormularioBase() {
+            const form = document.getElementById('form-novedad');
+            if (!form) return;
+
+            form.reset();
+
+            if (typeof $ !== 'undefined' && $('#empleado-select').length) {
+                $('#empleado-select').val(null).trigger('change');
+            }
+            if (typeof $ !== 'undefined' && $('#nuevo_puesto').length) {
+                $('#nuevo_puesto').val(null).trigger('change');
+            }
+            if (typeof $ !== 'undefined' && $('#puesto_reemplazo').length) {
+                $('#puesto_reemplazo').val(null).trigger('change');
+            }
+
+            const empSec = document.getElementById('datos-empleado-section');
+            if (empSec) empSec.style.display = 'block';
+            const ayudaGlobal = document.getElementById('empleado-ayuda-global');
+            if (ayudaGlobal) ayudaGlobal.style.display = 'none';
+            const ccEl = document.getElementById('empleado-centro-costos');
+            if (ccEl) ccEl.textContent = 'Seleccione un empleado para ver su centro de costos';
+            const ccInput = document.getElementById('centro_costos');
+            if (ccInput) ccInput.value = '';
+            const puestoEl = document.getElementById('empleado-puesto-actual');
+            if (puestoEl) puestoEl.textContent = 'Seleccione un empleado para ver su puesto';
+            const legajoInput = document.getElementById('legajo');
+            if (legajoInput) legajoInput.setAttribute('required', 'required');
+
+            const tbodyComInd = document.getElementById('tbody_comision_ind_unica');
+            if (tbodyComInd) {
+                tbodyComInd.innerHTML = '<tr class="fila-vacia-comision"><td colspan="5" class="text-center text-muted py-3">Agregue al menos una sucursal PROPIOS</td></tr>';
+            }
+
+            if (typeof ocultarTodasLasConfiguraciones === 'function') {
+                const cfgNov = document.getElementById('configuracion-novedad');
+                if (cfgNov) cfgNov.style.display = 'none';
+                ocultarTodasLasConfiguraciones();
+            }
+
+            if (typeof resetearChecklistMultiple === 'function') {
+                resetearChecklistMultiple();
+            }
+
+            const campos = form.querySelectorAll('.form-control, .form-select');
+            campos.forEach(campo => {
+                campo.classList.remove('is-invalid', 'is-valid');
+            });
+
+            try {
+                const app = getNovedadesApp();
+                if (app && app.hasOwnProperty('empleadoSeleccionado')) {
+                    app.empleadoSeleccionado = null;
+                }
+            } catch (error) {
+                console.error('Error limpiando empleado:', error);
+            }
+        }
+
         // Función para confirmar limpieza
         function confirmarLimpieza() {
             console.log('🧹 Ejecutando limpieza confirmada...');
-            
-            // Limpiar el formulario directamente sin llamar a la función original
-            const form = document.getElementById('form-novedad');
-            if (form) {
-                form.reset();
-                
-                // Limpiar Select2 específicamente
-                if (typeof $ !== 'undefined' && $('#empleado-select').length) {
-                    $('#empleado-select').val(null).trigger('change');
-                }
-                
-                // Ocultar configuraciones si existe la función
-                if (typeof ocultarTodasLasConfiguraciones === 'function') {
-                    document.getElementById('configuracion-novedad').style.display = 'none';
-                    ocultarTodasLasConfiguraciones();
-                }
+            _limpiarEstadoFormularioBase();
 
-                // Remover clases de validación
-                const campos = form.querySelectorAll('.form-control, .form-select');
-                campos.forEach(campo => {
-                    campo.classList.remove('is-invalid', 'is-valid');
-                });
-                
-                // Limpiar empleado seleccionado
-                try {
-                    const app = getNovedadesApp();
-                    if (app && app.hasOwnProperty('empleadoSeleccionado')) {
-                        app.empleadoSeleccionado = null;
-                    }
-                } catch (error) {
-                    console.error('Error limpiando empleado:', error);
-                }
-            }
-            
             // Cerrar modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('modalConfirmarLimpieza'));
             if (modal) {
@@ -1825,38 +1663,7 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
         // Función específica para limpiar cuando se guarda correctamente
         function limpiarFormularioSinConfirmacion() {
             console.log('🧹 Limpiando formulario después de guardar...');
-            
-            const form = document.getElementById('form-novedad');
-            if (form) {
-                form.reset();
-                
-                // Limpiar Select2 específicamente
-                if (typeof $ !== 'undefined' && $('#empleado-select').length) {
-                    $('#empleado-select').val(null).trigger('change');
-                }
-                
-                // Ocultar configuraciones
-                if (typeof ocultarTodasLasConfiguraciones === 'function') {
-                    document.getElementById('configuracion-novedad').style.display = 'none';
-                    ocultarTodasLasConfiguraciones();
-                }
-
-                // Remover clases de validación
-                const campos = form.querySelectorAll('.form-control, .form-select');
-                campos.forEach(campo => {
-                    campo.classList.remove('is-invalid', 'is-valid');
-                });
-                
-                // Limpiar empleado seleccionado
-                try {
-                    const app = getNovedadesApp();
-                    if (app && app.hasOwnProperty('empleadoSeleccionado')) {
-                        app.empleadoSeleccionado = null;
-                    }
-                } catch (error) {
-                    console.error('Error limpiando empleado:', error);
-                }
-            }
+            _limpiarEstadoFormularioBase();
         }
         
         // Función para el botón limpiar manual (CON confirmación)

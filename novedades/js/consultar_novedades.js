@@ -109,6 +109,7 @@ function inicializarSelect2() {
     // Select2 para búsqueda por empleado/legajo (campo unificado)
     $('#filtro-empleado').select2({
         theme: 'bootstrap-5',
+        width: '100%',
         placeholder: 'Buscar empleado...',
         allowClear: true,
         ajax: {
@@ -149,6 +150,7 @@ function inicializarSelect2() {
     // Select2 para tipos de novedad con búsqueda
     $('#filtro-tipo').select2({
         theme: 'bootstrap-5',
+        width: '100%',
         placeholder: 'Todos los tipos',
         allowClear: true,
         language: {
@@ -218,24 +220,20 @@ function aplicarFiltros() {
         
         // Filtro por rango de fechas (solo si NO hay filtro de período real activo)
         if (!filtrosActivos.periodoReal && (filtrosActivos.fechaDesde || filtrosActivos.fechaHasta)) {
-            // Extraer la fecha de la fecha_creacion (formato: YYYY-MM-DD HH:MM:SS)
-            let fechaNovedad = '';
-            if (novedad.fecha_creacion) {
-                // Si viene con hora, extraer solo la fecha
-                fechaNovedad = novedad.fecha_creacion.includes(' ') 
-                    ? novedad.fecha_creacion.split(' ')[0] 
-                    : novedad.fecha_creacion;
-            }
-            
-            console.log(`🔍 Comparando fechas - Novedad: ${fechaNovedad}, Desde: ${filtrosActivos.fechaDesde}, Hasta: ${filtrosActivos.fechaHasta}`);
-            
-            if (filtrosActivos.fechaDesde && fechaNovedad && fechaNovedad < filtrosActivos.fechaDesde) {
-                console.log(`❌ Novedad ${novedad.id} filtrada por fecha desde`);
+            const tsNovedad = parseFechaOrdenamiento(novedad.fecha_creacion);
+            const tsDesde = filtrosActivos.fechaDesde ? parseFechaOrdenamiento(filtrosActivos.fechaDesde) : null;
+            const tsHasta = filtrosActivos.fechaHasta ? parseFechaOrdenamiento(filtrosActivos.fechaHasta) : null;
+
+            if (tsNovedad === null) return false;
+            // Comparar solo fecha (inicio del día) para inclusión exacta del rango
+            const diaNov = new Date(tsNovedad);
+            diaNov.setHours(0, 0, 0, 0);
+            const tsDiaNov = diaNov.getTime();
+
+            if (tsDesde !== null && tsDiaNov < tsDesde) {
                 return false;
             }
-            
-            if (filtrosActivos.fechaHasta && fechaNovedad && fechaNovedad > filtrosActivos.fechaHasta) {
-                console.log(`❌ Novedad ${novedad.id} filtrada por fecha hasta`);
+            if (tsHasta !== null && tsDiaNov > tsHasta) {
                 return false;
             }
         }
@@ -297,6 +295,35 @@ function mostrarResultados(datos) {
     actualizarContadorResultados(datos.length, inicio, Math.min(fin, datos.length));
 }
 
+function obtenerCentroCostosDisplay(novedad) {
+    if (novedad.es_global == 1 || novedad.es_global === true) {
+        return 'Todos los locales';
+    }
+    return novedad.centro_costos_display || ((novedad.descripcion_centro_costos || 'Sin centro') + ' (' + (novedad.codigo_centro_costos || '') + ')');
+}
+
+function obtenerValorDisplayTabla(novedad) {
+    if (novedad.valor_display && novedad.valor_display.toString().trim() !== '' && novedad.valor_display !== '-') {
+        return novedad.valor_display;
+    }
+    const contexto = NovedadesApp.contextoDesdeTipo ? NovedadesApp.contextoDesdeTipo(parseInt(novedad.tipo_novedad)) : 'numero';
+    if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
+        return NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, contexto) : novedad.valor_numerico;
+    }
+    return '-';
+}
+
+function obtenerVigenciaHastaHtml(novedad) {
+    const tipo = parseInt(novedad.tipo_novedad);
+    if (novedad.fecha_vigencia_hasta) {
+        return `<small>${NovedadesApp.formatearFecha(novedad.fecha_vigencia_hasta)}</small>`;
+    }
+    if ([1, 32, 33, 34].includes(tipo)) {
+        return '<span class="badge bg-light text-muted border">Sin vencimiento</span>';
+    }
+    return '<small>-</small>';
+}
+
 /**
  * Mostrar vista de tabla
  */
@@ -306,19 +333,13 @@ function mostrarTabla(datos) {
 
     datos.forEach(novedad => {
         const fechaVigencia = novedad.fecha_vigencia ? NovedadesApp.formatearFecha(novedad.fecha_vigencia) : '-';
-        const fechaVigenciaHasta = novedad.fecha_vigencia_hasta ? NovedadesApp.formatearFecha(novedad.fecha_vigencia_hasta) : '-';
-        const contexto = NovedadesApp.contextoDesdeTipo ? NovedadesApp.contextoDesdeTipo(parseInt(novedad.tipo_novedad)) : 'numero';
-        let valor = '';
-        if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
-            valor = NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, contexto) : novedad.valor_numerico;
-        } else {
-            valor = '-';
-        }
+        const fechaVigenciaHastaHtml = obtenerVigenciaHastaHtml(novedad);
+        const valor = obtenerValorDisplayTabla(novedad);
         const fechaRegistro = NovedadesApp.formatearFecha(novedad.fecha_creacion);
-        console.log('📊 Tabla - Novedad ID:', novedad.id, 'estado_numero:', novedad.estado_numero);
         const estado = obtenerBadgeEstado(novedad.estado_numero || 1);
-        
-        // Formatear período
+        const esGlobal = (novedad.es_global == 1 || novedad.es_global === true);
+        const ccDisplay = obtenerCentroCostosDisplay(novedad);
+
         let periodoDisplay = '-';
         if (novedad.periodo_mes && novedad.periodo_anio) {
             periodoDisplay = `${novedad.periodo_mes}/${novedad.periodo_anio}`;
@@ -326,34 +347,34 @@ function mostrarTabla(datos) {
 
         html += `
             <tr class="novedad-row" data-id="${novedad.id}">
-                <td>
+                <td class="text-nowrap">
                     <small>${fechaRegistro}</small>
                 </td>
-                <td>
-                    <strong>${novedad.legajo}</strong>
+                <td class="text-nowrap">
+                    <strong>${esGlobal ? '-' : novedad.legajo}</strong>
                 </td>
-                <td>
-                    <strong>${novedad.nombre} ${novedad.apellido}</strong>
+                <td class="col-empleado">
+                    <strong>${esGlobal ? 'Todos los locales (Global)' : `${novedad.nombre} ${novedad.apellido}`}</strong>
                 </td>
-                <td>
-                    <span class="badge bg-light text-dark">${novedad.centro_costos_display || (novedad.descripcion_centro_costos || 'Sin centro') + ' (' + (novedad.codigo_centro_costos || '') + ')'}</span>
+                <td class="text-nowrap">
+                    <span class="badge ${esGlobal ? 'bg-warning text-dark' : 'bg-light text-dark border'}">${ccDisplay}</span>
                 </td>
-                <td>
+                <td class="text-nowrap">
                     <span class="badge bg-primary">${novedad.tipo_descripcion}</span>
                 </td>
-                <td class="tabla-periodo">
+                <td class="tabla-periodo text-nowrap">
                     <span class="badge bg-secondary badge-periodo">${periodoDisplay}</span>
                 </td>
-                <td>
+                <td class="text-nowrap">
                     <small>${fechaVigencia}</small>
                 </td>
-                <td>
-                    <small>${fechaVigenciaHasta}</small>
+                <td class="text-nowrap">
+                    ${fechaVigenciaHastaHtml}
                 </td>
-                <td>${valor !== '-' ? `<strong>${valor}</strong>` : '-'}</td>
-                <td>${estado}</td>
-                <td>
-                    <div class="btn-group btn-group-sm">
+                <td class="col-valor">${valor !== '-' ? `<strong>${valor}</strong>` : '-'}</td>
+                <td class="text-nowrap">${estado}</td>
+                <td class="col-acciones">
+                    <div class="btn-group btn-group-sm flex-nowrap">
                         <button class="btn btn-outline-info btn-sm" onclick="verDetalleNovedad(${novedad.id})" 
                                 title="Ver detalle">
                             <i class="fas fa-eye"></i>
@@ -382,7 +403,7 @@ function mostrarTabla(datos) {
     });
 
     tbody.innerHTML = html;
-    
+
     // Mostrar vista de tabla
     document.getElementById('vista-tabla').style.display = 'block';
     document.getElementById('vista-tarjetas').style.display = 'none';
@@ -397,21 +418,22 @@ function mostrarTarjetas(datos) {
 
     datos.forEach(novedad => {
         const fechaVigencia = novedad.fecha_vigencia ? NovedadesApp.formatearFecha(novedad.fecha_vigencia) : '';
-        const contexto = NovedadesApp.contextoDesdeTipo ? NovedadesApp.contextoDesdeTipo(parseInt(novedad.tipo_novedad)) : 'numero';
-        const valor = (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) ? (NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, contexto) : novedad.valor_numerico) : '';
+        const valorDisplay = obtenerValorDisplayTabla(novedad);
+        const valor = valorDisplay !== '-' ? valorDisplay : '';
         const fechaRegistro = NovedadesApp.formatearFecha(novedad.fecha_creacion);
-        console.log('🎴 Tarjetas - Novedad ID:', novedad.id, 'estado_numero:', novedad.estado_numero);
         const estado = obtenerBadgeEstado(novedad.estado_numero || 1);
+        const esGlobal = (novedad.es_global == 1 || novedad.es_global === true);
+        const ccDisplay = obtenerCentroCostosDisplay(novedad);
 
         html += `
             <div class="col-md-6 col-lg-4 mb-3">
                 <div class="card novedad-card h-100">
                     <div class="card-header bg-primary text-white">
                         <h6 class="card-title mb-0">
-                            <i class="fas fa-user me-2"></i>
-                            ${novedad.nombre} ${novedad.apellido}
+                            <i class="fas ${esGlobal ? 'fa-globe' : 'fa-user'} me-2"></i>
+                            ${esGlobal ? 'Todos los locales (Global)' : `${novedad.nombre} ${novedad.apellido}`}
                         </h6>
-                        <small>Legajo: ${novedad.legajo}</small>
+                        <small>${esGlobal ? 'Escala general' : `Legajo: ${novedad.legajo}`}</small>
                     </div>
                     <div class="card-body">
                         <div class="mb-2">
@@ -421,7 +443,7 @@ function mostrarTarjetas(datos) {
                         
                         <div class="mb-2">
                             <strong>Centro de Costos:</strong><br>
-                            <span class="badge bg-light text-dark">${novedad.centro_costos_display || (novedad.descripcion_centro_costos || 'Sin centro') + ' (' + (novedad.codigo_centro_costos || '') + ')'}</span>
+                            <span class="badge ${esGlobal ? 'bg-warning text-dark' : 'bg-light text-dark'}">${ccDisplay}</span>
                         </div>
                         
                         ${fechaVigencia ? `
@@ -525,9 +547,9 @@ function mostrarModalDetalleCompleto(novedad) {
                     </div>
                     <div class="card-body">
                         <table class="table table-sm">
-                            <tr><td><strong>Nombre:</strong></td><td>${novedad.nombre} ${novedad.apellido}</td></tr>
-                            <tr><td><strong>Legajo:</strong></td><td>${novedad.legajo}</td></tr>
-                            <tr><td><strong>Centro de Costos:</strong></td><td>${novedad.centro_costos_display || novedad.descripcion_centro_costos || 'Centro ' + novedad.codigo_centro_costos}</td></tr>
+                            <tr><td><strong>Nombre:</strong></td><td>${(novedad.es_global == 1 || novedad.es_global === true) ? 'Todos los locales (Global)' : `${novedad.nombre} ${novedad.apellido}`}</td></tr>
+                            <tr><td><strong>Legajo:</strong></td><td>${(novedad.es_global == 1 || novedad.es_global === true) ? '-' : novedad.legajo}</td></tr>
+                            <tr><td><strong>Centro de Costos:</strong></td><td>${obtenerCentroCostosDisplay(novedad)}</td></tr>
                         </table>
                     </div>
                 </div>
@@ -619,20 +641,24 @@ function mostrarModalDetalleCompleto(novedad) {
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <strong>Sucursal Actual:</strong><br>
                                     <span class="badge bg-secondary sucursal-actual-text">${sucursalActualDetalle}</span>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <strong>Nueva Sucursal:</strong><br>
                                     <span class="badge bg-primary">${nuevaSucursalDetalle}</span>
                                 </div>
                                 ${novedad.fecha_vigencia ? `
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <strong>Fecha de Vigencia:</strong><br>
                                     ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
                                 </div>
                                 ` : ''}
+                                <div class="col-md-3">
+                                    <strong>Fecha de Vencimiento:</strong><br>
+                                    ${obtenerVigenciaHastaHtml(novedad)}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -640,21 +666,16 @@ function mostrarModalDetalleCompleto(novedad) {
             break;
             
         case 2: // Nueva Posición
-            // Extraer nueva posición de las observaciones
             // Extraer detalle de la nueva posición - USAR CAMPOS DIRECTOS EN LUGAR DE OBSERVACIONES
             let nuevoPuestoDetalle = '';
             
-            // PRIORITARIO: Usar el campo puesto directo si existe
             if (novedad.puesto && novedad.puesto !== 'Cambio centro de costos' && novedad.puesto !== 'Ajuste Salario' && novedad.puesto !== 'Premio') {
                 nuevoPuestoDetalle = novedad.puesto;
             } else if (novedad.observaciones) {
-                // Solo como fallback: extraer de observaciones si no hay puesto directo
-                // Buscar el patrón más completo primero
                 let match = novedad.observaciones.match(/Nuevo puesto:\s*([^-]*?)\s*(?:\([^)]*?\))?(?:\s+hasta\s+\d{2}\/\d{2}\/\d{4})?(?:\s*-|$)/);
                 if (match) {
                     nuevoPuestoDetalle = match[1].trim();
                 } else {
-                    // Buscar con etiquetas HTML
                     match = novedad.observaciones.match(/Nuevo puesto:\s*<[^>]*>([^<]+)<[^>]*>/);
                     if (match) {
                         nuevoPuestoDetalle = match[1].trim();
@@ -662,7 +683,6 @@ function mostrarModalDetalleCompleto(novedad) {
                 }
             }
             
-            // Nueva Posición - siempre permanente, sin tipo ni fecha hasta
             html += `
                 <div class="col-12">
                     <div class="card">
@@ -671,12 +691,18 @@ function mostrarModalDetalleCompleto(novedad) {
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <strong>Nueva Posición:</strong><br>
                                     <span class="badge bg-success">${nuevoPuestoDetalle || 'No especificado'}</span>
                                 </div>
+                                ${novedad.convenio ? `
+                                <div class="col-md-4">
+                                    <strong>Convenio:</strong><br>
+                                    <span class="badge bg-info text-dark">${novedad.convenio}</span>
+                                </div>
+                                ` : ''}
                                 ${novedad.fecha_vigencia ? `
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <strong>Fecha de vigencia:</strong><br>
                                     ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
                                 </div>
@@ -816,16 +842,8 @@ function mostrarModalDetalleCompleto(novedad) {
             break;
 
         case 12: // Plus de caja (compatibilidad)
-        case 32: // Plus de caja (ID real BD)
-            // Extraer tipo de plus de observaciones
-            let tipoPlusCaja = 'No especificado';
-            if (novedad.observaciones) {
-                const match = novedad.observaciones.match(/Tipo:\s*(.+)/);
-                if (match) {
-                    tipoPlusCaja = match[1].trim();
-                }
-            }
-            
+        case 32: { // Plus de caja (ID real BD)
+            const tipoPlusCaja = novedad.tipo_plus_caja ? novedad.tipo_plus_caja.toUpperCase() : ((novedad.observaciones && novedad.observaciones.match(/Tipo:\s*([A-Za-z]+)/i)?.[1]?.toUpperCase()) || 'Recibo');
             html += `
                 <div class="col-12">
                     <div class="card">
@@ -838,26 +856,29 @@ function mostrarModalDetalleCompleto(novedad) {
                                     <strong>Tipo de Plus:</strong><br>
                                     <span class="badge bg-primary">${tipoPlusCaja}</span>
                                 </div>
-                                ${novedad.valor_numerico && parseFloat(novedad.valor_numerico) > 0 ? `
-                                <div class="col-md-4">
-                                    <strong>Importe:</strong><br>
-                                    <span class="h5">${NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda') : '$' + novedad.valor_numerico}</span>
-                                </div>
-                                ` : ''}
                                 ${novedad.fecha_vigencia ? `
                                 <div class="col-md-4">
                                     <strong>Fecha de Vigencia:</strong><br>
                                     ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
                                 </div>
                                 ` : ''}
+                                <div class="col-md-4">
+                                    <strong>Fecha de Vencimiento:</strong><br>
+                                    ${obtenerVigenciaHastaHtml(novedad)}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>`;
             break;
+        }
 
         case 13: // Plus de Sub-Encargada (compatibilidad)
-        case 33: // Plus de Sub-Encargada (ID real BD)
+        case 33: { // Plus de Sub-Encargada (ID real BD)
+            const aplicaSubTxt = (novedad.aplica_plus !== null && novedad.aplica_plus !== undefined)
+                ? (novedad.aplica_plus == 1 ? 'SI' : 'NO')
+                : (novedad.valor_numerico && parseFloat(novedad.valor_numerico) > 0 ? NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda') : 'SI');
+            const badgeSub = aplicaSubTxt === 'NO' ? 'bg-danger' : 'bg-success';
             html += `
                 <div class="col-12">
                     <div class="card">
@@ -866,27 +887,34 @@ function mostrarModalDetalleCompleto(novedad) {
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-6">
-                                    <strong>Plus de Sub-Encargada</strong><br>
-                                    ${novedad.valor_numerico && parseFloat(novedad.valor_numerico) > 0 ? 
-                                        `<span class="h5">${NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda') : '$' + novedad.valor_numerico}</span>` : 
-                                        '<span class="text-muted">Sin importe específico</span>'
-                                    }
+                                <div class="col-md-4">
+                                    <strong>¿Aplica?</strong><br>
+                                    <span class="badge ${badgeSub}">${aplicaSubTxt}</span>
+                                    <small class="d-block text-muted">Equivale al Plus de Caja</small>
                                 </div>
                                 ${novedad.fecha_vigencia ? `
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <strong>Fecha de Vigencia:</strong><br>
                                     ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
                                 </div>
                                 ` : ''}
+                                <div class="col-md-4">
+                                    <strong>Fecha de Vencimiento:</strong><br>
+                                    ${obtenerVigenciaHastaHtml(novedad)}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>`;
             break;
+        }
 
         case 14: // Plus de Encargada (compatibilidad)
-        case 34: // Plus de Encargada (ID real BD)
+        case 34: { // Plus de Encargada (ID real BD)
+            const aplicaEncTxt = (novedad.aplica_plus !== null && novedad.aplica_plus !== undefined)
+                ? (novedad.aplica_plus == 1 ? 'SI' : 'NO')
+                : (novedad.valor_numerico && parseFloat(novedad.valor_numerico) > 0 ? NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda') : 'SI');
+            const badgeEnc = aplicaEncTxt === 'NO' ? 'bg-danger' : 'bg-success';
             html += `
                 <div class="col-12">
                     <div class="card">
@@ -895,150 +923,170 @@ function mostrarModalDetalleCompleto(novedad) {
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-6">
-                                    <strong>Plus de Encargada</strong><br>
-                                    ${novedad.valor_numerico && parseFloat(novedad.valor_numerico) > 0 ? 
-                                        `<span class="h5">${NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda') : '$' + novedad.valor_numerico}</span>` : 
-                                        '<span class="text-muted">Sin importe específico</span>'
-                                    }
+                                <div class="col-md-4">
+                                    <strong>¿Aplica?</strong><br>
+                                    <span class="badge ${badgeEnc}">${aplicaEncTxt}</span>
                                 </div>
                                 ${novedad.fecha_vigencia ? `
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <strong>Fecha de Vigencia:</strong><br>
                                     ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
                                 </div>
                                 ` : ''}
+                                <div class="col-md-4">
+                                    <strong>Fecha de Vencimiento:</strong><br>
+                                    ${obtenerVigenciaHastaHtml(novedad)}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>`;
             break;
+        }
 
         case 15: // Premio Local (compatibilidad)
-        case 35: // Premio Local (ID real BD)
-            // Construir lista de aplicaciones - SOLO vendedora y sub-encargada
-            let aplicacionesPremio = [];
-            
-            // Conversión robusta y simple usando doble negación (!!)
-            // Cualquier valor truthy no-cero se considera true
-            const aplicaVendedora = !!(novedad.aplica_vendedora && novedad.aplica_vendedora != 0 && novedad.aplica_vendedora != '0');
-            const aplicaSubEncargada = !!(novedad.aplica_sub_encargada && novedad.aplica_sub_encargada != 0 && novedad.aplica_sub_encargada != '0');
-            
-            if (aplicaVendedora) aplicacionesPremio.push('Vendedora');
-            if (aplicaSubEncargada) aplicacionesPremio.push('Sub-Encargada');
-            const aplicaTexto = aplicacionesPremio.length > 0 ? aplicacionesPremio.join(', ') : 'No especificado';
-            
-            html += `
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header bg-warning text-dark">
-                            <h6 class="mb-0"><i class="fas fa-trophy me-2"></i>Detalles del Premio Local</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <strong>Importe del Premio:</strong><br>
-                                    ${novedad.valor_numerico && parseFloat(novedad.valor_numerico) > 0 ? 
-                                        `<span class="h5">${NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda') : '$' + novedad.valor_numerico}</span>` : 
-                                        '<span class="text-muted">No especificado</span>'
-                                    }
+        case 35: { // Premio Local (ID real BD)
+            if (Array.isArray(novedad.premio_local_escala) && novedad.premio_local_escala.length > 0) {
+                const labelsEscala = {
+                    'PRIMER_RANKING': '1ro en el ranking al cierre del mes',
+                    'CUMPLE_OBJETIVO': 'Cumple con el objetivo',
+                    'PRIMER_NO_LLEGA': '1ro en el ranking que NO llegó al objetivo'
+                };
+                let filasEscala = '';
+                novedad.premio_local_escala.forEach(r => {
+                    const fmt = v => NovedadesApp.formatearValor ? NovedadesApp.formatearValor(v, 'moneda') : '$' + v;
+                    filasEscala += `<tr><td>${labelsEscala[r.nivel_codigo] || r.nivel_codigo}</td><td><strong>${fmt(r.importe_enc_sub)}</strong></td><td><strong>${fmt(r.importe_vend)}</strong></td></tr>`;
+                });
+                html += `
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-warning text-dark">
+                                <h6 class="mb-0"><i class="fas fa-trophy me-2"></i>Premio Local - Escala General (Todos los locales)</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered mb-0">
+                                        <thead class="table-light">
+                                            <tr><th>Clase de Premio</th><th>Encargada / Sub-Encargada</th><th>Vendedora</th></tr>
+                                        </thead>
+                                        <tbody>${filasEscala}</tbody>
+                                    </table>
                                 </div>
-                                <div class="col-md-4">
-                                    <strong>Aplica a:</strong><br>
-                                    <span class="badge bg-info">${aplicaTexto}</span>
-                                </div>
-                                ${novedad.fecha_vigencia ? `
-                                <div class="col-md-4">
-                                    <strong>Fecha de Vigencia:</strong><br>
-                                    ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
-                                </div>
-                                ` : ''}
                             </div>
                         </div>
-                    </div>
-                </div>`;
+                    </div>`;
+            } else {
+                let aplicacionesPremio = [];
+                if (novedad.aplica_vendedora && novedad.aplica_vendedora != 0 && novedad.aplica_vendedora != '0') aplicacionesPremio.push('Vendedora');
+                if (novedad.aplica_encargada && novedad.aplica_encargada != 0 && novedad.aplica_encargada != '0') aplicacionesPremio.push('Encargada');
+                if (novedad.aplica_sub_encargada && novedad.aplica_sub_encargada != 0 && novedad.aplica_sub_encargada != '0') aplicacionesPremio.push('Sub-Encargada');
+                const aplicaTexto = aplicacionesPremio.length > 0 ? aplicacionesPremio.join(', ') : 'No especificado';
+                html += `
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-warning text-dark">
+                                <h6 class="mb-0"><i class="fas fa-trophy me-2"></i>Detalles del Premio Local</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <strong>Aplica a:</strong><br>
+                                        <span class="badge bg-info">${aplicaTexto}</span>
+                                    </div>
+                                    ${novedad.valor_numerico && parseFloat(novedad.valor_numerico) > 0 ? `
+                                    <div class="col-md-4">
+                                        <strong>Importe:</strong><br>
+                                        <span class="h5">${NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda')}</span>
+                                    </div>
+                                    ` : ''}
+                                    ${novedad.fecha_vigencia ? `
+                                    <div class="col-md-4">
+                                        <strong>Fecha de Vigencia:</strong><br>
+                                        ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+            }
             break;
+        }
 
         case 16: // Comisión Individual (compatibilidad)
-        case 36: // Comisión Individual (ID real BD)
-            // COMISIÓN INDIVIDUAL: Solo un porcentaje simple
-            const porcentajeIndividualDetalle = novedad.porcentaje_1 ? parseFloat(novedad.porcentaje_1) : 0;
-            
-            html += `
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header bg-primary text-white">
-                            <h6 class="mb-0"><i class="fas fa-user me-2"></i>Detalles de Comisión Individual</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <strong>Tipo de Comisión:</strong><br>
-                                    <span class="badge bg-primary">Individual</span>
+        case 36: { // Comisión Individual (ID real BD)
+            if (Array.isArray(novedad.comision_sucursales) && novedad.comision_sucursales.length > 0) {
+                let filasSuc = '';
+                novedad.comision_sucursales.forEach(s => {
+                    const p1 = (parseFloat(s.porcentaje_1 || 0) * 100).toFixed(2);
+                    const tope = Boolean(s.tiene_tope == 1 || s.tiene_tope === true);
+                    const p2 = tope && s.porcentaje_2 ? (parseFloat(s.porcentaje_2) * 100).toFixed(2) + '%' : '-';
+                    filasSuc += `<tr><td>${s.nombre_sucursal} (${s.nro_sucursal})</td><td><strong>${p1}%</strong></td><td>${tope ? '<span class="badge bg-warning text-dark">Sí</span>' : '<span class="badge bg-secondary">No</span>'}</td><td>${p2}</td></tr>`;
+                });
+                html += `
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0"><i class="fas fa-store-alt me-2"></i>Comisión Individual por Sucursales (PROPIOS)</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered mb-0">
+                                        <thead class="table-light">
+                                            <tr><th>Sucursal</th><th>% Comisión</th><th>¿Tope?</th><th>% Post-Tope</th></tr>
+                                        </thead>
+                                        <tbody>${filasSuc}</tbody>
+                                    </table>
                                 </div>
-                                <div class="col-md-4">
-                                    <strong>Porcentaje:</strong><br>
-                                    <span class="h5">${porcentajeIndividualDetalle}%</span>
-                                </div>
-                                ${novedad.fecha_vigencia ? `
-                                <div class="col-md-4">
-                                    <strong>Fecha de Vigencia:</strong><br>
-                                    ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
-                                </div>
-                                ` : ''}
                             </div>
                         </div>
-                    </div>
-                </div>`;
+                    </div>`;
+            } else {
+                const pctInd = novedad.porcentaje_1 ? (parseFloat(novedad.porcentaje_1) * 100).toFixed(2) : '0.00';
+                html += `
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0"><i class="fas fa-user me-2"></i>Detalles de Comisión Individual</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4"><strong>Tipo:</strong><br><span class="badge bg-primary">Individual</span></div>
+                                    <div class="col-md-4"><strong>Porcentaje:</strong><br><span class="h5">${pctInd}%</span></div>
+                                    ${novedad.fecha_vigencia ? `<div class="col-md-4"><strong>Fecha de Vigencia:</strong><br>${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}</div>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+            }
             break;
+        }
 
         case 17: // Comisión sobre Local (compatibilidad)
-        case 37: // Comisión sobre Local (ID real BD)
-            // COMISIÓN SOBRE LOCAL: Con estructura de tope
-            const tieneTopeLocalDetalle = novedad.tiene_tope;
-            const colorComisionDetalle = tieneTopeLocalDetalle ? 'bg-warning text-dark' : 'bg-info text-white';
-            const iconoComisionDetalle = 'fa-building';
-            const tipoComisionTextoDetalle = 'sobre el Local';
-            const estructuraComisionDetalle = tieneTopeLocalDetalle ? 'Con tope' : 'Sin tope';
-            
-            let porcentajesTextoDetalle = '';
-            if (tieneTopeLocalDetalle) {
-                const p1 = novedad.porcentaje_1 ? parseFloat(novedad.porcentaje_1) : 0;
-                const p2 = novedad.porcentaje_2 ? parseFloat(novedad.porcentaje_2) : 0;
-                porcentajesTextoDetalle = `Primer porcentaje: ${p1}%, Segundo porcentaje: ${p2}%`;
-            } else {
-                const p = novedad.porcentaje_1 ? parseFloat(novedad.porcentaje_1) : 0;
-                porcentajesTextoDetalle = `Porcentaje único: ${p}%`;
-            }
-            
+        case 37: { // Comisión sobre Local (ID real BD)
+            const tieneTopeLocalDetalle = Boolean(novedad.tiene_tope);
+            const p1Loc = novedad.porcentaje_1 ? (parseFloat(novedad.porcentaje_1) * 100).toFixed(2) : '0.00';
+            const p2Loc = novedad.porcentaje_2 ? (parseFloat(novedad.porcentaje_2) * 100).toFixed(2) : '0.00';
+            const porcentajesTextoDetalle = tieneTopeLocalDetalle
+                ? `Primer porcentaje (antes tope): ${p1Loc}% · Segundo porcentaje (post-tope): ${p2Loc}%`
+                : `Porcentaje único: ${p1Loc}%`;
+
             html += `
                 <div class="col-12">
                     <div class="card">
-                        <div class="card-header ${colorComisionDetalle}">
-                            <h6 class="mb-0"><i class="fas ${iconoComisionDetalle} me-2"></i>Detalles de Comisión ${tipoComisionTextoDetalle}</h6>
+                        <div class="card-header ${tieneTopeLocalDetalle ? 'bg-warning text-dark' : 'bg-info text-white'}">
+                            <h6 class="mb-0"><i class="fas fa-building me-2"></i>Detalles de Comisión sobre el Local</h6>
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-4">
-                                    <strong>Tipo de Comisión:</strong><br>
-                                    <span class="badge bg-secondary">${tipoComisionTextoDetalle}</span>
-                                </div>
-                                <div class="col-md-4">
-                                    <strong>Estructura:</strong><br>
-                                    <span class="detalle-estructura-comision badge ${novedad.tiene_tope ? 'bg-warning text-dark' : 'bg-success'}">${estructuraComisionDetalle}</span>
-                                </div>
-                                ${novedad.fecha_vigencia ? `
-                                <div class="col-md-4">
-                                    <strong>Fecha de Vigencia:</strong><br>
-                                    ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
-                                </div>
-                                ` : ''}
+                                <div class="col-md-4"><strong>Tipo:</strong><br><span class="badge bg-secondary">sobre el Local</span></div>
+                                <div class="col-md-4"><strong>Estructura:</strong><br><span class="badge ${tieneTopeLocalDetalle ? 'bg-warning text-dark' : 'bg-success'}">${tieneTopeLocalDetalle ? 'Con tope' : 'Sin tope'}</span></div>
+                                ${novedad.fecha_vigencia ? `<div class="col-md-4"><strong>Fecha de Vigencia:</strong><br>${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}</div>` : ''}
                             </div>
                             <div class="row mt-2">
                                 <div class="col-12">
-                                    <div class="alert alert-info detalle-porcentajes-comision">
-                                        <i class="fas fa-percentage me-2"></i>
-                                        <strong>Porcentajes:</strong> ${porcentajesTextoDetalle}
+                                    <div class="alert alert-info mb-0">
+                                        <i class="fas fa-percentage me-2"></i><strong>Porcentajes:</strong> ${porcentajesTextoDetalle}
                                     </div>
                                 </div>
                             </div>
@@ -1046,9 +1094,11 @@ function mostrarModalDetalleCompleto(novedad) {
                     </div>
                 </div>`;
             break;
+        }
 
         case 18: // Premios - Ajuste General (compatibilidad)
-        case 38: // Premios - Ajuste General (ID real BD)
+        case 38: { // Premios - Ajuste General (ID real BD)
+            const hasApl = (novedad.aplica_plus !== null && novedad.aplica_plus !== undefined);
             html += `
                 <div class="col-12">
                     <div class="card">
@@ -1057,155 +1107,21 @@ function mostrarModalDetalleCompleto(novedad) {
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-6">
+                                ${hasApl ? `<div class="col-md-4"><strong>Aplica:</strong><br><span class="badge ${novedad.aplica_plus == 1 ? 'bg-success' : 'bg-danger'}">${novedad.aplica_plus == 1 ? 'SI' : 'NO'}</span></div>` : ''}
+                                <div class="col-md-4">
                                     <strong>Importe del Ajuste:</strong><br>
                                     ${novedad.valor_numerico && parseFloat(novedad.valor_numerico) > 0 ? 
-                                        `<span class="h5">${NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda') : '$' + novedad.valor_numerico}</span>` : 
-                                        '<span class="text-muted">No especificado</span>'
+                                        `<span class="h5">${NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda')}</span>` : 
+                                        '<span class="text-muted">Sin importe específico</span>'
                                     }
                                 </div>
-                                ${novedad.fecha_vigencia ? `
-                                <div class="col-md-6">
-                                    <strong>Fecha de Vigencia:</strong><br>
-                                    ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
-                                </div>
-                                ` : ''}
+                                ${novedad.fecha_vigencia ? `<div class="col-md-4"><strong>Fecha de Vigencia:</strong><br>${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}</div>` : ''}
                             </div>
                         </div>
                     </div>
                 </div>`;
             break;
-
-        case 16: // Comisión Individual (compatibilidad)
-        case 36: // Comisión Individual (ID real BD)
-            // COMISIÓN INDIVIDUAL: Solo un porcentaje simple
-            const porcentajeIndividual = novedad.porcentaje_1 ? parseFloat(novedad.porcentaje_1) : 0;
-            
-            camposHTML = `
-                <div class="col-md-6">
-                    <div class="card border-primary">
-                        <div class="card-header bg-primary text-white">
-                            <h6 class="mb-0"><i class="fas fa-user me-2"></i>Comisión Individual</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <label for="edit_porcentaje_individual" class="form-label">Porcentaje Individual</label>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control" id="edit_porcentaje_individual" 
-                                            value="${porcentajeIndividual}" step="0.01" min="0.01">
-                                        <span class="input-group-text">%</span>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="edit_fecha_vigencia_comision_individual" class="form-label">Fecha Vigencia</label>
-                                    <input type="date" class="form-control" id="edit_fecha_vigencia_comision_individual" 
-                                        value="${novedad.fecha_vigencia || ''}">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-            break;
-
-        case 17: // Comisión sobre Local (compatibilidad)
-        case 37: // Comisión sobre Local (ID real BD)
-            // COMISIÓN SOBRE LOCAL: Con estructura de tope
-            const tieneTopeLocal = novedad.tiene_tope;
-            
-            camposHTML = `
-                <div class="col-md-12">
-                    <div class="card border-info">
-                        <div class="card-header bg-info text-white">
-                            <h6 class="mb-0"><i class="fas fa-building me-2"></i>Comisión sobre el Local</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <label for="edit-tiene-tope-local" class="form-label">Estructura</label>
-                                    <select class="form-select" id="edit-tiene-tope-local">
-                                        <option value="0" ${!tieneTopeLocal ? 'selected' : ''}>Sin tope</option>
-                                        <option value="1" ${tieneTopeLocal ? 'selected' : ''}>Con tope</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="edit_fecha_vigencia_comision_local" class="form-label">Fecha Vigencia</label>
-                                    <input type="date" class="form-control" id="edit_fecha_vigencia_comision_local" 
-                                        value="${novedad.fecha_vigencia || ''}">
-                                </div>
-                            </div>`;
-            
-            if (tieneTopeLocal) {
-                const p1 = novedad.porcentaje_1 ? parseFloat(novedad.porcentaje_1) : 0;
-                const p2 = novedad.porcentaje_2 ? parseFloat(novedad.porcentaje_2) : 0;
-                camposHTML += `
-                            <div class="row mt-3">
-                                <div class="col-md-6">
-                                    <label for="edit-porcentaje-1-local" class="form-label">Primer Porcentaje</label>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control" id="edit-porcentaje-1-local" 
-                                            value="${p1}" step="0.01" min="0.01">
-                                        <span class="input-group-text">%</span>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="edit-porcentaje-2-local" class="form-label">Segundo Porcentaje</label>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control" id="edit-porcentaje-2-local" 
-                                            value="${p2}" step="0.01" min="0.01">
-                                        <span class="input-group-text">%</span>
-                                    </div>
-                                </div>
-                            </div>`;
-            } else {
-                const p = novedad.porcentaje_1 ? parseFloat(novedad.porcentaje_1) : 0;
-                camposHTML += `
-                            <div class="row mt-3">
-                                <div class="col-md-6">
-                                    <label for="edit-porcentaje-unico-local" class="form-label">Porcentaje Único</label>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control" id="edit-porcentaje-unico-local" 
-                                            value="${p}" step="0.01" min="0.01">
-                                        <span class="input-group-text">%</span>
-                                    </div>
-                                </div>
-                            </div>`;
-            }
-            
-            camposHTML += `
-                        </div>
-                    </div>
-                </div>`;
-            break;
-
-        case 18: // Premios - Ajuste General (compatibilidad)
-        case 38: // Premios - Ajuste General (ID real BD)
-            camposHTML = `
-                <div class="col-md-6">
-                    <div class="card border-secondary">
-                        <div class="card-header bg-secondary text-white">
-                            <h6 class="mb-0"><i class="fas fa-adjust me-2"></i>Premios - Ajuste General</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <label for="edit-importe-ajuste-general" class="form-label">Importe del Ajuste</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text">$</span>
-                                        <input type="number" class="form-control" id="edit-importe-ajuste-general" 
-                                            value="${novedad.valor_numerico || ''}" step="0.01" min="0">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="edit_fecha_vigencia_ajuste" class="form-label">Fecha Vigencia</label>
-                                    <input type="date" class="form-control" id="edit_fecha_vigencia_ajuste" 
-                                        value="${novedad.fecha_vigencia || ''}">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-            break;
+        }
 
         case 53: // Reemplazo - siempre temporario
             // Reemplazo: Similar a Nueva Posición
@@ -1309,7 +1225,32 @@ function mostrarModalDetalleCompleto(novedad) {
                 </div>`;
             break;
 
-        case 54: // Aumento Salarial
+        case 54: // Aumento Salarial o Sueldo Básico
+            if (novedad.tipo_aumento === 'basico' || novedad.escala_sueldo_basico) {
+                html += `
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0"><i class="fas fa-chart-line me-2"></i>Detalles de Sueldo Básico (Escala)</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong>Escala Aplicable:</strong><br>
+                                        <span class="badge bg-primary">${novedad.escala_sueldo_basico || 'No especificado'}</span>
+                                    </div>
+                                    ${novedad.fecha_vigencia ? `
+                                    <div class="col-md-6">
+                                        <strong>Fecha de Vigencia:</strong><br>
+                                        ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                break;
+            }
             // Detectar tipo de aumento basándose en qué campo tiene valor
             const tienePorcentaje = novedad.porcentaje_1 && parseFloat(novedad.porcentaje_1) > 0;
             const tieneMonto = novedad.valor_numerico && parseFloat(novedad.valor_numerico) > 0;
@@ -1745,13 +1686,13 @@ function exportarExcel() {
             NovedadesApp.formatearFecha(novedad.fecha_creacion),
             
             // Legajo
-            novedad.legajo,
+            (novedad.es_global == 1 || novedad.es_global === true) ? '-' : novedad.legajo,
             
             // Empleado (Nombre completo)
-            `${novedad.nombre} ${novedad.apellido}`,
+            (novedad.es_global == 1 || novedad.es_global === true) ? 'Todos los locales (Global)' : `${novedad.nombre} ${novedad.apellido}`,
             
             // Centro de Costos
-            novedad.descripcion_centro_costos || novedad.codigo_centro_costos || novedad.sucursal || '',
+            obtenerCentroCostosDisplay(novedad),
             
             // Tipo de Novedad
             novedad.tipo_descripcion,
@@ -1764,16 +1705,12 @@ function exportarExcel() {
             novedad.fecha_vigencia ? NovedadesApp.formatearFecha(novedad.fecha_vigencia) : '',
             
             // Vigencia Hasta
-            novedad.fecha_vigencia_hasta ? NovedadesApp.formatearFecha(novedad.fecha_vigencia_hasta) : '',
+            novedad.fecha_vigencia_hasta
+                ? NovedadesApp.formatearFecha(novedad.fecha_vigencia_hasta)
+                : ([1, 32, 33, 34].includes(parseInt(novedad.tipo_novedad)) ? 'Sin vencimiento' : ''),
             
-            // Valor - usar la misma lógica que en la tabla
-            (() => {
-                const contexto = NovedadesApp.contextoDesdeTipo ? NovedadesApp.contextoDesdeTipo(parseInt(novedad.tipo_novedad)) : 'numero';
-                if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
-                    return NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, contexto) : novedad.valor_numerico;
-                }
-                return '-';
-            })(),
+            // Valor
+            obtenerValorDisplayTabla(novedad),
             
             // Estado
             (() => {
@@ -2247,6 +2184,7 @@ async function imprimirNovedad(id) {
                     <table>
                         <tr><th>Sucursal Actual</th><td>${novedad.descripcion_centro_costos || 'Centro ' + novedad.codigo_centro_costos}</td></tr>
                         <tr><th>Nueva Sucursal</th><td>${nuevaSucursal}</td></tr>
+                        <tr><th>Vencimiento</th><td>${novedad.fecha_vigencia_hasta || 'Sin vencimiento'}</td></tr>
                     </table>
                 </div>`;
             break;
@@ -2257,6 +2195,7 @@ async function imprimirNovedad(id) {
                     <h2 class="section-title">Detalles del Cambio de Puesto</h2>
                     <table>
                         <tr><th>Nueva Posición</th><td>${novedad.puesto || 'No especificado'}</td></tr>
+                        ${novedad.convenio ? `<tr><th>Convenio</th><td>${novedad.convenio}</td></tr>` : ''}
                         ${novedad.fecha_vigencia ? `<tr><th>Fecha de vigencia</th><td>${novedad.fecha_vigencia}</td></tr>` : ''}
                     </table>
                 </div>`;
@@ -2341,81 +2280,113 @@ async function imprimirNovedad(id) {
 
         case 12: // Plus de caja (compatibilidad)
         case 32: // Plus de caja
-            if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
-                html += `
-                    <div class="section">
-                        <h2 class="section-title">Detalles del Plus de Caja</h2>
-                        <table>
-                            <tr><th>Importe</th><td class="value-highlight">${NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda')}</td></tr>
-                        </table>
-                    </div>`;
-            }
+            html += `
+                <div class="section">
+                    <h2 class="section-title">Detalles del Plus de Caja</h2>
+                    <table>
+                        <tr><th>Tipo de Plus</th><td>${(novedad.tipo_plus_caja || 'Recibo').toUpperCase()}</td></tr>
+                        <tr><th>Vencimiento</th><td>${novedad.fecha_vigencia_hasta || 'Sin vencimiento'}</td></tr>
+                    </table>
+                </div>`;
             break;
 
         case 13: // Plus de Sub-Encargada (compatibilidad)
         case 33: // Plus de Sub-Encargada
-            const tieneImporteSub = novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0;
             html += `
                 <div class="section">
                     <h2 class="section-title">Detalles del Plus de Sub-Encargada</h2>
                     <table>
-                        <tr><th>Tipo de Plus</th><td><span class="badge ${tieneImporteSub ? 'badge-success' : 'badge-info'}">${tieneImporteSub ? 'Con importe fijo' : 'Sin importe fijo'}</span></td></tr>
-                        ${tieneImporteSub ? `<tr><th>Importe</th><td class="value-highlight">${NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda')}</td></tr>` : ''}
+                        <tr><th>Aplica</th><td><span class="badge ${novedad.aplica_plus == 0 ? 'badge-danger' : 'badge-success'}">${novedad.aplica_plus == 0 ? 'NO' : 'SI'}</span></td></tr>
+                        <tr><th>Vencimiento</th><td>${novedad.fecha_vigencia_hasta || 'Sin vencimiento'}</td></tr>
                     </table>
                 </div>`;
             break;
 
         case 14: // Plus de Encargada (compatibilidad)
         case 34: // Plus de Encargada
-            const tieneImporteEnc = novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0;
             html += `
                 <div class="section">
                     <h2 class="section-title">Detalles del Plus de Encargada</h2>
                     <table>
-                        <tr><th>Tipo de Plus</th><td><span class="badge ${tieneImporteEnc ? 'badge-success' : 'badge-info'}">${tieneImporteEnc ? 'Con importe fijo' : 'Sin importe fijo'}</span></td></tr>
-                        ${tieneImporteEnc ? `<tr><th>Importe</th><td class="value-highlight">${NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda')}</td></tr>` : ''}
+                        <tr><th>Aplica</th><td><span class="badge ${novedad.aplica_plus == 0 ? 'badge-danger' : 'badge-success'}">${novedad.aplica_plus == 0 ? 'NO' : 'SI'}</span></td></tr>
+                        <tr><th>Vencimiento</th><td>${novedad.fecha_vigencia_hasta || 'Sin vencimiento'}</td></tr>
                     </table>
                 </div>`;
             break;
 
         case 15: // Premio Local (compatibilidad)
-        case 35: // Premio Local
-            if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
-                // Conversión robusta: cualquier valor "truthy" no-cero se considera true
-                const aplicaVendedora = !!(novedad.aplica_vendedora && novedad.aplica_vendedora != 0 && novedad.aplica_vendedora != '0');
+        case 35: { // Premio Local
+            if (Array.isArray(novedad.premio_local_escala) && novedad.premio_local_escala.length > 0) {
+                const labels = {
+                    'PRIMER_RANKING': '1ro en el ranking',
+                    'CUMPLE_OBJETIVO': 'Cumple objetivo',
+                    'PRIMER_NO_LLEGA': '1ro que no llega'
+                };
+                let rows = '';
+                novedad.premio_local_escala.forEach(r => {
+                    rows += `<tr><td>${labels[r.nivel_codigo] || r.nivel_codigo}</td><td>${NovedadesApp.formatearValor(r.importe_enc_sub, 'moneda')}</td><td>${NovedadesApp.formatearValor(r.importe_vend, 'moneda')}</td></tr>`;
+                });
+                html += `
+                    <div class="section">
+                        <h2 class="section-title">Premio Local - Escala General (Todos los locales)</h2>
+                        <table>
+                            <tr><th>Clase</th><th>Encargada / Sub</th><th>Vendedora</th></tr>
+                            ${rows}
+                        </table>
+                    </div>`;
+            } else {
+                const aplicaVend = !!(novedad.aplica_vendedora && novedad.aplica_vendedora != 0 && novedad.aplica_vendedora != '0');
+                const aplicaEnc = !!(novedad.aplica_encargada && novedad.aplica_encargada != 0 && novedad.aplica_encargada != '0');
                 const aplicaSubEnc = !!(novedad.aplica_sub_encargada && novedad.aplica_sub_encargada != 0 && novedad.aplica_sub_encargada != '0');
-                
                 html += `
                     <div class="section">
                         <h2 class="section-title">Detalles del Premio Local</h2>
                         <table>
-                            <tr><th>Importe del Premio</th><td class="value-highlight">${NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda')}</td></tr>
-                            <tr><th>Aplica a Vendedora</th><td><span class="badge ${aplicaVendedora ? 'badge-success' : 'badge-secondary'}">${aplicaVendedora ? 'Sí' : 'No'}</span></td></tr>
-                            <tr><th>Aplica a Sub-Encargada</th><td><span class="badge ${aplicaSubEnc ? 'badge-success' : 'badge-secondary'}">${aplicaSubEnc ? 'Sí' : 'No'}</span></td></tr>
+                            <tr><th>Aplica a</th><td>${[aplicaVend ? 'Vendedora' : null, aplicaEnc ? 'Encargada' : null, aplicaSubEnc ? 'Sub-Encargada' : null].filter(Boolean).join(', ') || 'No especificado'}</td></tr>
+                            ${novedad.valor_numerico && parseFloat(novedad.valor_numerico) > 0 ? `<tr><th>Importe</th><td class="value-highlight">${NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda')}</td></tr>` : ''}
                         </table>
                     </div>`;
             }
             break;
+        }
 
         case 16: // Comisión Individual (compatibilidad)
         case 36: // Comisión Individual
-            const tieneTope = Boolean(novedad.tiene_tope);
-            const porc1 = parseFloat(novedad.porcentaje_1 || 0) * 100;
-            const porc2 = parseFloat(novedad.porcentaje_2 || 0) * 100;
-            html += `
-                <div class="section">
-                    <h2 class="section-title">Detalles de la Comisión Individual</h2>
-                    <table>
-                        <tr><th>Tipo de Comisión</th><td><span class="badge badge-info">Individual</span></td></tr>
-                        <tr><th>Estructura</th><td><span class="badge ${tieneTope ? 'badge-warning' : 'badge-success'}">${tieneTope ? 'Con tope' : 'Sin tope'}</span></td></tr>
-                        ${tieneTope ? `
-                            <tr><th>Primer Porcentaje</th><td>${porc1.toFixed(2)}% (hasta el tope)</td></tr>
-                            <tr><th>Segundo Porcentaje</th><td>${porc2.toFixed(2)}% (sobre excedente)</td></tr>
-                        ` : `
-                            <tr><th>Porcentaje Único</th><td class="value-highlight">${porc1.toFixed(2)}%</td></tr>
-                        `}
-                    </table>
-                </div>`;
+            if (Array.isArray(novedad.comision_sucursales) && novedad.comision_sucursales.length > 0) {
+                let rowsSuc = '';
+                novedad.comision_sucursales.forEach(s => {
+                    const p1 = (parseFloat(s.porcentaje_1 || 0) * 100).toFixed(2);
+                    const tope = Boolean(s.tiene_tope == 1 || s.tiene_tope === true);
+                    const p2 = tope && s.porcentaje_2 ? (parseFloat(s.porcentaje_2) * 100).toFixed(2) + '%' : '-';
+                    rowsSuc += `<tr><td>${s.nombre_sucursal} (${s.nro_sucursal})</td><td>${p1}%</td><td>${tope ? 'Sí' : 'No'}</td><td>${p2}</td></tr>`;
+                });
+                html += `
+                    <div class="section">
+                        <h2 class="section-title">Comisión Individual por Sucursal (PROPIOS)</h2>
+                        <table>
+                            <tr><th>Sucursal</th><th>%</th><th>Tope</th><th>% Post-Tope</th></tr>
+                            ${rowsSuc}
+                        </table>
+                    </div>`;
+            } else {
+                const tieneTope = Boolean(novedad.tiene_tope);
+                const porc1 = parseFloat(novedad.porcentaje_1 || 0) * 100;
+                const porc2 = parseFloat(novedad.porcentaje_2 || 0) * 100;
+                html += `
+                    <div class="section">
+                        <h2 class="section-title">Detalles de la Comisión Individual</h2>
+                        <table>
+                            <tr><th>Tipo de Comisión</th><td><span class="badge badge-info">Individual</span></td></tr>
+                            <tr><th>Estructura</th><td><span class="badge ${tieneTope ? 'badge-warning' : 'badge-success'}">${tieneTope ? 'Con tope' : 'Sin tope'}</span></td></tr>
+                            ${tieneTope ? `
+                                <tr><th>Primer Porcentaje</th><td>${porc1.toFixed(2)}% (hasta el tope)</td></tr>
+                                <tr><th>Segundo Porcentaje</th><td>${porc2.toFixed(2)}% (sobre excedente)</td></tr>
+                            ` : `
+                                <tr><th>Porcentaje Único</th><td class="value-highlight">${porc1.toFixed(2)}%</td></tr>
+                            `}
+                        </table>
+                    </div>`;
+            }
             break;
 
         case 17: // Comisión sobre Local (compatibilidad)
@@ -2441,16 +2412,14 @@ async function imprimirNovedad(id) {
 
         case 18: // Premios - Ajuste General (compatibilidad)
         case 38: // Premios - Ajuste General
-            if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
-                html += `
-                    <div class="section">
-                        <h2 class="section-title">Detalles del Ajuste General de Premios</h2>
-                        <table>
-                            <tr><th>Importe del Ajuste</th><td class="value-highlight">${NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda')}</td></tr>
-                            <tr><th>Descripción</th><td>Ajuste general aplicado a premios</td></tr>
-                        </table>
-                    </div>`;
-            }
+            html += `
+                <div class="section">
+                    <h2 class="section-title">Detalles del Ajuste General de Premios</h2>
+                    <table>
+                        ${(novedad.aplica_plus !== null && novedad.aplica_plus !== undefined) ? `<tr><th>Aplica</th><td>${novedad.aplica_plus == 1 ? 'SI' : 'NO'}</td></tr>` : ''}
+                        <tr><th>Importe del Ajuste</th><td class="value-highlight">${(novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) ? NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda') : 'Sin importe específico'}</td></tr>
+                    </table>
+                </div>`;
             break;
 
         case 53: // Reemplazo - siempre temporario
@@ -3043,9 +3012,8 @@ async function cargarSucursalesFormularioEdicion(novedad) {
  */
 function generarCamposDinamicosEdicion(novedad) {
     const tipo = parseInt(novedad.tipo_novedad);
-    console.log('🔍 generarCamposDinamicosEdicion - Tipo novedad:', tipo, 'Novedad completa:', novedad);
     let campos = '';
-    
+
     // Fecha de vigencia (común para varios tipos)
     if ([1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 32, 33, 34, 35, 36, 37, 38].includes(tipo)) {
         campos += `
@@ -3058,79 +3026,78 @@ function generarCamposDinamicosEdicion(novedad) {
             </div>
         `;
     }
-    
-    // Campos específicos según tipo
+
+    // Fecha de vencimiento opcional (para tipos 1, 32, 33, 34)
+    if ([1, 32, 33, 34].includes(tipo)) {
+        campos += `
+            <div class="col-md-6">
+                <label for="edit-fecha-vigencia-hasta-opc" class="form-label">Fecha de Vencimiento (opcional)</label>
+                <input type="text" class="form-control" id="edit-fecha-vigencia-hasta-opc" 
+                       value="${novedad.fecha_vigencia_hasta || ''}" 
+                       placeholder="dd/mm/aaaa">
+                <small class="text-muted">Si se deja vacía, se considera sin vencimiento.</small>
+            </div>
+        `;
+    }
+
     switch(tipo) {
-        case 1: // Cambio de sucursal
-            // Extraer sucursal nueva desde observaciones o campos específicos
+        case 1: { // Cambio de sucursal
             let nuevaSucursal = '';
             let nuevaSucursalId = '';
-            
-            // Intentar extraer de campos específicos primero
             if (novedad.sucursal_nueva_id) {
                 nuevaSucursalId = novedad.sucursal_nueva_id;
             } else if (novedad.observaciones) {
-                // Extraer de observaciones como fallback
                 const match = novedad.observaciones.match(/Nueva sucursal:\s*([^-\n]*)/);
-                if (match) {
-                    nuevaSucursal = match[1].trim();
-                }
+                if (match) nuevaSucursal = match[1].trim();
             }
-            
+
             campos += `
                 <div class="col-md-6">
                     <label for="edit-nueva-sucursal" class="form-label">Nueva Sucursal</label>
                     <select class="form-select" id="edit-nueva-sucursal" required>
                         <option value="">Seleccionar sucursal...</option>
-                        <!-- Se llenarán dinámicamente -->
                     </select>
-                    <!-- Campo oculto para valor actual -->
                     <input type="hidden" id="edit-nueva-sucursal-actual" value="${nuevaSucursalId || nuevaSucursal}">
                 </div>
             `;
             break;
-            
-        case 2: // Cambio de puesto
-            // PRIORIZAR CAMPOS DIRECTOS: Usar puesto y tipo_nuevo_puesto directamente
+        }
+
+        case 2: { // Cambio de puesto
             let nuevoPuesto = '';
-            
-            // PRIORITARIO: Usar el campo puesto directo
             if (novedad.puesto && novedad.puesto !== 'Cambio centro de costos' && novedad.puesto !== 'Ajuste Salario' && novedad.puesto !== 'Premio') {
                 nuevoPuesto = novedad.puesto;
             } else if (novedad.observaciones) {
-                // Solo como fallback: extraer de observaciones si no hay puesto directo
-                // Buscar el patrón más completo primero
                 let match = novedad.observaciones.match(/Nueva Posición:\s*([^-]*?)\s*(?:\([^)]*?\))?(?:\s+hasta\s+\d{2}\/\d{2}\/\d{4})?(?:\s*-|$)/);
                 if (match) {
                     nuevoPuesto = match[1].trim();
                 } else {
-                    // Buscar con etiquetas HTML
                     match = novedad.observaciones.match(/Nueva Posición:\s*<[^>]*>([^<]+)<[^>]*>/);
-                    if (match) {
-                        nuevoPuesto = match[1].trim();
-                    }
+                    if (match) nuevoPuesto = match[1].trim();
                 }
             }
-            
-            // Determinar tipo actual (permanente/temporario)
-            const tipoActual = novedad.tipo_nuevo_puesto || 'permanente';
-            
+
             campos += `
-                <div class="col-md-12">
+                <div class="col-md-6">
                     <label for="edit-puesto" class="form-label">Nueva Posición</label>
                     <select class="form-select" id="edit-puesto" required>
                         <option value="">Seleccionar puesto...</option>
-                        <!-- Se llenarán dinámicamente -->
                     </select>
-                    <!-- Campo oculto para almacenar el puesto original como fallback -->
                     <input type="hidden" id="edit-puesto-original" value="${nuevoPuesto || ''}">
                 </div>
+                <div class="col-md-6">
+                    <label for="edit-convenio" class="form-label">Convenio (opcional)</label>
+                    <select class="form-select" id="edit-convenio">
+                        <option value="">Sin especificar</option>
+                        <option value="Comercio" ${novedad.convenio === 'Comercio' ? 'selected' : ''}>Comercio</option>
+                        <option value="FC" ${novedad.convenio === 'FC' ? 'selected' : ''}>FC (Fuera de Convenio)</option>
+                    </select>
+                </div>
             `;
-            
-            // Cargar puestos después de renderizar
             setTimeout(() => cargarPuestosParaEdicion(nuevoPuesto), 100);
             break;
-            
+        }
+
         case 3: // Nuevo salario
             campos += `
                 <div class="col-md-6">
@@ -3140,17 +3107,17 @@ function generarCamposDinamicosEdicion(novedad) {
                 </div>
             `;
             break;
-            
-        case 4: // Ajuste premios
+
+        case 4: // Ajuste premios (importe no obligatorio)
             campos += `
                 <div class="col-md-6">
-                    <label for="edit-monto-ajuste" class="form-label">Monto de Ajuste</label>
+                    <label for="edit-monto-ajuste" class="form-label">Monto de Ajuste (opcional)</label>
                     <input type="number" class="form-control" id="edit-monto-ajuste" 
-                           value="${novedad.valor_numerico || ''}" step="0.01" required>
+                           value="${novedad.valor_numerico || ''}" step="0.01" min="0" placeholder="Opcional">
                 </div>
             `;
             break;
-            
+
         case 5: // Horas extras
         case 6: // Horas adicionales
             campos += `
@@ -3161,7 +3128,7 @@ function generarCamposDinamicosEdicion(novedad) {
                 </div>
             `;
             break;
-            
+
         case 7: // Permisos
             campos += `
                 <div class="col-md-6">
@@ -3186,7 +3153,7 @@ function generarCamposDinamicosEdicion(novedad) {
                 </div>
             `;
             break;
-            
+
         case 8: // Cortes
         case 9: // Producción 25%
         case 10: // Producción 50%
@@ -3202,157 +3169,194 @@ function generarCamposDinamicosEdicion(novedad) {
             break;
 
         case 12: // Plus de caja (compatibilidad)
-        case 32: // Plus de caja (ID real BD)
-        // Extraer tipo de plus de observaciones
-        let tipoPlusCajaEdit = 'recibo'; // default
-        if (novedad.observaciones) {
-            const match = novedad.observaciones.match(/Tipo:\s*(.+)/);
-            if (match) {
-                tipoPlusCajaEdit = match[1].trim().toLowerCase();
+        case 32: { // Plus de caja (sin importe)
+            let tipoPlusCajaEdit = (novedad.tipo_plus_caja || 'recibo').toLowerCase();
+            if (!novedad.tipo_plus_caja && novedad.observaciones) {
+                const match = novedad.observaciones.match(/Tipo:\s*([A-Za-z]+)/i);
+                if (match) tipoPlusCajaEdit = match[1].trim().toLowerCase();
             }
-        }
-        
-        campos += `
-            <div class="col-md-4">
-                <label for="edit-tipo-plus-caja" class="form-label">Tipo de Plus</label>
-                <select class="form-select" id="edit-tipo-plus-caja" required>
-                    <option value="">Seleccione tipo...</option>
-                    <option value="recibo" ${tipoPlusCajaEdit === 'recibo' ? 'selected' : ''}>Recibo</option>
-                    <option value="premio" ${tipoPlusCajaEdit === 'premio' ? 'selected' : ''}>Premio</option>
-                </select>
-            </div>
-            <div class="col-md-4">
-                <label for="edit-importe-plus-caja" class="form-label">Importe</label>
-                <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="number" class="form-control" id="edit-importe-plus-caja" 
-                        value="${novedad.valor_numerico || ''}" step="0.01" min="0">
+            campos += `
+                <div class="col-md-6">
+                    <label for="edit-tipo-plus-caja" class="form-label">Tipo de Plus de Caja <span class="text-danger">*</span></label>
+                    <select class="form-select" id="edit-tipo-plus-caja" required>
+                        <option value="recibo" ${tipoPlusCajaEdit === 'recibo' ? 'selected' : ''}>Recibo</option>
+                        <option value="premio" ${tipoPlusCajaEdit === 'premio' ? 'selected' : ''}>Premio</option>
+                    </select>
                 </div>
-            </div>
-        `;
-        break;
+            `;
+            break;
+        }
 
         case 13: // Plus de Sub-Encargada (compatibilidad)
-        case 33: // Plus de Sub-Encargada (ID real BD)
-            const tieneImporteSub = novedad.valor_numerico && parseFloat(novedad.valor_numerico) > 0 ? '1' : '0';
-            
+        case 33: { // Plus de Sub-Encargada (SI/NO, sin importe)
+            const aplicaSub = (novedad.aplica_plus !== null && novedad.aplica_plus !== undefined)
+                ? (novedad.aplica_plus == 1 || novedad.aplica_plus === true ? '1' : '0')
+                : '1';
             campos += `
                 <div class="col-md-6">
-                    <label for="edit-tiene-importe-sub" class="form-label">¿Tiene importe específico?</label>
-                    <select class="form-select" id="edit-tiene-importe-sub" required onchange="toggleImporteEdicion('sub')">
-                        <option value="1" ${tieneImporteSub === '1' ? 'selected' : ''}>Sí</option>
-                        <option value="0" ${tieneImporteSub === '0' ? 'selected' : ''}>No</option>
+                    <label for="edit-aplica-plus-sub" class="form-label">¿Aplica Plus de Sub-Encargada? <span class="text-danger">*</span></label>
+                    <select class="form-select" id="edit-aplica-plus-sub" required>
+                        <option value="1" ${aplicaSub === '1' ? 'selected' : ''}>SI</option>
+                        <option value="0" ${aplicaSub === '0' ? 'selected' : ''}>NO</option>
                     </select>
-                </div>
-                <div class="col-md-6" id="edit-campo-importe-sub" style="display: ${tieneImporteSub === '1' ? 'block' : 'none'}">
-                    <label for="edit-importe-sub" class="form-label">Importe</label>
-                    <div class="input-group">
-                        <span class="input-group-text">$</span>
-                        <input type="number" class="form-control" id="edit-importe-sub" 
-                            value="${novedad.valor_numerico || ''}" step="0.01" min="0">
-                    </div>
+                    <small class="text-muted">Equivale al Plus de Caja.</small>
                 </div>
             `;
             break;
+        }
 
         case 14: // Plus de Encargada (compatibilidad)
-        case 34: // Plus de Encargada (ID real BD)
-            const tieneImporteEnc = novedad.valor_numerico && parseFloat(novedad.valor_numerico) > 0 ? '1' : '0';
-            
+        case 34: { // Plus de Encargada (SI/NO, sin importe)
+            const aplicaEnc = (novedad.aplica_plus !== null && novedad.aplica_plus !== undefined)
+                ? (novedad.aplica_plus == 1 || novedad.aplica_plus === true ? '1' : '0')
+                : '1';
             campos += `
                 <div class="col-md-6">
-                    <label for="edit-tiene-importe-enc" class="form-label">¿Tiene importe específico?</label>
-                    <select class="form-select" id="edit-tiene-importe-enc" required onchange="toggleImporteEdicion('enc')">
-                        <option value="1" ${tieneImporteEnc === '1' ? 'selected' : ''}>Sí</option>
-                        <option value="0" ${tieneImporteEnc === '0' ? 'selected' : ''}>No</option>
+                    <label for="edit-aplica-plus-enc" class="form-label">¿Aplica Plus de Encargada? <span class="text-danger">*</span></label>
+                    <select class="form-select" id="edit-aplica-plus-enc" required>
+                        <option value="1" ${aplicaEnc === '1' ? 'selected' : ''}>SI</option>
+                        <option value="0" ${aplicaEnc === '0' ? 'selected' : ''}>NO</option>
                     </select>
                 </div>
-                <div class="col-md-6" id="edit-campo-importe-enc" style="display: ${tieneImporteEnc === '1' ? 'block' : 'none'}">
-                    <label for="edit-importe-enc" class="form-label">Importe</label>
-                    <div class="input-group">
-                        <span class="input-group-text">$</span>
-                        <input type="number" class="form-control" id="edit-importe-enc" 
-                            value="${novedad.valor_numerico || ''}" step="0.01" min="0">
-                    </div>
-                </div>
             `;
             break;
+        }
 
         case 15: // Premio Local (compatibilidad)
-        case 35: // Premio Local (ID real BD)
-            // Determinar cuál opción debe estar seleccionada basado en campos booleanos
-            let aplicaSeleccionado = '';
-            const vendedora = novedad.aplica_vendedora === true || novedad.aplica_vendedora === 1 || novedad.aplica_vendedora === '1';
-            const subEncargada = novedad.aplica_sub_encargada === true || novedad.aplica_sub_encargada === 1 || novedad.aplica_sub_encargada === '1';
-            
-            if (vendedora) {
-                aplicaSeleccionado = 'vendedora';
-            } else if (subEncargada) {
-                aplicaSeleccionado = 'sub_encargada';
+        case 35: { // Premio Local (escala global o rol empleado)
+            const esGlobal = (novedad.es_global == 1 || novedad.es_global === true || (Array.isArray(novedad.premio_local_escala) && novedad.premio_local_escala.length > 0));
+            if (esGlobal) {
+                const mapEsc = {};
+                (novedad.premio_local_escala || []).forEach(r => { mapEsc[r.nivel_codigo] = r; });
+                const r1 = mapEsc['PRIMER_RANKING'] || {};
+                const r2 = mapEsc['CUMPLE_OBJETIVO'] || {};
+                const r3 = mapEsc['PRIMER_NO_LLEGA'] || {};
+                campos += `
+                    <input type="hidden" id="edit-premio-es-global" value="1">
+                    <div class="col-12">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Clase de Premio (Todos los locales)</th>
+                                        <th>Encargada / Sub</th>
+                                        <th>Vendedora</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>1ro en el ranking</td>
+                                        <td><input type="number" class="form-control form-control-sm" id="edit-premio-1ro-enc" value="${r1.importe_enc_sub || ''}" step="0.01" min="0.01" required></td>
+                                        <td><input type="number" class="form-control form-control-sm" id="edit-premio-1ro-vend" value="${r1.importe_vend || ''}" step="0.01" min="0.01" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Cumple con el objetivo</td>
+                                        <td><input type="number" class="form-control form-control-sm" id="edit-premio-cumple-enc" value="${r2.importe_enc_sub || ''}" step="0.01" min="0.01" required></td>
+                                        <td><input type="number" class="form-control form-control-sm" id="edit-premio-cumple-vend" value="${r2.importe_vend || ''}" step="0.01" min="0.01" required></td>
+                                    </tr>
+                                    <tr>
+                                        <td>1ro que NO llegó al objetivo</td>
+                                        <td><input type="number" class="form-control form-control-sm" id="edit-premio-nollega-enc" value="${r3.importe_enc_sub || ''}" step="0.01" min="0.01" required></td>
+                                        <td><input type="number" class="form-control form-control-sm" id="edit-premio-nollega-vend" value="${r3.importe_vend || ''}" step="0.01" min="0.01" required></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            } else {
+                const vendedora = novedad.aplica_vendedora == 1 || novedad.aplica_vendedora === true;
+                const encargada = novedad.aplica_encargada == 1 || novedad.aplica_encargada === true;
+                const subEncargada = novedad.aplica_sub_encargada == 1 || novedad.aplica_sub_encargada === true;
+                let aplicaSel = vendedora ? 'vendedora' : (encargada ? 'encargada' : (subEncargada ? 'sub_encargada' : ''));
+                campos += `
+                    <input type="hidden" id="edit-premio-es-global" value="0">
+                    <div class="col-md-6">
+                        <label class="form-label">Aplica a</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" id="edit-aplica-vendedora" name="edit-aplica-a" value="vendedora" ${aplicaSel === 'vendedora' ? 'checked' : ''}>
+                            <label class="form-check-label" for="edit-aplica-vendedora">Vendedora</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" id="edit-aplica-encargada" name="edit-aplica-a" value="encargada" ${aplicaSel === 'encargada' || aplicaSel === 'sub_encargada' ? 'checked' : ''}>
+                            <label class="form-check-label" for="edit-aplica-encargada">Encargada</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="edit-importe-premio-local" class="form-label">Importe (opcional)</label>
+                        <input type="number" class="form-control" id="edit-importe-premio-local" value="${novedad.valor_numerico || ''}" step="0.01" min="0">
+                    </div>
+                `;
             }
-            
-            campos += `
-                <div class="col-md-4">
-                    <label for="edit-importe-premio-local" class="form-label">Importe del Premio</label>
-                    <div class="input-group">
-                        <span class="input-group-text">$</span>
-                        <input type="number" class="form-control" id="edit-importe-premio-local" 
-                            value="${novedad.valor_numerico || ''}" step="0.01" min="0" required>
-                    </div>
-                </div>
-                <div class="col-md-8">
-                    <label class="form-label">Aplica a</label>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" id="edit-aplica-vendedora" 
-                            name="edit-aplica-a" value="vendedora" ${aplicaSeleccionado === 'vendedora' ? 'checked' : ''}>
-                        <label class="form-check-label" for="edit-aplica-vendedora">
-                            <i class="fas fa-user me-2"></i>Vendedora
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" id="edit-aplica-sub-encargada" 
-                            name="edit-aplica-a" value="sub_encargada" ${aplicaSeleccionado === 'sub_encargada' ? 'checked' : ''}>
-                        <label class="form-check-label" for="edit-aplica-sub-encargada">
-                            <i class="fas fa-user-tie me-2"></i>Sub-Encargada
-                        </label>
-                    </div>
-                </div>
-            `;
             break;
+        }
 
         case 16: // Comisión Individual (compatibilidad)
-        case 36: // Comisión Individual (ID real BD)
-            // COMISIÓN INDIVIDUAL: Solo un porcentaje simple
-            const porcentajeIndividualEdit = novedad.porcentaje_1 ? parseFloat(novedad.porcentaje_1) : 0;
-            console.log('🔍 Generando campos para Comisión Individual - porcentaje:', porcentajeIndividualEdit);
-            
-            campos += `
-                <div class="col-md-6">
-                    <label for="edit_porcentaje_individual" class="form-label">Porcentaje Individual</label>
-                    <div class="input-group">
-                        <input type="number" class="form-control" id="edit_porcentaje_individual" 
-                            value="${porcentajeIndividualEdit}" step="0.01" min="0.01" max="100" required>
-                        <span class="input-group-text">%</span>
+        case 36: { // Comisión Individual (multi-sucursal o porcentaje simple)
+            if (Array.isArray(novedad.comision_sucursales) && novedad.comision_sucursales.length > 0) {
+                let filasHtml = '';
+                novedad.comision_sucursales.forEach(s => {
+                    const p1 = (parseFloat(s.porcentaje_1 || 0) * 100).toFixed(2);
+                    const tope = Boolean(s.tiene_tope == 1 || s.tiene_tope === true);
+                    const p2 = tope && s.porcentaje_2 ? (parseFloat(s.porcentaje_2) * 100).toFixed(2) : '';
+                    filasHtml += `
+                        <tr data-nro-sucursal="${s.nro_sucursal}" data-nombre-sucursal="${s.nombre_sucursal}">
+                            <td class="align-middle fw-semibold">${s.nombre_sucursal} (${s.nro_sucursal})</td>
+                            <td><input type="number" class="form-control form-control-sm edit-com-pct1" value="${p1}" step="0.01" min="0.01" max="100" required></td>
+                            <td class="text-center align-middle"><input type="checkbox" class="form-check-input edit-com-tope-chk" ${tope ? 'checked' : ''} onchange="toggleEditTopeSucursal(this)"></td>
+                            <td><input type="number" class="form-control form-control-sm edit-com-pct2" value="${p2}" step="0.01" min="0.01" max="100" ${tope ? 'required' : 'disabled'}></td>
+                            <td class="text-center"><button type="button" class="btn btn-outline-danger btn-sm" onclick="this.closest('tr').remove()"><i class="fas fa-trash"></i></button></td>
+                        </tr>
+                    `;
+                });
+                campos += `
+                    <div class="col-md-6">
+                        <label for="edit_fecha_vigencia_comision_individual" class="form-label">Fecha Vigencia</label>
+                        <input type="text" class="form-control" id="edit_fecha_vigencia_comision_individual" value="${novedad.fecha_vigencia || ''}" placeholder="dd/mm/aaaa" required>
                     </div>
-                </div>
-                <div class="col-md-6">
-                    <label for="edit_fecha_vigencia_comision_individual" class="form-label">Fecha Vigencia</label>
-                    <input type="text" class="form-control" id="edit_fecha_vigencia_comision_individual" 
-                        value="${novedad.fecha_vigencia || ''}" 
-                        placeholder="dd/mm/aaaa" required>
-                    <small class="text-muted">Formato: dd/mm/aaaa</small>
-                </div>
-            `;
+                    <div class="col-12 mt-2">
+                        <div class="input-group input-group-sm mb-2">
+                            <select class="form-select" id="edit_comision_ind_suc_select"><option value="">Agregar sucursal PROPIOS...</option></select>
+                            <button type="button" class="btn btn-outline-primary" onclick="agregarSucursalComisionEdicion()"><i class="fas fa-plus me-1"></i>Agregar</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead class="table-light">
+                                    <tr><th>Sucursal</th><th>%</th><th>Tope</th><th>% Post-Tope</th><th>Quitar</th></tr>
+                                </thead>
+                                <tbody id="edit_tbody_comision_ind">${filasHtml}</tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                setTimeout(() => cargarSucursalesPropiosEdicion(), 100);
+            } else {
+                const porcentajeIndividualEdit = novedad.porcentaje_1 ? (parseFloat(novedad.porcentaje_1) * 100).toFixed(2) : 0;
+                campos += `
+                    <div class="col-md-6">
+                        <label for="edit_porcentaje_individual" class="form-label">Porcentaje Individual</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="edit_porcentaje_individual" 
+                                value="${porcentajeIndividualEdit}" step="0.01" min="0.01" max="100" required>
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="edit_fecha_vigencia_comision_individual" class="form-label">Fecha Vigencia</label>
+                        <input type="text" class="form-control" id="edit_fecha_vigencia_comision_individual" 
+                            value="${novedad.fecha_vigencia || ''}" placeholder="dd/mm/aaaa" required>
+                    </div>
+                `;
+            }
             break;
+        }
 
         case 17: // Comisión sobre Local (compatibilidad)
-        case 37: // Comisión sobre Local (ID real BD)
-            // COMISIÓN SOBRE LOCAL: Con estructura de tope
-            const tieneTopeLocalEdit = novedad.tiene_tope;
-            const porcentaje1Edit = novedad.porcentaje_1 ? parseFloat(novedad.porcentaje_1) : 0;
-            const porcentaje2Edit = novedad.porcentaje_2 ? parseFloat(novedad.porcentaje_2) : 0;
-            console.log('🔍 Generando campos para Comisión sobre Local - tiene_tope:', tieneTopeLocalEdit, 'p1:', porcentaje1Edit, 'p2:', porcentaje2Edit);
-            
+        case 37: { // Comisión sobre Local (ID real BD)
+            const tieneTopeLocalEdit = Boolean(novedad.tiene_tope);
+            const porcentaje1Edit = novedad.porcentaje_1 ? (parseFloat(novedad.porcentaje_1) * 100).toFixed(2) : '';
+            const porcentaje2Edit = novedad.porcentaje_2 ? (parseFloat(novedad.porcentaje_2) * 100).toFixed(2) : '';
+
             campos += `
                 <div class="col-md-4">
                     <label for="edit-tiene-tope-local" class="form-label">Estructura</label>
@@ -3364,37 +3368,31 @@ function generarCamposDinamicosEdicion(novedad) {
                 <div class="col-md-4">
                     <label for="edit_fecha_vigencia_comision_local" class="form-label">Fecha Vigencia</label>
                     <input type="text" class="form-control" id="edit_fecha_vigencia_comision_local" 
-                        value="${novedad.fecha_vigencia || ''}" 
-                        placeholder="dd/mm/aaaa" required>
-                    <small class="text-muted">Formato: dd/mm/aaaa</small>
+                        value="${novedad.fecha_vigencia || ''}" placeholder="dd/mm/aaaa" required>
                 </div>
-                
-                <!-- Campos para sin tope -->
                 <div class="col-md-4" id="edit-campos-sin-tope-local" style="display: ${!tieneTopeLocalEdit ? 'block' : 'none'}">
                     <label for="edit-porcentaje-unico-local" class="form-label">Porcentaje Único</label>
                     <div class="input-group">
                         <input type="number" class="form-control" id="edit-porcentaje-unico-local" 
-                            value="${!tieneTopeLocalEdit ? porcentaje1Edit : ''}" step="0.01" min="0.01" max="100">
+                            value="${!tieneTopeLocalEdit ? porcentaje1Edit : ''}" step="0.05" min="0.01" max="100">
                         <span class="input-group-text">%</span>
                     </div>
                 </div>
-                
-                <!-- Campos para con tope -->
                 <div class="col-md-8" id="edit-campos-con-tope-local" style="display: ${tieneTopeLocalEdit ? 'block' : 'none'}">
                     <div class="row">
                         <div class="col-md-6">
-                            <label for="edit-porcentaje-1-local" class="form-label">Primer Porcentaje</label>
+                            <label for="edit-porcentaje-1-local" class="form-label">Primer Porcentaje (guía: 0.30-1.00%)</label>
                             <div class="input-group">
                                 <input type="number" class="form-control" id="edit-porcentaje-1-local" 
-                                    value="${tieneTopeLocalEdit ? porcentaje1Edit : ''}" step="0.01" min="0.01" max="100">
+                                    value="${tieneTopeLocalEdit ? porcentaje1Edit : ''}" step="0.05" min="0.01" max="100">
                                 <span class="input-group-text">%</span>
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <label for="edit-porcentaje-2-local" class="form-label">Segundo Porcentaje</label>
+                            <label for="edit-porcentaje-2-local" class="form-label">Segundo Porcentaje (guía: 0.15-0.50%)</label>
                             <div class="input-group">
                                 <input type="number" class="form-control" id="edit-porcentaje-2-local" 
-                                    value="${tieneTopeLocalEdit ? porcentaje2Edit : ''}" step="0.01" min="0.01" max="100">
+                                    value="${tieneTopeLocalEdit ? porcentaje2Edit : ''}" step="0.05" min="0.01" max="100">
                                 <span class="input-group-text">%</span>
                             </div>
                         </div>
@@ -3402,20 +3400,33 @@ function generarCamposDinamicosEdicion(novedad) {
                 </div>
             `;
             break;
+        }
 
         case 18: // Premios - Ajuste General (compatibilidad)
-        case 38: // Premios - Ajuste General (ID real BD)
+        case 38: { // Premios - Ajuste General (importe no obligatorio)
+            const aplAjEdit = (novedad.aplica_plus !== null && novedad.aplica_plus !== undefined)
+                ? (novedad.aplica_plus == 1 || novedad.aplica_plus === true ? '1' : '0')
+                : '';
             campos += `
                 <div class="col-md-6">
-                    <label for="edit-importe-ajuste-general" class="form-label">Importe del Ajuste</label>
+                    <label for="edit-aplica-plus-ajuste" class="form-label">¿Aplica Ajuste? (si corresponde)</label>
+                    <select class="form-select" id="edit-aplica-plus-ajuste">
+                        <option value="" ${aplAjEdit === '' ? 'selected' : ''}>Sin especificar</option>
+                        <option value="1" ${aplAjEdit === '1' ? 'selected' : ''}>SI</option>
+                        <option value="0" ${aplAjEdit === '0' ? 'selected' : ''}>NO</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="edit-importe-ajuste-general" class="form-label">Importe del Ajuste (opcional)</label>
                     <div class="input-group">
                         <span class="input-group-text">$</span>
                         <input type="number" class="form-control" id="edit-importe-ajuste-general" 
-                            value="${novedad.valor_numerico || ''}" step="0.01" min="0" required>
+                            value="${novedad.valor_numerico || ''}" step="0.01" min="0" placeholder="Opcional">
                     </div>
                 </div>
             `;
             break;
+        }
 
         case 53: // Reemplazo - siempre temporario
             campos += `
@@ -3501,7 +3512,20 @@ function generarCamposDinamicosEdicion(novedad) {
             `;
             break;
 
-        case 54: // Aumento Salarial
+        case 54: // Aumento Salarial o Sueldo Básico (escala)
+            if (novedad.tipo_aumento === 'basico' || novedad.escala_sueldo_basico) {
+                const escBasico = novedad.escala_sueldo_basico || 'Vendedora';
+                campos += `
+                    <div class="col-md-6">
+                        <label for="edit-escala-sueldo-basico" class="form-label">Escala Sueldo Básico <span class="text-danger">*</span></label>
+                        <select class="form-select" id="edit-escala-sueldo-basico" required>
+                            <option value="Vendedora" ${escBasico === 'Vendedora' ? 'selected' : ''}>Vendedora</option>
+                            <option value="Encargada" ${escBasico === 'Encargada' ? 'selected' : ''}>Encargada</option>
+                        </select>
+                    </div>
+                `;
+                break;
+            }
             // Detectar tipo de aumento basándose en qué campo tiene valor
             const tienePorcentajeEdit = novedad.porcentaje_1 && parseFloat(novedad.porcentaje_1) > 0;
             const tipoAumentoEdit = tienePorcentajeEdit ? 'porcentaje' : 'monto';
@@ -3638,248 +3662,238 @@ async function guardarEdicionNovedad() {
             console.error('❌ No se encontró el campo edit-fecha-vigencia o está vacío');
         }
         
+        // Fecha de vigencia hasta (vencimiento opcional para tipos 1, 32, 33, 34)
+        if ([1, 32, 33, 34].includes(tipo)) {
+            const fhInput = document.getElementById('edit-fecha-vigencia-hasta-opc');
+            datos.fecha_vigencia_hasta = (fhInput && fhInput.value.trim()) ? convertirFechaParaBackend(fhInput.value.trim()) : null;
+        }
+
         // Campos específicos por tipo
         switch(tipo) {
             case 1: // Cambio de sucursal
                 const nuevaSucursal = document.getElementById('edit-nueva-sucursal');
                 if (nuevaSucursal && nuevaSucursal.value) {
                     datos.sucursal_nueva_id = nuevaSucursal.value;
-                    console.log(`🏢 Nueva sucursal capturada:`, nuevaSucursal.value);
-                } else {
-                    console.error('❌ No se pudo obtener el valor de la nueva sucursal');
                 }
                 break;
-                
+
             case 2: // Cambio de puesto
                 const puesto = document.getElementById('edit-puesto');
                 const puestoOriginal = document.getElementById('edit-puesto-original');
-                
                 if (puesto && puesto.value) {
                     datos.puesto = puesto.value;
-                    console.log(`👔 Puesto capturado desde select:`, puesto.value);
                 } else if (puestoOriginal && puestoOriginal.value) {
                     datos.puesto = puestoOriginal.value;
-                    console.log(`👔 Puesto capturado desde fallback:`, puestoOriginal.value);
-                } else {
-                    console.error('❌ No se pudo obtener el valor del puesto - verificar que el campo esté cargado');
                 }
-                
-                // Siempre permanente
+                const editConv = document.getElementById('edit-convenio');
+                if (editConv && editConv.value) {
+                    datos.convenio = editConv.value;
+                }
                 datos.tipo_nuevo_puesto = 'permanente';
                 datos.fecha_vigencia_hasta = null;
                 break;
-                
+
             case 3: // Nuevo salario
                 const nuevoSalario = document.getElementById('edit-nuevo-salario');
                 if (nuevoSalario) {
-                    datos.importe = nuevoSalario.value; // Backend espera 'importe'
-                    console.log(`💰 Nuevo salario capturado:`, nuevoSalario.value);
+                    datos.importe = nuevoSalario.value;
                 }
                 break;
-            case 4: // Ajuste premios
+            case 4: // Ajuste premios (importe no obligatorio)
                 const montoAjuste = document.getElementById('edit-monto-ajuste');
-                if (montoAjuste) {
-                    datos.importe = montoAjuste.value; // Backend espera 'importe'
-                    console.log(`🎯 Monto ajuste capturado:`, montoAjuste.value);
-                }
+                datos.importe = (montoAjuste && montoAjuste.value.trim() !== '') ? parseFloat(montoAjuste.value) : null;
                 break;
             case 5: // Horas extras
                 const cantidadHoras5 = document.getElementById('edit-cantidad-horas');
                 if (cantidadHoras5) {
                     datos.cantidad_horas = cantidadHoras5.value;
-                    console.log(`⏰ Cantidad horas extras capturada:`, cantidadHoras5.value);
                 }
                 break;
             case 6: // Horas adicionales
                 const cantidadHoras6 = document.getElementById('edit-cantidad-horas');
                 if (cantidadHoras6) {
                     datos.cantidad_horas = cantidadHoras6.value;
-                    console.log(`⏰ Cantidad horas adicionales capturada:`, cantidadHoras6.value);
                 }
                 break;
             case 7: // Permisos
-                datos.fecha_permiso = document.getElementById('edit-fecha-permiso').value;
+                datos.fecha_permiso = convertirFechaParaBackend(document.getElementById('edit-fecha-permiso')?.value || '');
                 const compensaRadio = document.querySelector('input[name="edit-compensa"]:checked');
                 datos.compensa = compensaRadio ? compensaRadio.value === '1' : false;
                 break;
             case 8: // Cortes
                 const cantidadCortesElement = document.getElementById('edit-cantidad-unidades');
                 if (cantidadCortesElement) {
-                    datos.cantidad_cortes = cantidadCortesElement.value; // Para cortes usar cantidad_cortes
-                    console.log(`🔢 Cantidad de cortes capturada:`, cantidadCortesElement.value);
-                } else {
-                    console.error('❌ No se encontró el elemento edit-cantidad-unidades para cortes');
+                    datos.cantidad_cortes = cantidadCortesElement.value;
                 }
                 break;
             case 9: case 10: case 11: // Producción
                 const cantidadUnidadesElement = document.getElementById('edit-cantidad-unidades');
                 if (cantidadUnidadesElement) {
-                    datos.cantidad_unidades = cantidadUnidadesElement.value; // Para producción usar cantidad_unidades
-                    console.log(`🔢 Cantidad de unidades capturada para tipo ${tipo}:`, cantidadUnidadesElement.value);
-                } else {
-                    console.error('❌ No se encontró el elemento edit-cantidad-unidades para producción');
+                    datos.cantidad_unidades = cantidadUnidadesElement.value;
                 }
                 break;
-            
+
             case 12: // Plus de caja (compatibilidad)
-            case 32: // Plus de caja (ID real BD)
-                datos.tipo_plus_caja = document.getElementById('edit-tipo-plus-caja')?.value;
-                const importePlusCaja = document.getElementById('edit-importe-plus-caja');
-                if (importePlusCaja && importePlusCaja.value) {
-                    datos.importe = parseFloat(importePlusCaja.value);
-                }
+            case 32: // Plus de caja (ID real BD, sin importe)
+                datos.tipo_plus_caja = document.getElementById('edit-tipo-plus-caja')?.value || '';
                 break;
 
             case 13: // Plus de Sub-Encargada (compatibilidad)
-            case 33: // Plus de Sub-Encargada (ID real BD)
-                datos.tiene_importe = document.getElementById('edit-tiene-importe-sub')?.value;
-                if (datos.tiene_importe === '1') {
-                    const importeSub = document.getElementById('edit-importe-sub');
-                    if (importeSub && importeSub.value) {
-                        datos.importe = parseFloat(importeSub.value);
-                    }
-                }
+            case 33: // Plus de Sub-Encargada (SI/NO, sin importe)
+                datos.aplica_plus = document.getElementById('edit-aplica-plus-sub')?.value;
                 break;
 
             case 14: // Plus de Encargada (compatibilidad)
-            case 34: // Plus de Encargada (ID real BD)
-                datos.tiene_importe = document.getElementById('edit-tiene-importe-enc')?.value;
-                if (datos.tiene_importe === '1') {
-                    const importeEnc = document.getElementById('edit-importe-enc');
-                    if (importeEnc && importeEnc.value) {
-                        datos.importe = parseFloat(importeEnc.value);
-                    }
-                }
+            case 34: // Plus de Encargada (SI/NO, sin importe)
+                datos.aplica_plus = document.getElementById('edit-aplica-plus-enc')?.value;
                 break;
 
             case 15: // Premio Local (compatibilidad)
-            case 35: // Premio Local (ID real BD)
-                const importePremioLocal = document.getElementById('edit-importe-premio-local');
-                if (importePremioLocal && importePremioLocal.value) {
-                    datos.importe = parseFloat(importePremioLocal.value);
-                }
-                // Obtener el valor del radio button seleccionado y convertir a campos booleanos
-                const aplicaRadio = document.querySelector('input[name="edit-aplica-a"]:checked');
-                if (aplicaRadio) {
-                    datos.aplica_vendedora = aplicaRadio.value === 'vendedora';
-                    datos.aplica_sub_encargada = aplicaRadio.value === 'sub_encargada';
+            case 35: { // Premio Local (escala global o rol empleado)
+                const editEsGlobal = document.getElementById('edit-premio-es-global')?.value === '1';
+                if (editEsGlobal) {
+                    datos.es_global = 1;
+                    datos.escala_premios = [
+                        {
+                            nivel_codigo: 'PRIMER_RANKING',
+                            importe_enc_sub: parseFloat(document.getElementById('edit-premio-1ro-enc')?.value || '0'),
+                            importe_vend: parseFloat(document.getElementById('edit-premio-1ro-vend')?.value || '0')
+                        },
+                        {
+                            nivel_codigo: 'CUMPLE_OBJETIVO',
+                            importe_enc_sub: parseFloat(document.getElementById('edit-premio-cumple-enc')?.value || '0'),
+                            importe_vend: parseFloat(document.getElementById('edit-premio-cumple-vend')?.value || '0')
+                        },
+                        {
+                            nivel_codigo: 'PRIMER_NO_LLEGA',
+                            importe_enc_sub: parseFloat(document.getElementById('edit-premio-nollega-enc')?.value || '0'),
+                            importe_vend: parseFloat(document.getElementById('edit-premio-nollega-vend')?.value || '0')
+                        }
+                    ];
+                } else {
+                    datos.es_global = 0;
+                    const aplicaRadio = document.querySelector('input[name="edit-aplica-a"]:checked');
+                    if (aplicaRadio) {
+                        datos.aplica_vendedora = aplicaRadio.value === 'vendedora';
+                        datos.aplica_encargada = aplicaRadio.value === 'encargada';
+                        datos.aplica_sub_encargada = aplicaRadio.value === 'sub_encargada';
+                    }
+                    const importePremioLocal = document.getElementById('edit-importe-premio-local');
+                    if (importePremioLocal && importePremioLocal.value) {
+                        datos.importe = parseFloat(importePremioLocal.value);
+                    }
                 }
                 break;
+            }
 
             case 16: // Comisión Individual (compatibilidad)
-            case 36: // Comisión Individual (ID real BD)
-                // COMISIÓN INDIVIDUAL: Solo un porcentaje simple
-                const porcentajeIndEdit = document.getElementById('edit_porcentaje_individual');
-                console.log('🔍 Debug Comisión Individual - elemento encontrado:', porcentajeIndEdit);
-                console.log('🔍 Debug Comisión Individual - valor:', porcentajeIndEdit ? porcentajeIndEdit.value : 'ELEMENTO NO ENCONTRADO');
-                
-                if (porcentajeIndEdit) {
-                    datos.porcentaje_individual = parseFloat(porcentajeIndEdit.value) || 0;
-                    console.log('✅ Porcentaje individual agregado:', datos.porcentaje_individual);
+            case 36: { // Comisión Individual
+                const tbodyEditCom = document.getElementById('edit_tbody_comision_ind');
+                if (tbodyEditCom) {
+                    const sucs = [];
+                    tbodyEditCom.querySelectorAll('tr[data-nro-sucursal]').forEach(tr => {
+                        const chk = tr.querySelector('.edit-com-tope-chk');
+                        const tope = chk && chk.checked ? 1 : 0;
+                        sucs.push({
+                            nro_sucursal: tr.getAttribute('data-nro-sucursal'),
+                            nombre_sucursal: tr.getAttribute('data-nombre-sucursal'),
+                            porcentaje_1: parseFloat(tr.querySelector('.edit-com-pct1')?.value || '0'),
+                            tiene_tope: tope,
+                            porcentaje_2: tope ? parseFloat(tr.querySelector('.edit-com-pct2')?.value || '0') : null
+                        });
+                    });
+                    datos.comision_sucursales = sucs;
                 } else {
-                    console.error('❌ Elemento edit_porcentaje_individual no encontrado en el DOM');
+                    const porcentajeIndEdit = document.getElementById('edit_porcentaje_individual');
+                    if (porcentajeIndEdit) {
+                        datos.porcentaje_individual = parseFloat(porcentajeIndEdit.value) || 0;
+                    }
                 }
-                
-                // Agregar fecha de vigencia específica para comisión individual
                 const fechaVigenciaComisionInd = document.getElementById('edit_fecha_vigencia_comision_individual');
                 if (fechaVigenciaComisionInd && fechaVigenciaComisionInd.value) {
                     datos.fecha_vigencia = convertirFechaParaBackend(fechaVigenciaComisionInd.value);
                 }
                 break;
+            }
 
             case 17: // Comisión sobre Local (compatibilidad)
-            case 37: // Comisión sobre Local (ID real BD)
-                // COMISIÓN SOBRE LOCAL: Con estructura de tope
+            case 37: { // Comisión sobre Local
                 const tieneTopeLocal = document.getElementById('edit-tiene-tope-local');
-                
                 if (tieneTopeLocal) {
                     datos.tiene_tope = tieneTopeLocal.value === '1';
-                    
                     if (datos.tiene_tope) {
-                        // Con tope: dos porcentajes
                         const p1 = document.getElementById('edit-porcentaje-1-local');
                         const p2 = document.getElementById('edit-porcentaje-2-local');
                         if (p1) datos.porcentaje_1 = parseFloat(p1.value) || 0;
                         if (p2) datos.porcentaje_2 = parseFloat(p2.value) || 0;
                     } else {
-                        // Sin tope: un porcentaje
                         const pUnico = document.getElementById('edit-porcentaje-unico-local');
                         if (pUnico) datos.porcentaje_unico = parseFloat(pUnico.value) || 0;
                     }
                 }
-                
-                // Agregar fecha de vigencia específica para comisión sobre local
                 const fechaVigenciaComisionLocal = document.getElementById('edit_fecha_vigencia_comision_local');
                 if (fechaVigenciaComisionLocal && fechaVigenciaComisionLocal.value) {
                     datos.fecha_vigencia = convertirFechaParaBackend(fechaVigenciaComisionLocal.value);
                 }
                 break;
+            }
 
             case 18: // Premios - Ajuste General (compatibilidad)
-            case 38: // Premios - Ajuste General (ID real BD)
-                const importeAjuste = document.getElementById('edit-importe-ajuste-general');
-                if (importeAjuste && importeAjuste.value) {
-                    datos.importe = parseFloat(importeAjuste.value);
+            case 38: { // Premios - Ajuste General (importe no obligatorio)
+                const aplAj = document.getElementById('edit-aplica-plus-ajuste');
+                if (aplAj && (aplAj.value === '1' || aplAj.value === '0')) {
+                    datos.aplica_plus = aplAj.value;
                 }
+                const importeAjuste = document.getElementById('edit-importe-ajuste-general');
+                datos.importe = (importeAjuste && importeAjuste.value.trim() !== '') ? parseFloat(importeAjuste.value) : null;
                 break;
+            }
 
             case 53: // Reemplazo
                 const puestoReemplazo = document.getElementById('edit-puesto-reemplazo');
                 if (puestoReemplazo && puestoReemplazo.value) {
                     datos.puesto = puestoReemplazo.value;
-                    console.log(`👔 Puesto de reemplazo capturado:`, puestoReemplazo.value);
                 }
-                
-                // IMPORTANTE: Capturar fecha de inicio de vigencia
                 const fechaVigenciaReemplazo = document.getElementById('edit-fecha-vigencia-reemplazo');
                 if (fechaVigenciaReemplazo && fechaVigenciaReemplazo.value) {
                     datos.fecha_vigencia = convertirFechaParaBackend(fechaVigenciaReemplazo.value);
-                    console.log(`📅 Fecha de inicio de reemplazo capturada:`, fechaVigenciaReemplazo.value, '→', datos.fecha_vigencia);
                 }
-                
-                // Siempre temporario
                 datos.tipo_reemplazo = 'temporario';
                 const fechaFinReemplazo = document.getElementById('edit-fecha-hasta-reemplazo');
                 if (fechaFinReemplazo && fechaFinReemplazo.value) {
                     datos.fecha_vigencia_hasta = convertirFechaParaBackend(fechaFinReemplazo.value);
-                    console.log(`📅 Fecha de fin de reemplazo capturada:`, fechaFinReemplazo.value, '→', datos.fecha_vigencia_hasta);
                 }
                 break;
 
-            case 55: // A prueba
+            case 55: // A prueba (solo históricos)
                 const puestoAPrueba = document.getElementById('edit-puesto-a-prueba');
                 if (puestoAPrueba && puestoAPrueba.value) {
                     datos.puesto = puestoAPrueba.value;
-                    console.log(`👔 Puesto de prueba capturado:`, puestoAPrueba.value);
                 }
-                
-                // IMPORTANTE: Capturar fecha de inicio de vigencia
                 const fechaVigenciaAPrueba = document.getElementById('edit-fecha-vigencia-a-prueba');
                 if (fechaVigenciaAPrueba && fechaVigenciaAPrueba.value) {
                     datos.fecha_vigencia = convertirFechaParaBackend(fechaVigenciaAPrueba.value);
-                    console.log(`📅 Fecha de inicio de a prueba capturada:`, fechaVigenciaAPrueba.value, '→', datos.fecha_vigencia);
                 }
-                
-                // Siempre temporario
                 datos.tipo_reemplazo = 'temporario';
                 const fechaFinAPrueba = document.getElementById('edit-fecha-hasta-a-prueba');
                 if (fechaFinAPrueba && fechaFinAPrueba.value) {
                     datos.fecha_vigencia_hasta = convertirFechaParaBackend(fechaFinAPrueba.value);
-                    console.log(`📅 Fecha de fin de a prueba capturada:`, fechaFinAPrueba.value, '→', datos.fecha_vigencia_hasta);
                 }
                 break;
 
-            case 54: // Aumento Salarial
-                // IMPORTANTE: Capturar fecha de vigencia
+            case 54: { // Aumento Salarial o Sueldo Básico (escala)
+                const escBasicoEl = document.getElementById('edit-escala-sueldo-basico');
+                if (escBasicoEl) {
+                    datos.tipo_aumento = 'basico';
+                    datos.escala_sueldo_basico = escBasicoEl.value;
+                    break;
+                }
                 const fechaVigenciaAumento = document.getElementById('edit-fecha-vigencia-aumento');
                 if (fechaVigenciaAumento && fechaVigenciaAumento.value) {
                     datos.fecha_vigencia = convertirFechaParaBackend(fechaVigenciaAumento.value);
-                    console.log(`📅 Fecha de vigencia de aumento capturada:`, fechaVigenciaAumento.value, '→', datos.fecha_vigencia);
                 }
-                
-                // Obtener tipo de aumento (porcentaje/monto)
                 const tipoAumentoRadios = document.getElementsByName('edit-tipo-aumento');
-                let tipoAumento = 'porcentaje'; // default
+                let tipoAumento = 'porcentaje';
                 for (let radio of tipoAumentoRadios) {
                     if (radio.checked) {
                         tipoAumento = radio.value;
@@ -3887,26 +3901,21 @@ async function guardarEdicionNovedad() {
                     }
                 }
                 datos.tipo_aumento = tipoAumento;
-                console.log(`💰 Tipo de aumento capturado:`, tipoAumento);
-                
-                // Recopilar valor según tipo
                 if (tipoAumento === 'porcentaje') {
                     const porcentajeAumento = document.getElementById('edit-porcentaje-aumento');
                     if (porcentajeAumento && porcentajeAumento.value) {
-                        // NO dividir por 100 aquí - el backend lo hará (enviar 21, no 0.21)
                         datos.porcentaje_1 = parseFloat(porcentajeAumento.value);
-                        datos.valor_numerico = null; // Limpiar monto
-                        console.log(`📊 Porcentaje de aumento capturado: ${datos.porcentaje_1}% (backend lo convertirá a decimal)`);
+                        datos.valor_numerico = null;
                     }
-                } else { // monto
+                } else {
                     const montoAumento = document.getElementById('edit-monto-aumento');
                     if (montoAumento && montoAumento.value) {
                         datos.valor_numerico = parseFloat(montoAumento.value);
-                        datos.porcentaje_1 = null; // Limpiar porcentaje
-                        console.log(`💵 Monto de aumento capturado:`, datos.valor_numerico);
+                        datos.porcentaje_1 = null;
                     }
                 }
                 break;
+            }
         }
         
         console.log('📋 Datos completos a enviar:', datos);
@@ -4000,11 +4009,50 @@ async function guardarEdicionNovedad() {
 }
 
 /**
+ * Parsear fecha en múltiples formatos (dd/mm/yyyy, yyyy-mm-dd, DateTime object SQL Server) a timestamp numérico
+ */
+function parseFechaOrdenamiento(fecha) {
+    if (!fecha) return null;
+
+    if (typeof fecha === 'object' && fecha.date) {
+        fecha = fecha.date;
+    }
+
+    const str = String(fecha).trim();
+    if (!str || str === '-' || str === 'N/A') return null;
+
+    // Formato dd/mm/yyyy (con o sin hora)
+    const matchDMY = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+    if (matchDMY) {
+        const dia = parseInt(matchDMY[1], 10);
+        const mes = parseInt(matchDMY[2], 10) - 1;
+        const anio = parseInt(matchDMY[3], 10);
+        const hh = matchDMY[4] ? parseInt(matchDMY[4], 10) : 0;
+        const mm = matchDMY[5] ? parseInt(matchDMY[5], 10) : 0;
+        const ss = matchDMY[6] ? parseInt(matchDMY[6], 10) : 0;
+        return new Date(anio, mes, dia, hh, mm, ss).getTime();
+    }
+
+    // Formato yyyy-mm-dd (con o sin hora)
+    const matchYMD = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T\s](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+    if (matchYMD) {
+        const anio = parseInt(matchYMD[1], 10);
+        const mes = parseInt(matchYMD[2], 10) - 1;
+        const dia = parseInt(matchYMD[3], 10);
+        const hh = matchYMD[4] ? parseInt(matchYMD[4], 10) : 0;
+        const mm = matchYMD[5] ? parseInt(matchYMD[5], 10) : 0;
+        const ss = matchYMD[6] ? parseInt(matchYMD[6], 10) : 0;
+        return new Date(anio, mes, dia, hh, mm, ss).getTime();
+    }
+
+    const parsed = Date.parse(str);
+    return isNaN(parsed) ? null : parsed;
+}
+
+/**
  * Ordenar datos por columna
  */
 function ordenarPor(columna) {
-    console.log(`🔄 Ordenando por columna: ${columna}`);
-    
     // Si es la misma columna, alternar dirección
     if (ordenActual.columna === columna) {
         ordenActual.direccion = ordenActual.direccion === 'asc' ? 'desc' : 'asc';
@@ -4012,143 +4060,143 @@ function ordenarPor(columna) {
         ordenActual.columna = columna;
         ordenActual.direccion = 'asc';
     }
-    
+
     // Actualizar indicadores visuales
     actualizarIndicadoresOrden();
-    
+
     // Aplicar ordenamiento a datos filtrados
-    let datosParaOrdenar = [...(window.datosFiltrados || novedadesData)]; // Crear copia
-    
+    let datosParaOrdenar = [...(window.datosFiltrados || novedadesData)];
+
     datosParaOrdenar.sort((a, b) => {
         let valorA, valorB;
         let esVacioA = false, esVacioB = false;
-        
-        switch(columna) {
+
+        switch (columna) {
+            case 'legajo': {
+                const esGlobalA = (a.es_global == 1 || a.es_global === true);
+                const esGlobalB = (b.es_global == 1 || b.es_global === true);
+                valorA = (!esGlobalA && a.legajo) ? parseInt(a.legajo, 10) : null;
+                valorB = (!esGlobalB && b.legajo) ? parseInt(b.legajo, 10) : null;
+                esVacioA = valorA === null || isNaN(valorA);
+                esVacioB = valorB === null || isNaN(valorB);
+                break;
+            }
+
             case 'empleado':
-                valorA = `${a.nombre || ''} ${a.apellido || ''}`.trim().toLowerCase();
-                valorB = `${b.nombre || ''} ${b.apellido || ''}`.trim().toLowerCase();
+                valorA = (a.es_global == 1 || a.es_global === true)
+                    ? 'todos los locales (global)'
+                    : `${a.nombre || ''} ${a.apellido || ''}`.trim().toLowerCase();
+                valorB = (b.es_global == 1 || b.es_global === true)
+                    ? 'todos los locales (global)'
+                    : `${b.nombre || ''} ${b.apellido || ''}`.trim().toLowerCase();
                 esVacioA = valorA === '';
                 esVacioB = valorB === '';
                 break;
-                
+
             case 'centro_costos':
-                valorA = a.descripcion_centro_costos?.toLowerCase() || '';
-                valorB = b.descripcion_centro_costos?.toLowerCase() || '';
-                esVacioA = !valorA || valorA === '';
-                esVacioB = !valorB || valorB === '';
-                // Si no hay descripcion_centro_costos, usar código como fallback
-                if (esVacioA) valorA = a.codigo_centro_costos ? `centro ${a.codigo_centro_costos}` : '';
-                if (esVacioB) valorB = b.codigo_centro_costos ? `centro ${b.codigo_centro_costos}` : '';
-                esVacioA = valorA === '';
-                esVacioB = valorB === '';
+                valorA = obtenerCentroCostosDisplay(a).toLowerCase();
+                valorB = obtenerCentroCostosDisplay(b).toLowerCase();
+                esVacioA = !valorA;
+                esVacioB = !valorB;
                 break;
-                
+
             case 'tipo':
-                valorA = a.tipo_descripcion?.toLowerCase() || '';
-                valorB = b.tipo_descripcion?.toLowerCase() || '';
+                valorA = (a.tipo_descripcion || '').toLowerCase();
+                valorB = (b.tipo_descripcion || '').toLowerCase();
                 esVacioA = valorA === '';
                 esVacioB = valorB === '';
                 break;
-                
-            case 'periodo':
-                // Ordenar por período (mes/año) - convertir a formato comparable
-                if (a.periodo_mes && a.periodo_anio) {
-                    valorA = a.periodo_anio * 100 + a.periodo_mes; // Ej: 2024*100 + 8 = 202548
-                } else {
-                    valorA = null;
-                }
-                
-                if (b.periodo_mes && b.periodo_anio) {
-                    valorB = b.periodo_anio * 100 + b.periodo_mes;
-                } else {
-                    valorB = null;
-                }
-                
+
+            case 'periodo': {
+                const mesA = parseInt(a.periodo_mes, 10);
+                const anioA = parseInt(a.periodo_anio, 10);
+                const mesB = parseInt(b.periodo_mes, 10);
+                const anioB = parseInt(b.periodo_anio, 10);
+                valorA = (!isNaN(mesA) && !isNaN(anioA)) ? (anioA * 100 + mesA) : null;
+                valorB = (!isNaN(mesB) && !isNaN(anioB)) ? (anioB * 100 + mesB) : null;
                 esVacioA = valorA === null;
                 esVacioB = valorB === null;
                 break;
-                
+            }
+
             case 'vigencia':
-                // Ordenar por fecha de vigencia
-                valorA = a.fecha_vigencia || null;
-                valorB = b.fecha_vigencia || null;
-                esVacioA = !valorA || valorA === null;
-                esVacioB = !valorB || valorB === null;
+                valorA = parseFechaOrdenamiento(a.fecha_vigencia);
+                valorB = parseFechaOrdenamiento(b.fecha_vigencia);
+                esVacioA = valorA === null;
+                esVacioB = valorB === null;
                 break;
-                
-            case 'valor':
-                // Ordenar por valor numérico
-                valorA = a.valor_numerico ? parseFloat(a.valor_numerico) : null;
-                valorB = b.valor_numerico ? parseFloat(b.valor_numerico) : null;
-                esVacioA = valorA === null || isNaN(valorA) || valorA === 0;
-                esVacioB = valorB === null || isNaN(valorB) || valorB === 0;
+
+            case 'vigencia_hasta':
+                valorA = parseFechaOrdenamiento(a.fecha_vigencia_hasta);
+                valorB = parseFechaOrdenamiento(b.fecha_vigencia_hasta);
+                esVacioA = valorA === null;
+                esVacioB = valorB === null;
                 break;
-                
+
+            case 'valor': {
+                const numA = a.valor_numerico !== null && a.valor_numerico !== undefined ? parseFloat(a.valor_numerico) : 0;
+                const numB = b.valor_numerico !== null && b.valor_numerico !== undefined ? parseFloat(b.valor_numerico) : 0;
+                if (numA !== 0 || numB !== 0) {
+                    valorA = numA;
+                    valorB = numB;
+                    esVacioA = numA === 0;
+                    esVacioB = numB === 0;
+                } else {
+                    valorA = obtenerValorDisplayTabla(a).toLowerCase();
+                    valorB = obtenerValorDisplayTabla(b).toLowerCase();
+                    esVacioA = valorA === '-' || valorA === '';
+                    esVacioB = valorB === '-' || valorB === '';
+                }
+                break;
+            }
+
             case 'fecha_registro':
-                // Ordenar por fecha de creación
-                valorA = a.fecha_creacion || null;
-                valorB = b.fecha_creacion || null;
-                esVacioA = !valorA || valorA === null;
-                esVacioB = !valorB || valorB === null;
+                valorA = parseFechaOrdenamiento(a.fecha_creacion);
+                valorB = parseFechaOrdenamiento(b.fecha_creacion);
+                esVacioA = valorA === null;
+                esVacioB = valorB === null;
                 break;
-                
+
             case 'estado':
-                // Ordenar por estado numérico usando estado_numero
-                valorA = parseInt(a.estado_numero) || parseInt(a.estado) || 1;
-                valorB = parseInt(b.estado_numero) || parseInt(b.estado) || 1;
+                valorA = parseInt(a.estado_numero || a.estado || 1, 10);
+                valorB = parseInt(b.estado_numero || b.estado || 1, 10);
                 esVacioA = !a.estado_numero && !a.estado;
                 esVacioB = !b.estado_numero && !b.estado;
                 break;
-                
+
             default:
                 return 0;
         }
-        
-        // Los valores vacíos/null siempre van al final
-        if (esVacioA && esVacioB) return 0; // Ambos vacíos, mantener orden
-        if (esVacioA) return 1;  // A vacío, va al final
-        if (esVacioB) return -1; // B vacío, va al final
-        
-        // Comparar valores no vacíos
+
+        // Los valores vacíos/null siempre van al final independientemente de asc/desc
+        if (esVacioA && esVacioB) return 0;
+        if (esVacioA) return 1;
+        if (esVacioB) return -1;
+
         let resultado = 0;
         if (typeof valorA === 'string' && typeof valorB === 'string') {
-            resultado = valorA.localeCompare(valorB);
+            resultado = valorA.localeCompare(valorB, 'es', { numeric: true });
         } else {
             resultado = valorA < valorB ? -1 : (valorA > valorB ? 1 : 0);
         }
-        
+
+        // Desempate determinístico por ID cuando coinciden en la misma fecha/valor
+        if (resultado === 0) {
+            const idA = parseInt(a.id || 0, 10);
+            const idB = parseInt(b.id || 0, 10);
+            resultado = idA - idB;
+        }
+
         return ordenActual.direccion === 'desc' ? -resultado : resultado;
     });
-    
+
     // Actualizar datos filtrados
     window.datosFiltrados = datosParaOrdenar;
-    
+
     // Resetear paginación y mostrar resultados
     paginaActual = 1;
     mostrarResultados(datosParaOrdenar);
     actualizarEstadisticasFiltros(datosParaOrdenar);
-    
-    console.log(`✅ Ordenamiento aplicado: ${columna} ${ordenActual.direccion}`);
-    
-    // Log para debugging de valores vacíos
-    const valoresVacios = datosParaOrdenar.filter(item => {
-        switch(columna) {
-            case 'empleado':
-                return !item.nombre || !item.apellido;
-            case 'periodo':
-                return !item.periodo_mes || !item.periodo_anio;
-            case 'vigencia':
-                return !item.fecha_vigencia;
-            case 'valor':
-                return !item.valor_numerico || parseFloat(item.valor_numerico) === 0;
-            default:
-                return false;
-        }
-    });
-    
-    if (valoresVacios.length > 0) {
-        console.log(`📝 ${valoresVacios.length} registros con valores vacíos movidos al final`);
-    }
 }
 
 /**
@@ -4708,11 +4756,9 @@ function toggleTipoAumentoEdicion() {
         // Mostrar campo monto, ocultar porcentaje
         if (campoMonto) {
             campoMonto.style.display = 'block';
-            console.log('✅ Campo monto edición mostrado');
         }
         if (campoPorcentaje) {
             campoPorcentaje.style.display = 'none';
-            console.log('🔒 Campo porcentaje edición ocultado');
         }
         if (inputMonto) {
             inputMonto.setAttribute('required', 'required');
@@ -4721,5 +4767,67 @@ function toggleTipoAumentoEdicion() {
             inputPorcentaje.removeAttribute('required');
             inputPorcentaje.value = '';
         }
+    }
+}
+
+/**
+ * Helpers para edición de Comisión Individual multi-sucursal (PROPIOS)
+ */
+async function cargarSucursalesPropiosEdicion() {
+    const sel = document.getElementById('edit_comision_ind_suc_select');
+    if (!sel) return;
+    try {
+        const sucs = await NovedadesApp.request('get_sucursales');
+        sel.innerHTML = '<option value="">Agregar sucursal PROPIOS...</option>';
+        (sucs || []).forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.numero;
+            opt.textContent = s.descripcion;
+            opt.setAttribute('data-nombre', s.nombre || s.descripcion);
+            sel.appendChild(opt);
+        });
+    } catch (e) {
+        console.error('Error cargando sucursales PROPIOS en edición:', e);
+    }
+}
+
+function agregarSucursalComisionEdicion() {
+    const sel = document.getElementById('edit_comision_ind_suc_select');
+    const tbody = document.getElementById('edit_tbody_comision_ind');
+    if (!sel || !tbody) return;
+    const nro = (sel.value || '').trim();
+    if (!nro) return;
+    if (tbody.querySelector(`tr[data-nro-sucursal="${CSS.escape(nro)}"]`)) {
+        NovedadesApp.mostrarError('Esa sucursal ya está en la lista');
+        return;
+    }
+    const opt = sel.options[sel.selectedIndex];
+    const nombre = opt ? (opt.getAttribute('data-nombre') || opt.textContent) : nro;
+    const tr = document.createElement('tr');
+    tr.setAttribute('data-nro-sucursal', nro);
+    tr.setAttribute('data-nombre-sucursal', nombre);
+    tr.innerHTML = `
+        <td class="align-middle fw-semibold">${nombre} (${nro})</td>
+        <td><input type="number" class="form-control form-control-sm edit-com-pct1" step="0.01" min="0.01" max="100" required></td>
+        <td class="text-center align-middle"><input type="checkbox" class="form-check-input edit-com-tope-chk" onchange="toggleEditTopeSucursal(this)"></td>
+        <td><input type="number" class="form-control form-control-sm edit-com-pct2" step="0.01" min="0.01" max="100" disabled></td>
+        <td class="text-center"><button type="button" class="btn btn-outline-danger btn-sm" onclick="this.closest('tr').remove()"><i class="fas fa-trash"></i></button></td>
+    `;
+    tbody.appendChild(tr);
+    sel.value = '';
+}
+
+function toggleEditTopeSucursal(chk) {
+    const tr = chk.closest('tr');
+    if (!tr) return;
+    const pct2 = tr.querySelector('.edit-com-pct2');
+    if (!pct2) return;
+    if (chk.checked) {
+        pct2.disabled = false;
+        pct2.required = true;
+    } else {
+        pct2.disabled = true;
+        pct2.required = false;
+        pct2.value = '';
     }
 }

@@ -274,6 +274,30 @@ try {
             }
             break;
 
+        case 'crear_novedades_lote':
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                handleError('Método no permitido');
+            }
+
+            try {
+                $inputData = file_get_contents('php://input');
+                $payload = json_decode($inputData, true);
+
+                if (!$payload || empty($payload['novedades']) || !is_array($payload['novedades'])) {
+                    handleError('Debe enviar un listado válido de novedades');
+                }
+
+                $resultado = $novedades->crearNovedadesLote($payload['novedades']);
+                if ($resultado['success']) {
+                    sendResponse(true, $resultado, 'Novedades registradas exitosamente');
+                } else {
+                    handleError($resultado['error']);
+                }
+            } catch (Exception $e) {
+                handleError('Error creando lote de novedades', $e);
+            }
+            break;
+
         case 'get_novedades':
             try {
                 $filtros = [

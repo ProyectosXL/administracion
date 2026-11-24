@@ -166,18 +166,21 @@ class Novedades {
     }
 
     /**
-     * Obtener información completa de un empleado
+     * Obtener información completa de un empleado (deduplicado por ingreso más reciente)
      */
     public function getEmpleadoInfo($legajo) {
         try {
-            $sql = "SELECT 
+            $sql = "SELECT TOP 1
                         e.NRO_LEGAJO as legajo,
-                        e.NOMBRE as nombre,
-                        e.APELLIDO as apellido,
+                        LTRIM(RTRIM(e.NOMBRE)) as nombre,
+                        LTRIM(RTRIM(e.APELLIDO)) as apellido,
                         e.COD_DEPARTAMENTO as codigo_centro_costos,
-                        e.DESC_DEPARTAMENTO as descripcion_centro_costos
+                        e.DESC_DEPARTAMENTO as descripcion_centro_costos,
+                        LTRIM(RTRIM(e.TAREA_HABITUAL)) as puesto_actual,
+                        e.FECHA_INGRESO as fecha_ingreso
                     FROM [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL e
-                    WHERE e.NRO_LEGAJO = ?";
+                    WHERE e.NRO_LEGAJO = ?
+                    ORDER BY CASE WHEN e.HABILITADO = 'S' THEN 0 ELSE 1 END, e.FECHA_INGRESO DESC";
             
             $result = $this->db->query($sql, [$legajo]);
             $empleado = $result->fetch();
@@ -188,11 +191,14 @@ class Novedades {
             
             // Obtener información de la sucursal
             try {
-                $sucursalInfo = $this->getSucursalPorCentroCostos($empleado['codigo_centro_costos']);
-                $empleado['sucursal_numero'] = $sucursalInfo['numero'] ?? null;
-                $empleado['sucursal'] = $sucursalInfo['descripcion'] ?? 'No especificado';
+                $sucursalDesc = $this->getSucursalPorCentroCostos($empleado['codigo_centro_costos']);
+                $numeroSucursal = null;
+                if (!empty($empleado['codigo_centro_costos']) && preg_match('/^LOC(\d+)$/i', trim($empleado['codigo_centro_costos']), $m)) {
+                    $numeroSucursal = (int)$m[1];
+                }
+                $empleado['sucursal_numero'] = $numeroSucursal;
+                $empleado['sucursal'] = $sucursalDesc ?: ($empleado['descripcion_centro_costos'] ?? 'No especificado');
             } catch (Exception $e) {
-                // Si no se puede obtener la sucursal, continuar sin ella
                 $empleado['sucursal_numero'] = null;
                 $empleado['sucursal'] = 'No especificado';
             }
@@ -205,24 +211,37 @@ class Novedades {
     }
 
     /**
-     * Obtener sucursal asociada a un centro de costos
+     * Obtener sucursal asociada a un centro de costos (sin depender del linked server TANGO-SUELDOS)
      */
     public function getSucursalPorCentroCostos($codigoCentroCostos) {
         try {
-            $sql = "SELECT DESC_SUCURSAL as descripcion 
-                    FROM RO_V_SUCURSALES_CON_CC 
-                    WHERE COD_DEPARTAMENTO = ?";
-            
-            $result = $this->db->query($sql, [$codigoCentroCostos]);
-            $sucursal = $result->fetch();
-            
-            if ($sucursal) {
-                return $sucursal['descripcion'];
+            if (empty($codigoCentroCostos)) {
+                return null;
             }
-            
+            $codigoCentroCostos = trim($codigoCentroCostos);
+
+            if (preg_match('/^LOC(\d+)$/i', $codigoCentroCostos, $m)) {
+                $nroSucursal = (int)$m[1];
+                $sql = "SELECT TOP 1 DESC_SUCURSAL as descripcion
+                        FROM [LAKERBIS].locales_lakers.dbo.SUCURSALES_LAKERS
+                        WHERE NRO_SUCURSAL = ? AND CANAL = 'PROPIOS'";
+                $row = $this->db->query($sql, [$nroSucursal])->fetch();
+                if ($row && !empty($row['descripcion'])) {
+                    return $row['descripcion'];
+                }
+            }
+
+            $sqlEmp = "SELECT TOP 1 DESC_DEPARTAMENTO as descripcion
+                       FROM [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL
+                       WHERE COD_DEPARTAMENTO = ? AND DESC_DEPARTAMENTO IS NOT NULL";
+            $rowEmp = $this->db->query($sqlEmp, [$codigoCentroCostos])->fetch();
+            if ($rowEmp && !empty($rowEmp['descripcion'])) {
+                return $rowEmp['descripcion'];
+            }
+
             return null;
         } catch (Exception $e) {
-            error_log("❌ Error obteniendo sucursal para centro de costos $codigoCentroCostos: " . $e->getMessage());
+            error_log("Error obteniendo sucursal para centro de costos $codigoCentroCostos: " . $e->getMessage());
             return null;
         }
     }
@@ -245,33 +264,50 @@ class Novedades {
     }
 
     /**
-     * Buscar empleados para Select2 (autocompletado)
+     * Buscar empleados para Select2 (deduplicado por legajo, tomando el ingreso más reciente)
      */
     public function buscarEmpleadosSelect2($termino = '', $limit = 10) {
-        $sql = "SELECT TOP {$limit} 
-                    NRO_LEGAJO as legajo, 
-                    NOMBRE as nombre, 
-                    APELLIDO as apellido,
-                    COD_DEPARTAMENTO as cod_centro_costos,
-                    DESC_DEPARTAMENTO as desc_centro_costos,
-                    CONCAT(NOMBRE, ' ', APELLIDO, ' (', NRO_LEGAJO, ')') as texto_completo
-                FROM [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL 
-                WHERE 1=1 AND HABILITADO = 'S'";
+        $limit = max(1, (int)$limit);
+        $sql = "WITH EmpleadosDeduplicados AS (
+                    SELECT
+                        NRO_LEGAJO as legajo,
+                        LTRIM(RTRIM(NOMBRE)) as nombre,
+                        LTRIM(RTRIM(APELLIDO)) as apellido,
+                        COD_DEPARTAMENTO as cod_centro_costos,
+                        DESC_DEPARTAMENTO as desc_centro_costos,
+                        LTRIM(RTRIM(TAREA_HABITUAL)) as puesto_actual,
+                        FECHA_INGRESO as fecha_ingreso,
+                        ROW_NUMBER() OVER (PARTITION BY NRO_LEGAJO ORDER BY FECHA_INGRESO DESC) as rn
+                    FROM [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL
+                    WHERE HABILITADO = 'S'
+                )
+                SELECT TOP {$limit}
+                    legajo,
+                    nombre,
+                    apellido,
+                    cod_centro_costos,
+                    desc_centro_costos,
+                    puesto_actual,
+                    fecha_ingreso,
+                    CONCAT(nombre, ' ', apellido, ' (', legajo, ')') as texto_completo
+                FROM EmpleadosDeduplicados
+                WHERE rn = 1";
         
         $params = [];
         
         if (!empty($termino)) {
             $sql .= " AND (
-                        CONCAT(NOMBRE, ' ', APELLIDO) LIKE ? 
-                        OR CAST(NRO_LEGAJO AS VARCHAR) LIKE ?
-                        OR NOMBRE LIKE ?
-                        OR APELLIDO LIKE ?
+                        CONCAT(nombre, ' ', apellido) LIKE ? 
+                        OR CONCAT(apellido, ' ', nombre) LIKE ?
+                        OR CAST(legajo AS VARCHAR) LIKE ?
+                        OR nombre LIKE ?
+                        OR apellido LIKE ?
                       )";
             $terminoBusqueda = "%{$termino}%";
-            $params = [$terminoBusqueda, $terminoBusqueda, $terminoBusqueda, $terminoBusqueda];
+            $params = [$terminoBusqueda, $terminoBusqueda, $terminoBusqueda, $terminoBusqueda, $terminoBusqueda];
         }
         
-        $sql .= " ORDER BY NOMBRE, APELLIDO";
+        $sql .= " ORDER BY nombre, apellido";
         
         $stmt = $this->db->query($sql, $params);
         $empleados = $stmt->fetchAll();
@@ -279,6 +315,10 @@ class Novedades {
         // Formatear para Select2
         $resultado = [];
         foreach ($empleados as $empleado) {
+            $sucursalNumero = null;
+            if (!empty($empleado['cod_centro_costos']) && preg_match('/^LOC(\d+)$/i', trim($empleado['cod_centro_costos']), $m)) {
+                $sucursalNumero = (int)$m[1];
+            }
             $resultado[] = [
                 'id' => $empleado['legajo'],
                 'text' => $empleado['texto_completo'],
@@ -286,17 +326,28 @@ class Novedades {
                 'nombre' => $empleado['nombre'],
                 'apellido' => $empleado['apellido'],
                 'cod_centro_costos' => $empleado['cod_centro_costos'],
-                'desc_centro_costos' => $empleado['desc_centro_costos']
+                'desc_centro_costos' => $empleado['desc_centro_costos'],
+                'puesto_actual' => $empleado['puesto_actual'] ?? '',
+                'sucursal_numero' => $sucursalNumero,
+                'fecha_ingreso' => $this->formatearFecha($empleado['fecha_ingreso'] ?? null)
             ];
         }
         
         return $resultado;
     }
+
     public function buscarEmpleado($legajo) {
-        $sql = "SELECT NRO_LEGAJO as legajo, NOMBRE as nombre, APELLIDO as apellido, TAREA_HABITUAL as puesto_actual,
-                       COD_DEPARTAMENTO as cod_centro_costos, DESC_DEPARTAMENTO as desc_centro_costos
+        $sql = "SELECT TOP 1
+                       NRO_LEGAJO as legajo,
+                       LTRIM(RTRIM(NOMBRE)) as nombre,
+                       LTRIM(RTRIM(APELLIDO)) as apellido,
+                       LTRIM(RTRIM(TAREA_HABITUAL)) as puesto_actual,
+                       COD_DEPARTAMENTO as cod_centro_costos,
+                       DESC_DEPARTAMENTO as desc_centro_costos,
+                       FECHA_INGRESO as fecha_ingreso
                 FROM [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL 
-                WHERE NRO_LEGAJO = ? AND HABILITADO = 'S'";
+                WHERE NRO_LEGAJO = ? AND HABILITADO = 'S'
+                ORDER BY FECHA_INGRESO DESC";
         $stmt = $this->db->query($sql, [$legajo]);
         return $stmt->fetch();
     }
@@ -417,10 +468,16 @@ class Novedades {
     }
 
     /**
-     * Obtener puestos disponibles
+     * Obtener puestos disponibles directamente desde TAREA_HABITUAL en Tango Sueldos
+     * Unifica la fuente entre modo único, modo múltiple y edición (ej. "SUB ENCARGADA")
      */
     public function getPuestosDisponibles() {
-        $sql = "SELECT * FROM puestos_disponibles WHERE activo = 1 ORDER BY nombre_puesto";
+        $sql = "SELECT DISTINCT LTRIM(RTRIM(TAREA_HABITUAL)) as nombre_puesto
+                FROM [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL
+                WHERE HABILITADO = 'S'
+                  AND TAREA_HABITUAL IS NOT NULL
+                  AND LTRIM(RTRIM(TAREA_HABITUAL)) != ''
+                ORDER BY nombre_puesto";
         $stmt = $this->db->query($sql);
         return $stmt->fetchAll();
     }
@@ -428,9 +485,10 @@ class Novedades {
     /**
      * Buscar puestos desde TAREA_HABITUAL para Select2
      */
-    public function buscarPuestosSelect2($termino = '', $limit = 20) {
+    public function buscarPuestosSelect2($termino = '', $limit = 50) {
+        $limit = max(1, (int)$limit);
         $sql = "SELECT DISTINCT TOP {$limit} 
-                    TAREA_HABITUAL as puesto
+                    LTRIM(RTRIM(TAREA_HABITUAL)) as puesto
                 FROM [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL 
                 WHERE HABILITADO = 'S' 
                 AND TAREA_HABITUAL IS NOT NULL 
@@ -439,11 +497,11 @@ class Novedades {
         $params = [];
         
         if (!empty($termino)) {
-            $sql .= " AND TAREA_HABITUAL LIKE ?";
+            $sql .= " AND LTRIM(RTRIM(TAREA_HABITUAL)) LIKE ?";
             $params = ["%{$termino}%"];
         }
         
-        $sql .= " ORDER BY TAREA_HABITUAL";
+        $sql .= " ORDER BY LTRIM(RTRIM(TAREA_HABITUAL))";
         
         $stmt = $this->db->query($sql, $params);
         $puestos = $stmt->fetchAll();
@@ -451,10 +509,11 @@ class Novedades {
         // Formatear para Select2
         $resultado = [];
         foreach ($puestos as $puesto) {
-            if (!empty(trim($puesto['puesto']))) {
+            $nombre = trim($puesto['puesto']);
+            if (!empty($nombre)) {
                 $resultado[] = [
-                    'id' => trim($puesto['puesto']),
-                    'text' => trim($puesto['puesto'])
+                    'id' => $nombre,
+                    'text' => $nombre
                 ];
             }
         }
@@ -501,27 +560,8 @@ class Novedades {
      * Verificar y agregar tipos de novedad faltantes
      */
     private function verificarYAgregarTiposFaltantes() {
-        // Tipos que podrían faltar (IDs 12-18)
-        $tiposFaltantes = [
-            ['PLUS_CAJA', 'Plus de caja', 1, 1, 0, 1],
-            ['PREMIO_LOCAL', 'Premio Local', 1, 1, 0, 1],
-            ['COMISION_INDIVIDUAL', 'Comisión Individual', 1, 1, 0, 1],
-            ['COMISION_LOCAL', 'Comisión sobre Local', 1, 1, 0, 1]
-        ];
-
-        foreach ($tiposFaltantes as $tipo) {
-            // Verificar si el tipo ya existe
-            $checkSql = "SELECT COUNT(*) as count FROM tipos_novedad WHERE codigo = ?";
-            $result = $this->db->query($checkSql, [$tipo[0]]);
-            $row = $result->fetch();
-
-            if ($row['count'] == 0) {
-                // Insertar el tipo faltante
-                $sql = "INSERT INTO tipos_novedad (codigo, descripcion, user_adm, user_com, user_prod, user_rrhh) VALUES (?, ?, ?, ?, ?, ?)";
-                $this->db->query($sql, $tipo);
-                error_log("Tipo de novedad agregado: " . $tipo[1]);
-            }
-        }
+        // Los tipos activos se administran desde Gestión de Tipos / migraciones SQL.
+        return;
     }
     private function agregarColumnaUserRRHH() {
         try {
@@ -1184,19 +1224,22 @@ class Novedades {
         try {
             $periodo = $this->getPeriodoActual();
             $tipoUsuario = Usuario::getTipoUsuario();
+            $empSubquery = $this->getSubqueryEmpleadosUnicos('rle');
             
             // Si es usuario RRHH, puede ver todas las novedades
             if ($tipoUsuario == Usuario::TIPO_RRHH) {
                 $sql = "SELECT n.id, n.legajo, n.tipo_novedad, n.valor_numerico, 
                                n.puesto, n.fecha_vigencia, n.fecha_vigencia_hasta, n.fecha_permiso, n.compensa, 
                                n.observaciones, n.fecha_creacion, n.fecha_modificacion, n.tipo_nuevo_puesto,
-                               n.periodo_mes, n.periodo_anio, n.estado,
+                               n.periodo_mes, n.periodo_anio, n.estado, n.es_global,
                                tn.descripcion as tipo_descripcion, 
-                               rle.NOMBRE, rle.APELLIDO,
-                               rle.COD_DEPARTAMENTO as codigo_centro_costos, rle.DESC_DEPARTAMENTO as descripcion_centro_costos
+                               CASE WHEN n.es_global = 1 THEN 'TODOS LOS LOCALES' ELSE COALESCE(rle.NOMBRE, n.nombre) END as NOMBRE,
+                               CASE WHEN n.es_global = 1 THEN '' ELSE COALESCE(rle.APELLIDO, n.apellido) END as APELLIDO,
+                               CASE WHEN n.es_global = 1 THEN 'TODOS' ELSE COALESCE(rle.COD_DEPARTAMENTO, n.centro_costos) END as codigo_centro_costos,
+                               CASE WHEN n.es_global = 1 THEN 'Todos los locales' ELSE rle.DESC_DEPARTAMENTO END as descripcion_centro_costos
                         FROM novedades n 
                         INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
-                        LEFT JOIN [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
+                        LEFT JOIN {$empSubquery} ON n.legajo = rle.NRO_LEGAJO AND rle.rn = 1 AND ISNULL(n.es_global, 0) = 0
                         WHERE n.periodo_mes = ? AND n.periodo_anio = ?";
             } else {
                 // Para otros tipos de usuario, aplicar filtro específico dinámicamente
@@ -1205,13 +1248,15 @@ class Novedades {
                 $sql = "SELECT n.id, n.legajo, n.tipo_novedad, n.valor_numerico, 
                                n.puesto, n.fecha_vigencia, n.fecha_vigencia_hasta, n.fecha_permiso, n.compensa, 
                                n.observaciones, n.fecha_creacion, n.fecha_modificacion, n.tipo_nuevo_puesto,
-                               n.periodo_mes, n.periodo_anio, n.estado,
+                               n.periodo_mes, n.periodo_anio, n.estado, n.es_global,
                                tn.descripcion as tipo_descripcion, 
-                               rle.NOMBRE, rle.APELLIDO,
-                               rle.COD_DEPARTAMENTO as codigo_centro_costos, rle.DESC_DEPARTAMENTO as descripcion_centro_costos
+                               CASE WHEN n.es_global = 1 THEN 'TODOS LOS LOCALES' ELSE COALESCE(rle.NOMBRE, n.nombre) END as NOMBRE,
+                               CASE WHEN n.es_global = 1 THEN '' ELSE COALESCE(rle.APELLIDO, n.apellido) END as APELLIDO,
+                               CASE WHEN n.es_global = 1 THEN 'TODOS' ELSE COALESCE(rle.COD_DEPARTAMENTO, n.centro_costos) END as codigo_centro_costos,
+                               CASE WHEN n.es_global = 1 THEN 'Todos los locales' ELSE rle.DESC_DEPARTAMENTO END as descripcion_centro_costos
                         FROM novedades n 
                         INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
-                        LEFT JOIN [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
+                        LEFT JOIN {$empSubquery} ON n.legajo = rle.NRO_LEGAJO AND rle.rn = 1 AND ISNULL(n.es_global, 0) = 0
                         WHERE n.periodo_mes = ? AND n.periodo_anio = ? AND tn.$campoPermiso = 1";
             }
             
@@ -1396,45 +1441,109 @@ class Novedades {
     }
 
     /**
+     * Subconsulta SQL deduplicada de empleados por NRO_LEGAJO (prioriza activo y último ingreso)
+     */
+    private function getSubqueryEmpleadosUnicos($alias = 'rle') {
+        return "(
+            SELECT NRO_LEGAJO,
+                   LTRIM(RTRIM(NOMBRE)) COLLATE DATABASE_DEFAULT AS NOMBRE,
+                   LTRIM(RTRIM(APELLIDO)) COLLATE DATABASE_DEFAULT AS APELLIDO,
+                   COD_DEPARTAMENTO COLLATE DATABASE_DEFAULT AS COD_DEPARTAMENTO,
+                   DESC_DEPARTAMENTO COLLATE DATABASE_DEFAULT AS DESC_DEPARTAMENTO,
+                   LTRIM(RTRIM(TAREA_HABITUAL)) COLLATE DATABASE_DEFAULT AS TAREA_HABITUAL,
+                   FECHA_INGRESO, HABILITADO,
+                   ROW_NUMBER() OVER (
+                       PARTITION BY NRO_LEGAJO
+                       ORDER BY CASE WHEN HABILITADO = 'S' THEN 0 ELSE 1 END, FECHA_INGRESO DESC
+                   ) AS rn
+            FROM [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL
+        ) {$alias}";
+    }
+
+    /**
+     * Obtener sucursales de comisión individual agrupadas por novedad_id
+     */
+    private function obtenerMapaComisionSucursales($novedadIds) {
+        if (empty($novedadIds)) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($novedadIds), '?'));
+        $sql = "SELECT id, novedad_id, nro_sucursal, nombre_sucursal, porcentaje_1, tiene_tope, porcentaje_2
+                FROM FP_NOVEDADES_COMISION_SUCURSALES
+                WHERE novedad_id IN ($placeholders)
+                ORDER BY nombre_sucursal";
+        $rows = $this->db->query($sql, array_values($novedadIds))->fetchAll();
+        $mapa = [];
+        foreach ($rows as $row) {
+            $nid = (int)$row['novedad_id'];
+            $row['porcentaje_1_pct'] = $row['porcentaje_1'] !== null ? round((float)$row['porcentaje_1'] * 100, 2) : null;
+            $row['porcentaje_2_pct'] = $row['porcentaje_2'] !== null ? round((float)$row['porcentaje_2'] * 100, 2) : null;
+            $row['tiene_tope'] = !empty($row['tiene_tope']) ? 1 : 0;
+            $mapa[$nid][] = $row;
+        }
+        return $mapa;
+    }
+
+    /**
+     * Obtener escalas de Premio Local agrupadas por novedad_id
+     */
+    private function obtenerMapaPremioLocalEscala($novedadIds) {
+        if (empty($novedadIds)) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($novedadIds), '?'));
+        $sql = "SELECT id, novedad_id, nivel_codigo, nivel_orden, nivel_descripcion, importe_enc_sub, importe_vend
+                FROM FP_NOVEDADES_PREMIO_LOCAL_ESCALA
+                WHERE novedad_id IN ($placeholders)
+                ORDER BY nivel_orden ASC";
+        $rows = $this->db->query($sql, array_values($novedadIds))->fetchAll();
+        $mapa = [];
+        foreach ($rows as $row) {
+            $nid = (int)$row['novedad_id'];
+            $mapa[$nid][] = $row;
+        }
+        return $mapa;
+    }
+
+    /**
      * Obtener TODAS las novedades sin filtro de período (para consulta general)
      */
     public function getAllNovedades($filtros = []) {
         try {
             $tipoUsuario = Usuario::getTipoUsuario();
+            $empSubquery = $this->getSubqueryEmpleadosUnicos('rle');
             
-            // Si es usuario RRHH, puede ver todas las novedades
+            $selectCols = "n.id, n.legajo, n.tipo_novedad, n.valor_numerico, 
+                           n.puesto, n.fecha_vigencia, n.fecha_vigencia_hasta, n.fecha_permiso, n.compensa, 
+                           n.observaciones, n.fecha_creacion, n.fecha_modificacion, n.tipo_nuevo_puesto,
+                           n.periodo_mes, n.periodo_anio, n.estado,
+                           n.tiene_tope, n.porcentaje_1, n.porcentaje_2, n.tipo_comision,
+                           n.aplica_vendedora, n.aplica_sub_encargada, n.aplica_encargada,
+                           n.es_global, n.lote_id, n.etapa_multiple, n.convenio, n.escala_sueldo_basico, n.aplica_plus,
+                           tn.descripcion as tipo_descripcion,
+                           CASE WHEN n.es_global = 1 THEN 'TODOS LOS LOCALES' ELSE COALESCE(rle.NOMBRE, n.nombre) END as nombre,
+                           CASE WHEN n.es_global = 1 THEN '' ELSE COALESCE(rle.APELLIDO, n.apellido) END as apellido,
+                           CASE WHEN n.es_global = 1 THEN 'TODOS' ELSE COALESCE(rle.COD_DEPARTAMENTO, n.centro_costos) END as codigo_centro_costos,
+                           CASE WHEN n.es_global = 1 THEN 'Todos los locales' ELSE rle.DESC_DEPARTAMENTO END as descripcion_centro_costos";
+
             if ($tipoUsuario == Usuario::TIPO_RRHH) {
-                $sql = "SELECT n.id, n.legajo, n.tipo_novedad, n.valor_numerico, 
-                               n.puesto, n.fecha_vigencia, n.fecha_vigencia_hasta, n.fecha_permiso, n.compensa, 
-                               n.observaciones, n.fecha_creacion, n.fecha_modificacion, n.tipo_nuevo_puesto,
-                               n.periodo_mes, n.periodo_anio, n.estado,
-                               tn.descripcion as tipo_descripcion, 
-                               rle.NOMBRE as nombre, rle.APELLIDO as apellido,
-                               rle.COD_DEPARTAMENTO as codigo_centro_costos, rle.DESC_DEPARTAMENTO as descripcion_centro_costos
+                $sql = "SELECT {$selectCols}
                         FROM novedades n 
                         INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
-                        LEFT JOIN [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
+                        LEFT JOIN {$empSubquery} ON n.legajo = rle.NRO_LEGAJO AND rle.rn = 1 AND ISNULL(n.es_global, 0) = 0
                         WHERE 1=1";
             } else {
-                // Para otros tipos de usuario, aplicar filtro específico dinámicamente
                 $campoPermiso = $this->getCampoPermisoUsuario($tipoUsuario);
                 
-                $sql = "SELECT n.id, n.legajo, n.tipo_novedad, n.valor_numerico, 
-                               n.puesto, n.fecha_vigencia, n.fecha_vigencia_hasta, n.fecha_permiso, n.compensa, 
-                               n.observaciones, n.fecha_creacion, n.fecha_modificacion, n.tipo_nuevo_puesto,
-                               n.periodo_mes, n.periodo_anio, n.estado,
-                               tn.descripcion as tipo_descripcion, 
-                               rle.NOMBRE as nombre, rle.APELLIDO as apellido,
-                               rle.COD_DEPARTAMENTO as codigo_centro_costos, rle.DESC_DEPARTAMENTO as descripcion_centro_costos
+                $sql = "SELECT {$selectCols}
                         FROM novedades n 
                         INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
-                        LEFT JOIN [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
+                        LEFT JOIN {$empSubquery} ON n.legajo = rle.NRO_LEGAJO AND rle.rn = 1 AND ISNULL(n.es_global, 0) = 0
                         WHERE tn.$campoPermiso = 1";
             }
             
             $params = [];
 
-            // Filtros adicionales para getAllNovedades
             if (!empty($filtros['legajo'])) {
                 $sql .= " AND n.legajo = ?";
                 $params[] = $filtros['legajo'];
@@ -1454,137 +1563,98 @@ class Novedades {
 
             $stmt = $this->db->query($sql, $params);
             $novedades = $stmt->fetchAll();
+
+            // Adjuntar detalles relacionados en batch (evita N+1)
+            $idsComision = [];
+            $idsPremio = [];
+            foreach ($novedades as $nov) {
+                if ((int)$nov['tipo_novedad'] === 36 || (int)$nov['tipo_novedad'] === 16) {
+                    $idsComision[] = (int)$nov['id'];
+                }
+                if (((int)$nov['tipo_novedad'] === 35 || (int)$nov['tipo_novedad'] === 15) && !empty($nov['es_global'])) {
+                    $idsPremio[] = (int)$nov['id'];
+                }
+            }
+            $mapaComisiones = $this->obtenerMapaComisionSucursales($idsComision);
+            $mapaPremios = $this->obtenerMapaPremioLocalEscala($idsPremio);
             
-            // Procesar los resultados igual que en getNovedadesPeriodoActual
             foreach ($novedades as &$novedad) {
+                $nid = (int)$novedad['id'];
+                $novedad['comision_sucursales'] = $mapaComisiones[$nid] ?? [];
+                $novedad['premio_local_escala'] = $mapaPremios[$nid] ?? [];
+
                 // Agregar display de centro de costos (abreviado)
-                $novedad['centro_costos_display'] = '';
-                if (!empty($novedad['descripcion_centro_costos'])) {
-                    // Usar función de abreviación
-                    $novedad['centro_costos_display'] = $this->abreviarCentroCostos(
-                        $novedad['descripcion_centro_costos'], 
-                        $novedad['codigo_centro_costos'] ?? ''
-                    );
-                } elseif (!empty($novedad['codigo_centro_costos'])) {
-                    $novedad['centro_costos_display'] = $novedad['codigo_centro_costos'];
+                if (!empty($novedad['es_global'])) {
+                    $novedad['centro_costos_display'] = 'Todos los locales';
+                } else {
+                    $novedad['centro_costos_display'] = '';
+                    if (!empty($novedad['descripcion_centro_costos'])) {
+                        $novedad['centro_costos_display'] = $this->abreviarCentroCostos(
+                            $novedad['descripcion_centro_costos'], 
+                            $novedad['codigo_centro_costos'] ?? ''
+                        );
+                    } elseif (!empty($novedad['codigo_centro_costos'])) {
+                        $novedad['centro_costos_display'] = $novedad['codigo_centro_costos'];
+                    }
                 }
                 
-                // Mantener compatibilidad con nombre_sucursal para el frontend
                 $novedad['nombre_sucursal'] = $novedad['centro_costos_display'];
+                $novedad['valor_display'] = $this->calcularValorDisplayNovedad($novedad);
                 
-                // Agregar valor display basado en tipo de novedad
-                $tipoNovedad = (int)$novedad['tipo_novedad'];
-                $valorNumerico = (float)$novedad['valor_numerico'];
-                
-                switch ($tipoNovedad) {
-                    case 1: // Cambio de centro de costos
-                        $novedad['valor_display'] = 'Cambio de centro de costos';
-                        break;
-                    case 2: // Nueva Posición
-                        $novedad['valor_display'] = !empty($novedad['puesto']) ? $novedad['puesto'] : 'Nueva Posición';
-                        break;
-                    case 3: // Nuevo salario neto
-                        $novedad['valor_display'] = $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2) : 'Ajuste salarial';
-                        break;
-                    case 4: // Ajuste de premios
-                        $novedad['valor_display'] = $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2) : 'Premio';
-                        break;
-                    case 5: // Horas extras
-                        $novedad['valor_display'] = $valorNumerico != 0 ? $valorNumerico . ' horas extras' : 'Horas extras';
-                        break;
-                    case 6: // Horas adicionales
-                        $novedad['valor_display'] = $valorNumerico != 0 ? $valorNumerico . ' horas adicionales' : 'Horas adicionales';
-                        break;
-                    case 7: // Permisos
-                        $novedad['valor_display'] = 'Permiso' . ($novedad['compensa'] ? ' (compensa)' : '');
-                        break;
-                    case 8: // Cortes
-                        $novedad['valor_display'] = $valorNumerico != 0 ? $valorNumerico . ' cortes' : 'Cortes';
-                        break;
-                    case 9: // Producción 25%
-                        $novedad['valor_display'] = $valorNumerico != 0 ? $valorNumerico . ' unidades (25%)' : 'Producción 25%';
-                        break;
-                    case 10: // Producción 50%
-                        $novedad['valor_display'] = $valorNumerico != 0 ? $valorNumerico . ' unidades (50%)' : 'Producción 50%';
-                        break;
-                    case 11: // Producción 100%
-                        $novedad['valor_display'] = $valorNumerico != 0 ? $valorNumerico . ' unidades (100%)' : 'Producción 100%';
-                        break;
-                    default:
-                        $novedad['valor_display'] = 'N/A';
-                        break;
-                }
-                
-                // Procesar fechas igual que en el método original
+                // Procesar fechas
                 $fechaRegistro = null;
                 $fechaVigencia = null;
                 $fechaVigenciaHasta = null;
                 
-                // Procesar fecha_creacion (registro)
                 if (!empty($novedad['fecha_creacion'])) {
                     try {
-                        if ($novedad['fecha_creacion'] instanceof DateTime) {
-                            $fechaRegistro = $novedad['fecha_creacion']->format('d/m/Y');
-                        } else {
-                            $fechaRegistro = date('d/m/Y', strtotime($novedad['fecha_creacion']));
-                        }
+                        $fechaRegistro = ($novedad['fecha_creacion'] instanceof DateTime)
+                            ? $novedad['fecha_creacion']->format('d/m/Y')
+                            : date('d/m/Y', strtotime($novedad['fecha_creacion']));
                     } catch (Exception $e) {
                         $fechaRegistro = 'Fecha inválida';
                     }
                 }
                 
-                // Procesar fecha_vigencia o fecha_permiso según corresponda
                 $fechaClave = null;
                 if (!empty($novedad['fecha_vigencia'])) {
                     try {
-                        if ($novedad['fecha_vigencia'] instanceof DateTime) {
-                            $fechaVigencia = $novedad['fecha_vigencia']->format('d/m/Y');
-                        } else {
-                            $fechaVigencia = date('d/m/Y', strtotime($novedad['fecha_vigencia']));
-                        }
-                        $novedad['fecha_vigencia'] = $fechaVigencia; // Sobrescribir con formato correcto
+                        $fechaVigencia = ($novedad['fecha_vigencia'] instanceof DateTime)
+                            ? $novedad['fecha_vigencia']->format('d/m/Y')
+                            : date('d/m/Y', strtotime($novedad['fecha_vigencia']));
+                        $novedad['fecha_vigencia'] = $fechaVigencia;
                         $fechaClave = $fechaVigencia;
                     } catch (Exception $e) {
                         $fechaVigencia = null;
                     }
                 } elseif (!empty($novedad['fecha_permiso'])) {
                     try {
-                        if ($novedad['fecha_permiso'] instanceof DateTime) {
-                            $fechaClave = $novedad['fecha_permiso']->format('d/m/Y');
-                            $novedad['fecha_permiso'] = $fechaClave;
-                        } else {
-                            $fechaClave = date('d/m/Y', strtotime($novedad['fecha_permiso']));
-                            $novedad['fecha_permiso'] = $fechaClave;
-                        }
+                        $fechaClave = ($novedad['fecha_permiso'] instanceof DateTime)
+                            ? $novedad['fecha_permiso']->format('d/m/Y')
+                            : date('d/m/Y', strtotime($novedad['fecha_permiso']));
+                        $novedad['fecha_permiso'] = $fechaClave;
                     } catch (Exception $e) {
                         $fechaClave = null;
                     }
                 }
                 
-                // Procesar fecha_vigencia_hasta
                 if (!empty($novedad['fecha_vigencia_hasta'])) {
                     try {
-                        if ($novedad['fecha_vigencia_hasta'] instanceof DateTime) {
-                            $fechaVigenciaHasta = $novedad['fecha_vigencia_hasta']->format('d/m/Y');
-                        } else {
-                            $fechaVigenciaHasta = date('d/m/Y', strtotime($novedad['fecha_vigencia_hasta']));
-                        }
-                        $novedad['fecha_vigencia_hasta'] = $fechaVigenciaHasta; // Sobrescribir con formato correcto
+                        $fechaVigenciaHasta = ($novedad['fecha_vigencia_hasta'] instanceof DateTime)
+                            ? $novedad['fecha_vigencia_hasta']->format('d/m/Y')
+                            : date('d/m/Y', strtotime($novedad['fecha_vigencia_hasta']));
+                        $novedad['fecha_vigencia_hasta'] = $fechaVigenciaHasta;
                     } catch (Exception $e) {
                         $fechaVigenciaHasta = null;
                     }
                 }
                 
-                // Procesar fecha_creacion y sobrescribir
                 if ($fechaRegistro) {
                     $novedad['fecha_creacion'] = $fechaRegistro;
                 }
                 
-                // Asignar fechas procesadas
                 $novedad['fecha_registro'] = $fechaRegistro ?: 'N/A';
                 $novedad['fecha_display'] = $fechaClave ?: $fechaRegistro ?: 'N/A';
-                
-                // Mapear estado string de BD a número para frontend
                 $novedad['estado_numero'] = $this->mapearEstadoANumero($novedad['estado']);
             }
             
@@ -1593,6 +1663,99 @@ class Novedades {
         } catch (Exception $e) {
             error_log("Error en getAllNovedades: " . $e->getMessage());
             throw $e;
+        }
+    }
+
+    /**
+     * Calcular el valor_display unificado para cualquier tipo de novedad
+     */
+    private function calcularValorDisplayNovedad($novedad) {
+        $tipoNovedad = (int)$novedad['tipo_novedad'];
+        $valorNumerico = $novedad['valor_numerico'] !== null ? (float)$novedad['valor_numerico'] : 0;
+
+        switch ($tipoNovedad) {
+            case 1:
+                return 'Cambio de sucursal';
+            case 2:
+                $puesto = !empty($novedad['puesto']) ? $novedad['puesto'] : 'Nueva Posición';
+                return !empty($novedad['convenio']) ? "{$puesto} ({$novedad['convenio']})" : $puesto;
+            case 3:
+                return $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2, ',', '.') : 'Ajuste salarial';
+            case 4:
+                return $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2, ',', '.') : 'A definir';
+            case 5:
+                return $valorNumerico != 0 ? $valorNumerico . ' horas extras' : 'Horas extras';
+            case 6:
+                return $valorNumerico != 0 ? $valorNumerico . ' horas adicionales' : 'Horas adicionales';
+            case 7:
+                return 'Permiso' . ($novedad['compensa'] ? ' (compensa)' : '');
+            case 12:
+            case 32:
+                if (preg_match('/Tipo:\s*([^-\n]+)/i', (string)$novedad['observaciones'], $m)) {
+                    return 'Tipo: ' . ucfirst(trim($m[1]));
+                }
+                return $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2, ',', '.') : 'Plus de caja';
+            case 13:
+            case 33:
+                if ($novedad['aplica_plus'] !== null) {
+                    return $novedad['aplica_plus'] ? 'SI' : 'NO';
+                }
+                return $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2, ',', '.') : 'SI';
+            case 14:
+            case 34:
+                if ($novedad['aplica_plus'] !== null) {
+                    return $novedad['aplica_plus'] ? 'SI' : 'NO';
+                }
+                return $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2, ',', '.') : 'SI';
+            case 15:
+            case 35:
+                if (!empty($novedad['es_global']) && !empty($novedad['premio_local_escala'])) {
+                    return 'Escala global (' . count($novedad['premio_local_escala']) . ' tramos)';
+                }
+                $aplica = [];
+                if (!empty($novedad['aplica_vendedora'])) $aplica[] = 'Vendedora';
+                if (!empty($novedad['aplica_encargada'])) $aplica[] = 'Encargada';
+                if (!empty($novedad['aplica_sub_encargada'])) $aplica[] = 'Sub-Encargada';
+                if (!empty($aplica)) {
+                    return 'Aplica: ' . implode(', ', $aplica);
+                }
+                return $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2, ',', '.') : 'Premio Local';
+            case 16:
+            case 36:
+                if (!empty($novedad['comision_sucursales'])) {
+                    $cnt = count($novedad['comision_sucursales']);
+                    return $cnt . ($cnt === 1 ? ' sucursal' : ' sucursales');
+                }
+                $p = $novedad['porcentaje_1'] ? number_format((float)$novedad['porcentaje_1'] * 100, 2) : '0';
+                return "Individual: {$p}%";
+            case 17:
+            case 37:
+                if (!empty($novedad['tiene_tope'])) {
+                    $p1 = $novedad['porcentaje_1'] ? number_format((float)$novedad['porcentaje_1'] * 100, 2) : '0';
+                    $p2 = $novedad['porcentaje_2'] ? number_format((float)$novedad['porcentaje_2'] * 100, 2) : '0';
+                    return "Con tope: {$p1}% / {$p2}%";
+                }
+                $p = $novedad['porcentaje_1'] ? number_format((float)$novedad['porcentaje_1'] * 100, 2) : '0';
+                return "Sin tope: {$p}%";
+            case 18:
+            case 38:
+                if ($novedad['aplica_plus'] !== null && $valorNumerico == 0) {
+                    return $novedad['aplica_plus'] ? 'SI' : 'NO';
+                }
+                return $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2, ',', '.') : 'A definir';
+            case 53:
+            case 55:
+                return !empty($novedad['puesto']) ? $novedad['puesto'] : 'N/A';
+            case 54:
+                if (!empty($novedad['escala_sueldo_basico'])) {
+                    return 'Sueldo básico: ' . $novedad['escala_sueldo_basico'];
+                }
+                if (!empty($novedad['porcentaje_1']) && (float)$novedad['porcentaje_1'] > 0) {
+                    return number_format((float)$novedad['porcentaje_1'] * 100, 2) . '%';
+                }
+                return $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2, ',', '.') : 'Aumento Salarial';
+            default:
+                return 'N/A';
         }
     }
     
@@ -1649,40 +1812,34 @@ class Novedades {
      */
     public function getNovedadById($id) {
         $tipoUsuario = Usuario::getTipoUsuario();
+        $empSubquery = $this->getSubqueryEmpleadosUnicos('emp');
         
-        // Si es usuario RRHH, puede ver cualquier novedad
+        $selectCols = "n.id, n.legajo, n.tipo_novedad, n.valor_numerico, 
+                       n.puesto, n.fecha_vigencia, n.fecha_vigencia_hasta, n.fecha_permiso, n.compensa, 
+                       n.observaciones, n.fecha_creacion, n.fecha_modificacion, n.tipo_nuevo_puesto,
+                       n.periodo_mes, n.periodo_anio, n.estado,
+                       n.tiene_tope, n.porcentaje_1, n.porcentaje_2, n.tipo_comision,
+                       n.aplica_vendedora, n.aplica_sub_encargada, n.aplica_encargada,
+                       n.es_global, n.lote_id, n.etapa_multiple, n.convenio, n.escala_sueldo_basico, n.aplica_plus,
+                       tn.descripcion as tipo_descripcion,
+                       CASE WHEN n.es_global = 1 THEN 'TODOS LOS LOCALES' ELSE COALESCE(emp.NOMBRE, n.nombre) END as nombre,
+                       CASE WHEN n.es_global = 1 THEN '' ELSE COALESCE(emp.APELLIDO, n.apellido) END as apellido,
+                       CASE WHEN n.es_global = 1 THEN 'TODOS' ELSE COALESCE(emp.COD_DEPARTAMENTO, n.centro_costos) END as codigo_centro_costos,
+                       CASE WHEN n.es_global = 1 THEN 'Todos los locales' ELSE emp.DESC_DEPARTAMENTO END as descripcion_centro_costos";
+
         if ($tipoUsuario == Usuario::TIPO_RRHH) {
-            $sql = "SELECT n.id, n.legajo, n.tipo_novedad, n.valor_numerico, 
-                           n.puesto, n.fecha_vigencia, n.fecha_vigencia_hasta, n.fecha_permiso, n.compensa, 
-                           n.observaciones, n.fecha_creacion, n.fecha_modificacion, n.tipo_nuevo_puesto,
-                           n.periodo_mes, n.periodo_anio, n.estado,
-                           n.tiene_tope, n.porcentaje_1, n.porcentaje_2, n.tipo_comision,
-                           n.aplica_vendedora, n.aplica_sub_encargada, 
-                           tn.descripcion as tipo_descripcion,
-                           emp.NOMBRE as nombre, emp.APELLIDO as apellido,
-                           emp.COD_DEPARTAMENTO as codigo_centro_costos,
-                           emp.DESC_DEPARTAMENTO as descripcion_centro_costos
+            $sql = "SELECT {$selectCols}
                     FROM novedades n 
                     INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
-                    LEFT JOIN [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL emp ON n.legajo = emp.NRO_LEGAJO
+                    LEFT JOIN {$empSubquery} ON n.legajo = emp.NRO_LEGAJO AND emp.rn = 1 AND ISNULL(n.es_global, 0) = 0
                     WHERE n.id = ?";
         } else {
-            // Para otros tipos de usuario, validar permisos específicos dinámicamente
             $campoPermiso = $this->getCampoPermisoUsuario($tipoUsuario);
             
-            $sql = "SELECT n.id, n.legajo, n.tipo_novedad, n.valor_numerico, 
-                           n.puesto, n.fecha_vigencia, n.fecha_vigencia_hasta, n.fecha_permiso, n.compensa, 
-                           n.observaciones, n.fecha_creacion, n.fecha_modificacion, n.tipo_nuevo_puesto,
-                           n.periodo_mes, n.periodo_anio, n.estado,
-                           n.tiene_tope, n.porcentaje_1, n.porcentaje_2, n.tipo_comision,
-                           n.aplica_vendedora, n.aplica_sub_encargada,
-                           tn.descripcion as tipo_descripcion,
-                           emp.NOMBRE as nombre, emp.APELLIDO as apellido,
-                           emp.COD_DEPARTAMENTO as codigo_centro_costos,
-                           emp.DESC_DEPARTAMENTO as descripcion_centro_costos
+            $sql = "SELECT {$selectCols}
                     FROM novedades n 
                     INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
-                    LEFT JOIN [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL emp ON n.legajo = emp.NRO_LEGAJO
+                    LEFT JOIN {$empSubquery} ON n.legajo = emp.NRO_LEGAJO AND emp.rn = 1 AND ISNULL(n.es_global, 0) = 0
                     WHERE n.id = ? AND tn.$campoPermiso = 1";
         }
 
@@ -1690,24 +1847,30 @@ class Novedades {
         $novedad = $stmt->fetch();
 
         if ($novedad) {
-            // Centro de costos en lugar de sucursal (abreviado)
-            $novedad['centro_costos_display'] = '';
-            if (!empty($novedad['descripcion_centro_costos'])) {
-                // Usar función de abreviación
-                $novedad['centro_costos_display'] = $this->abreviarCentroCostos(
-                    $novedad['descripcion_centro_costos'], 
-                    $novedad['codigo_centro_costos'] ?? ''
-                );
-            } elseif (!empty($novedad['codigo_centro_costos'])) {
-                $novedad['centro_costos_display'] = $novedad['codigo_centro_costos'];
-            } elseif (!empty($novedad['sucursal'])) {
-                $novedad['centro_costos_display'] = 'Centro ' . $novedad['sucursal'];
+            $nid = (int)$novedad['id'];
+            $mapaCom = $this->obtenerMapaComisionSucursales([$nid]);
+            $mapaPrem = $this->obtenerMapaPremioLocalEscala([$nid]);
+            $novedad['comision_sucursales'] = $mapaCom[$nid] ?? [];
+            $novedad['premio_local_escala'] = $mapaPrem[$nid] ?? [];
+
+            if (!empty($novedad['es_global'])) {
+                $novedad['centro_costos_display'] = 'Todos los locales';
+            } else {
+                $novedad['centro_costos_display'] = '';
+                if (!empty($novedad['descripcion_centro_costos'])) {
+                    $novedad['centro_costos_display'] = $this->abreviarCentroCostos(
+                        $novedad['descripcion_centro_costos'], 
+                        $novedad['codigo_centro_costos'] ?? ''
+                    );
+                } elseif (!empty($novedad['codigo_centro_costos'])) {
+                    $novedad['centro_costos_display'] = $novedad['codigo_centro_costos'];
+                } elseif (!empty($novedad['sucursal'])) {
+                    $novedad['centro_costos_display'] = 'Centro ' . $novedad['sucursal'];
+                }
             }
 
-            // Mantener compatibilidad con campos de sucursal por ahora
             $novedad['nombre_sucursal'] = $novedad['centro_costos_display'];
 
-            // Formatear fechas a dd/mm/aaaa
             foreach (['fecha_vigencia','fecha_vigencia_hasta','fecha_permiso','fecha_creacion'] as $campoFecha) {
                 if (!empty($novedad[$campoFecha])) {
                     try {
@@ -1722,27 +1885,14 @@ class Novedades {
                 }
             }
 
-            // Agregar información de período SOLO SI NO ESTÁ EN LA BASE DE DATOS
             if (empty($novedad['periodo_mes']) || empty($novedad['periodo_anio'])) {
                 $periodo = $this->getPeriodoActual();
                 $novedad['periodo_mes'] = $novedad['periodo_mes'] ?: $periodo['periodo_mes'];
                 $novedad['periodo_anio'] = $novedad['periodo_anio'] ?: $periodo['periodo_anio'];
             }
 
-            // Valor display - MEJORADO para tipo 2
-            if ((int)$novedad['tipo_novedad'] === 2) {
-                // Para nueva posición, construir display desde campos directos
-                $puestoDisplay = !empty($novedad['puesto']) ? $novedad['puesto'] : 'Nueva Posición';
-                $tipoPuesto = isset($novedad['tipo_nuevo_puesto']) ? ucfirst($novedad['tipo_nuevo_puesto']) : 'Permanente';
-                $novedad['valor_display'] = $puestoDisplay . ' (' . $tipoPuesto . ')';
-            } else {
-                $novedad['valor_display'] = $this->construirValorDisplay((int)$novedad['tipo_novedad'], $novedad['valor_numerico']);
-            }
-
-            // Detalle específico
+            $novedad['valor_display'] = $this->calcularValorDisplayNovedad($novedad);
             $novedad['detalle_especifico'] = $this->generarDetalleEspecifico($novedad);
-            
-            // Agregar estado_numero para compatibilidad con frontend
             $novedad['estado_numero'] = $this->mapearEstadoANumero($novedad['estado']);
         }
 
@@ -1904,32 +2054,35 @@ class Novedades {
     public function validarDatos($datos) {
         $errores = [];
 
-        if (empty($datos['legajo'])) {
-            $errores[] = 'El legajo es obligatorio';
-        }
+        $tipoNovedad = isset($datos['tipo_novedad']) ? (int)$datos['tipo_novedad'] : 0;
+        $esGlobal = !empty($datos['es_global']) || ($tipoNovedad === 35 && isset($datos['escala_premios']));
 
-        if (empty($datos['tipo_novedad'])) {
+        if (!$tipoNovedad) {
             $errores[] = 'El tipo de novedad es obligatorio';
         }
 
-        if (empty($datos['nombre'])) {
-            $errores[] = 'El nombre es obligatorio';
+        if (!$esGlobal) {
+            if (empty($datos['legajo'])) {
+                $errores[] = 'El legajo es obligatorio';
+            }
+            if (empty($datos['nombre'])) {
+                $errores[] = 'El nombre es obligatorio';
+            }
+            if (empty($datos['apellido'])) {
+                $errores[] = 'El apellido es obligatorio';
+            }
         }
 
-        if (empty($datos['apellido'])) {
-            $errores[] = 'El apellido es obligatorio';
+        // Validación opcional de fecha_vigencia_hasta >= fecha_vigencia
+        if (!empty($datos['fecha_vigencia']) && !empty($datos['fecha_vigencia_hasta'])) {
+            $f1 = $this->formatearFechaParaSQL($datos['fecha_vigencia']);
+            $f2 = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta']);
+            if ($f1 && $f2 && $f2 < $f1) {
+                $errores[] = 'La fecha de vencimiento/fin no puede ser anterior a la fecha de inicio';
+            }
         }
 
-        // Validar sucursal solo para cambio de sucursal (tipo 1)
-        $tipoNovedad = (int)$datos['tipo_novedad'];
-        if ($tipoNovedad == 1 && empty($datos['nueva_sucursal']) && empty($datos['sucursal_nueva_id'])) {
-            $errores[] = 'La nueva sucursal es obligatoria para cambio de sucursal';
-        }
-
-        // Validaciones específicas por tipo de novedad
-        $tipoNovedad = (int)$datos['tipo_novedad'];
-        
-        switch($tipoNovedad) {
+        switch ($tipoNovedad) {
             case 1: // Cambio de sucursal
                 if (empty($datos['nueva_sucursal']) && empty($datos['sucursal_nueva_id'])) {
                     $errores[] = 'La nueva sucursal es obligatoria';
@@ -1939,7 +2092,7 @@ class Novedades {
                 }
                 break;
                 
-            case 2: // Cambio de puesto
+            case 2: // Nueva Posición
                 if (empty($datos['puesto'])) {
                     $errores[] = 'El puesto es obligatorio';
                 }
@@ -1948,10 +2101,9 @@ class Novedades {
                 }
                 break;
                 
-            case 3: // Nuevo salario neto
-            case 4: // Ajuste de premios
-                if (empty($datos['importe']) || !is_numeric($datos['importe'])) {
-                    $errores[] = 'El importe es obligatorio y debe ser numérico';
+            case 4: // Ajuste de premios (importe opcional)
+                if (isset($datos['importe']) && $datos['importe'] !== '' && (!is_numeric($datos['importe']) || (float)$datos['importe'] < 0)) {
+                    $errores[] = 'El importe debe ser un valor numérico válido';
                 }
                 if (empty($datos['fecha_vigencia'])) {
                     $errores[] = 'La fecha de vigencia es obligatoria';
@@ -1969,136 +2121,165 @@ class Novedades {
                 break;
                 
             case 7: // Permisos
-                // Log para debugging del caso de permisos
-                error_log("🔍 VALIDACIÓN PERMISOS - Datos recibidos: fecha_permiso=" . 
-                         (isset($datos['fecha_permiso']) ? var_export($datos['fecha_permiso'], true) : 'NO EXISTE') . 
-                         ", empty()=" . (empty($datos['fecha_permiso']) ? 'TRUE' : 'FALSE'));
-                
                 if (empty($datos['fecha_permiso'])) {
                     $errores[] = 'La fecha del permiso es obligatoria';
                 } else {
-                    // Validar formato de fecha
                     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $datos['fecha_permiso'])) {
                         $errores[] = 'La fecha del permiso debe tener formato válido (YYYY-MM-DD)';
                     } else {
-                        // Validar que sea una fecha válida
                         $fechaPartes = explode('-', $datos['fecha_permiso']);
-                        if (count($fechaPartes) === 3) {
-                            $year = (int)$fechaPartes[0];
-                            $month = (int)$fechaPartes[1];
-                            $day = (int)$fechaPartes[2];
-                            if (!checkdate($month, $day, $year)) {
-                                $errores[] = 'La fecha del permiso no es válida';
-                            }
+                        if (count($fechaPartes) === 3 && !checkdate((int)$fechaPartes[1], (int)$fechaPartes[2], (int)$fechaPartes[0])) {
+                            $errores[] = 'La fecha del permiso no es válida';
                         }
                     }
                 }
                 break;
-                
-            case 8: // Cortes
-                if (empty($datos['cantidad_cortes']) || !is_numeric($datos['cantidad_cortes'])) {
-                    $errores[] = 'La cantidad de cortes es obligatoria y debe ser numérica';
-                }
-                if (empty($datos['fecha_vigencia'])) {
-                    $errores[] = 'La fecha de vigencia es obligatoria';
-                }
-                break;
             
-            case 32: // Plus de caja
+            case 12:
+            case 32: // Plus de caja (no lleva importe obligatorio)
                 if (empty($datos['tipo_plus_caja'])) {
                     $errores[] = 'El tipo de plus de caja es obligatorio';
                 }
-                // Para premios, el importe es obligatorio
-                if (isset($datos['tipo_plus_caja']) && $datos['tipo_plus_caja'] === 'premio') {
-                    if (empty($datos['importe']) || !is_numeric($datos['importe']) || $datos['importe'] <= 0) {
-                        $errores[] = 'El importe es obligatorio para premios de caja';
-                    }
-                }
                 if (empty($datos['fecha_vigencia'])) {
                     $errores[] = 'La fecha de vigencia es obligatoria';
                 }
                 break;
 
-            case 33: // Plus de Sub-Encargada
-            case 34: // Plus de Encargada
+            case 13:
+            case 33: // Plus de Sub-Encargada (solo SI/NO, sin importe)
+            case 14:
+            case 34: // Plus de Encargada (solo SI/NO, sin importe)
                 if (empty($datos['fecha_vigencia'])) {
                     $errores[] = 'La fecha de vigencia es obligatoria';
                 }
-                // Si tiene importe, validar que sea numérico y positivo
-                if (isset($datos['tiene_importe']) && $datos['tiene_importe'] === '1') {
-                    if (empty($datos['importe']) || !is_numeric($datos['importe']) || $datos['importe'] <= 0) {
-                        $errores[] = 'El importe debe ser un número positivo cuando se especifica';
-                    }
+                if (!isset($datos['aplica_plus']) && !isset($datos['tiene_importe'])) {
+                    $errores[] = 'Debe indicar SI o NO para el plus';
                 }
                 break;
 
+            case 15:
             case 35: // Premio Local
-                if (empty($datos['importe']) || !is_numeric($datos['importe']) || $datos['importe'] <= 0) {
-                    $errores[] = 'El importe del premio es obligatorio';
-                }
                 if (empty($datos['fecha_vigencia'])) {
                     $errores[] = 'La fecha de vigencia es obligatoria';
                 }
-                // Validar selección (manejar tanto formato nuevo como antiguo)
-                $tieneSeleccion = false;
-                if (isset($datos['aplica_a']) && in_array($datos['aplica_a'], ['vendedora', 'sub_encargada'])) {
-                    $tieneSeleccion = true;
-                } elseif (isset($datos['aplica_vendedora']) || isset($datos['aplica_sub_encargada'])) {
-                    $tieneSeleccion = (!empty($datos['aplica_vendedora']) || !empty($datos['aplica_sub_encargada']));
-                }
-                
-                if (!$tieneSeleccion) {
-                    $errores[] = 'Debe seleccionar a quién aplica el premio';
+                if ($esGlobal) {
+                    if (empty($datos['escala_premios']) || !is_array($datos['escala_premios'])) {
+                        $errores[] = 'Debe completar la escala de premios (3 categorías)';
+                    } else {
+                        $codigosRequeridos = ['PRIMER_RANKING', 'CUMPLE_OBJETIVO', 'PRIMER_NO_LLEGA'];
+                        $encontrados = [];
+                        foreach ($datos['escala_premios'] as $tramo) {
+                            $cod = $tramo['nivel_codigo'] ?? '';
+                            $encontrados[] = $cod;
+                            if (!isset($tramo['importe_enc_sub']) || !is_numeric($tramo['importe_enc_sub']) || (float)$tramo['importe_enc_sub'] <= 0) {
+                                $errores[] = "El importe de Encargada/Sub para '{$cod}' es obligatorio y mayor a 0";
+                            }
+                            if (!isset($tramo['importe_vend']) || !is_numeric($tramo['importe_vend']) || (float)$tramo['importe_vend'] <= 0) {
+                                $errores[] = "El importe de Vendedora para '{$cod}' es obligatorio y mayor a 0";
+                            }
+                        }
+                        foreach ($codigosRequeridos as $req) {
+                            if (!in_array($req, $encontrados, true)) {
+                                $errores[] = "Falta la categoría de premio: {$req}";
+                            }
+                        }
+                    }
+                } else {
+                    $tieneSeleccion = !empty($datos['aplica_vendedora']) || !empty($datos['aplica_encargada']) || !empty($datos['aplica_sub_encargada']);
+                    if (!$tieneSeleccion) {
+                        $errores[] = 'Debe seleccionar a quién aplica el Premio Local (Vendedora o Encargada)';
+                    }
                 }
                 break;
 
-            case 36: // Comisión Individual
+            case 16:
+            case 36: // Comisión Individual (Supervisoras: múltiples sucursales PROPIOS con tope opcional; o simple)
                 if (empty($datos['fecha_vigencia'])) {
                     $errores[] = 'La fecha de vigencia es obligatoria';
                 }
-                
-                // COMISIÓN INDIVIDUAL: Solo validar porcentaje simple
-                if (empty($datos['porcentaje_individual']) || !is_numeric($datos['porcentaje_individual']) || 
-                    $datos['porcentaje_individual'] <= 0) {
-                    $errores[] = 'El porcentaje individual es obligatorio y debe ser mayor a 0';
+                if (!empty($datos['comision_sucursales']) && is_array($datos['comision_sucursales'])) {
+                    foreach ($datos['comision_sucursales'] as $idx => $suc) {
+                        if (empty($suc['nro_sucursal'])) {
+                            $errores[] = 'Debe seleccionar la sucursal en todas las filas de comisión';
+                        }
+                        if (!isset($suc['porcentaje_1']) || !is_numeric($suc['porcentaje_1']) || (float)$suc['porcentaje_1'] <= 0) {
+                            $errores[] = 'El porcentaje base debe ser mayor a 0 en todas las sucursales';
+                        }
+                        if (!empty($suc['tiene_tope'])) {
+                            if (!isset($suc['porcentaje_2']) || !is_numeric($suc['porcentaje_2']) || (float)$suc['porcentaje_2'] <= 0) {
+                                $errores[] = 'El porcentaje post-tope es obligatorio y mayor a 0 cuando tiene tope';
+                            }
+                        }
+                    }
+                } else {
+                    if (empty($datos['porcentaje_individual']) || !is_numeric($datos['porcentaje_individual']) || (float)$datos['porcentaje_individual'] <= 0) {
+                        $errores[] = 'Debe agregar al menos una sucursal o indicar el porcentaje individual mayor a 0';
+                    }
                 }
                 break;
 
+            case 17:
             case 37: // Comisión sobre Local
                 if (empty($datos['fecha_vigencia'])) {
                     $errores[] = 'La fecha de vigencia es obligatoria';
                 }
-                
-                // COMISIÓN SOBRE LOCAL: Validar estructura de tope
                 if (!isset($datos['tiene_tope'])) {
                     $errores[] = 'Debe indicar si la comisión tiene tope';
                 } else {
                     if ($datos['tiene_tope']) {
-                        // Con tope: validar dos porcentajes
-                        if (empty($datos['porcentaje_1']) || !is_numeric($datos['porcentaje_1']) || 
-                            $datos['porcentaje_1'] <= 0) {
+                        if (empty($datos['porcentaje_1']) || !is_numeric($datos['porcentaje_1']) || (float)$datos['porcentaje_1'] <= 0) {
                             $errores[] = 'El primer porcentaje es obligatorio y debe ser mayor a 0';
                         }
-                        if (empty($datos['porcentaje_2']) || !is_numeric($datos['porcentaje_2']) || 
-                            $datos['porcentaje_2'] <= 0) {
+                        if (empty($datos['porcentaje_2']) || !is_numeric($datos['porcentaje_2']) || (float)$datos['porcentaje_2'] <= 0) {
                             $errores[] = 'El segundo porcentaje es obligatorio y debe ser mayor a 0';
                         }
                     } else {
-                        // Sin tope: validar un porcentaje
-                        if (empty($datos['porcentaje_unico']) || !is_numeric($datos['porcentaje_unico']) || 
-                            $datos['porcentaje_unico'] <= 0) {
+                        if (empty($datos['porcentaje_unico']) || !is_numeric($datos['porcentaje_unico']) || (float)$datos['porcentaje_unico'] <= 0) {
                             $errores[] = 'El porcentaje único es obligatorio y debe ser mayor a 0';
                         }
                     }
                 }
                 break;
 
-            case 38: // Premios - Ajuste General
-                if (empty($datos['importe']) || !is_numeric($datos['importe']) || $datos['importe'] <= 0) {
-                    $errores[] = 'El importe del ajuste es obligatorio';
-                }
+            case 18:
+            case 38: // Premios - Ajuste General (importe no obligatorio)
                 if (empty($datos['fecha_vigencia'])) {
                     $errores[] = 'La fecha de vigencia es obligatoria';
+                }
+                if (isset($datos['importe']) && $datos['importe'] !== '' && (!is_numeric($datos['importe']) || (float)$datos['importe'] < 0)) {
+                    $errores[] = 'El importe del ajuste debe ser numérico válido';
+                }
+                break;
+
+            case 53: // Reemplazo
+                if (empty($datos['puesto'])) {
+                    $errores[] = 'El puesto de reemplazo es obligatorio';
+                }
+                if (empty($datos['fecha_vigencia'])) {
+                    $errores[] = 'La fecha de inicio es obligatoria';
+                }
+                if (empty($datos['fecha_vigencia_hasta'])) {
+                    $errores[] = 'La fecha de fin es obligatoria para reemplazos';
+                }
+                break;
+
+            case 54: // Aumento Salarial / Sueldo Básico
+                if (empty($datos['fecha_vigencia'])) {
+                    $errores[] = 'La fecha de vigencia es obligatoria';
+                }
+                if (isset($datos['tipo_aumento']) && $datos['tipo_aumento'] === 'basico') {
+                    if (empty($datos['escala_sueldo_basico'])) {
+                        $errores[] = 'Debe seleccionar el sueldo básico (Vendedora o Encargada)';
+                    }
+                } elseif (isset($datos['tipo_aumento']) && $datos['tipo_aumento'] === 'monto') {
+                    $monto = $datos['valor_numerico'] ?? ($datos['importe'] ?? null);
+                    if (empty($monto) || !is_numeric($monto) || (float)$monto <= 0) {
+                        $errores[] = 'El monto del aumento debe ser mayor a 0';
+                    }
+                } else {
+                    if (empty($datos['porcentaje_1']) || !is_numeric($datos['porcentaje_1']) || (float)$datos['porcentaje_1'] <= 0) {
+                        $errores[] = 'El porcentaje de aumento debe ser mayor a 0';
+                    }
                 }
                 break;
         }
@@ -2111,17 +2292,12 @@ class Novedades {
                 $mes = (int)$datos['periodo_mes'];
                 $año = (int)$datos['periodo_anio'];
                 
-                // Validar rango del mes
                 if ($mes < 1 || $mes > 12) {
                     $errores[] = 'El mes del período debe estar entre 1 y 12';
                 }
-                
-                // Validar rango del año
                 if ($año < 2020 || $año > 2030) {
                     $errores[] = 'El año del período debe estar entre 2020 y 2030';
                 }
-                
-                // Validar que el período esté dentro del rango permitido
                 if ($mes >= 1 && $mes <= 12 && $año >= 2020 && $año <= 2030) {
                     $fechaActual = new DateTime();
                     $fechaPeriodo = new DateTime("{$año}-{$mes}-01");
@@ -2194,12 +2370,15 @@ class Novedades {
                 throw new Exception('Novedad no encontrada');
             }
 
-            // Validar permisos si se cambia el tipo de novedad
             if (isset($datos['tipo_novedad']) && $datos['tipo_novedad'] != $novedadActual['tipo_novedad']) {
                 $this->validarPermisosTipoNovedad($datos['tipo_novedad']);
             } else {
-                // Validar permisos para el tipo actual
                 $this->validarPermisosTipoNovedad($novedadActual['tipo_novedad']);
+            }
+
+            // Conservar flag global si la novedad original es global
+            if (!isset($datos['es_global']) && !empty($novedadActual['es_global'])) {
+                $datos['es_global'] = 1;
             }
 
             // Validar datos
@@ -2210,16 +2389,15 @@ class Novedades {
 
             // Adaptar datos para la actualización
             $datosAdaptados = $this->adaptarDatosParaEdicion($datos);
-            $periodo = $this->getPeriodoActual();
 
-            // Preparar SQL de actualización - ACTUALIZADO CON NUEVOS CAMPOS
             $sql = "UPDATE novedades SET 
                         legajo = ?, nombre = ?, apellido = ?, centro_costos = ?, 
                         fecha_vigencia = ?, fecha_vigencia_hasta = ?, puesto = ?, valor_numerico = ?, 
                         fecha_permiso = ?, compensa = ?, tipo_permiso = ?, tipo_nuevo_puesto = ?,
                         observaciones = ?, tipo_novedad = ?, fecha_modificacion = GETDATE(),
                         tiene_tope = ?, porcentaje_1 = ?, porcentaje_2 = ?, tipo_comision = ?,
-                        aplica_vendedora = ?, aplica_sub_encargada = ?
+                        aplica_vendedora = ?, aplica_sub_encargada = ?, aplica_encargada = ?,
+                        es_global = ?, convenio = ?, escala_sueldo_basico = ?, aplica_plus = ?
                     WHERE id = ?";
 
             $params = [
@@ -2237,17 +2415,35 @@ class Novedades {
                 $datosAdaptados['tipo_nuevo_puesto'],
                 $datosAdaptados['observaciones'],
                 $datosAdaptados['tipo_novedad'],
-                // NUEVOS PARÁMETROS
                 $datosAdaptados['tiene_tope'],
                 $datosAdaptados['porcentaje_1'],
                 $datosAdaptados['porcentaje_2'],
                 $datosAdaptados['tipo_comision'],
                 $datosAdaptados['aplica_vendedora'],
                 $datosAdaptados['aplica_sub_encargada'],
+                $datosAdaptados['aplica_encargada'],
+                $datosAdaptados['es_global'],
+                $datosAdaptados['convenio'],
+                $datosAdaptados['escala_sueldo_basico'],
+                $datosAdaptados['aplica_plus'],
                 $id
             ];
 
             $this->db->query($sql, $params);
+
+            // Actualizar tablas detalle FP_ si corresponde
+            $tipo = (int)$datosAdaptados['tipo_novedad'];
+            if ($tipo === 36 || $tipo === 16) {
+                $this->db->query("DELETE FROM FP_NOVEDADES_COMISION_SUCURSALES WHERE novedad_id = ?", [$id]);
+                if (!empty($datos['comision_sucursales']) && is_array($datos['comision_sucursales'])) {
+                    $this->guardarComisionSucursales($id, $datos['comision_sucursales']);
+                }
+            }
+            if (($tipo === 35 || $tipo === 15) && !empty($datosAdaptados['es_global']) && !empty($datos['escala_premios'])) {
+                $this->db->query("DELETE FROM FP_NOVEDADES_PREMIO_LOCAL_ESCALA WHERE novedad_id = ?", [$id]);
+                $this->guardarPremioLocalEscala($id, $datos['escala_premios']);
+            }
+
             $this->db->commit();
             
             return ['success' => true, 'id' => $id];
@@ -2260,24 +2456,22 @@ class Novedades {
     }
 
     /**
-     * Eliminar una novedad
+     * Eliminar una novedad y sus detalles relacionados
      */
     public function eliminarNovedad($id) {
         try {
             $this->db->beginTransaction();
 
-            // Verificar que la novedad existe
             $novedad = $this->getNovedadById($id);
             if (!$novedad) {
                 throw new Exception('Novedad no encontrada');
             }
 
-            // Validar permisos para eliminar este tipo de novedad
             $this->validarPermisosTipoNovedad($novedad['tipo_novedad']);
 
-            // Eliminar la novedad
-            $sql = "DELETE FROM novedades WHERE id = ?";
-            $this->db->query($sql, [$id]);
+            $this->db->query("DELETE FROM FP_NOVEDADES_COMISION_SUCURSALES WHERE novedad_id = ?", [$id]);
+            $this->db->query("DELETE FROM FP_NOVEDADES_PREMIO_LOCAL_ESCALA WHERE novedad_id = ?", [$id]);
+            $this->db->query("DELETE FROM novedades WHERE id = ?", [$id]);
 
             $this->db->commit();
             
@@ -2464,23 +2658,24 @@ class Novedades {
     }
 
     /**
-     * Obtener centro de costos de un empleado específico
+     * Obtener centro de costos de un empleado específico (deduplicado por ingreso más reciente)
      */
     private function obtenerCentroCostosEmpleado($legajo) {
         try {
-            $sql = "SELECT COD_DEPARTAMENTO FROM [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL WHERE NRO_LEGAJO = ?";
+            $sql = "SELECT TOP 1 COD_DEPARTAMENTO
+                    FROM [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL
+                    WHERE NRO_LEGAJO = ?
+                    ORDER BY CASE WHEN HABILITADO = 'S' THEN 0 ELSE 1 END, FECHA_INGRESO DESC";
             $result = $this->db->query($sql, [$legajo]);
             $resultado = $result->fetch();
             
             if ($resultado && !empty($resultado['COD_DEPARTAMENTO'])) {
-                error_log("✅ Centro de costos encontrado para legajo {$legajo}: " . $resultado['COD_DEPARTAMENTO']);
                 return $resultado['COD_DEPARTAMENTO'];
             }
             
-            error_log("❌ No se encontró centro de costos para empleado con legajo: " . $legajo);
             throw new Exception("No se encontró centro de costos para el empleado con legajo: $legajo");
         } catch (Exception $e) {
-            error_log("❌ Error obteniendo centro de costos para empleado {$legajo}: " . $e->getMessage());
+            error_log("Error obteniendo centro de costos para empleado {$legajo}: " . $e->getMessage());
             throw $e;
         }
     }
@@ -2498,36 +2693,43 @@ class Novedades {
     }
 
     /**
-     * Adaptar datos para inserción - ACTUALIZADO CON NUEVOS TIPOS
+     * Adaptar datos para inserción - ACTUALIZADO CON NUEVOS TIPOS Y REGLAS 2026.11
      */
     private function adaptarDatosParaInsercionActualizado($datos) {
         $tipoNovedad = (int)$datos['tipo_novedad'];
+        $esGlobal = !empty($datos['es_global']) || ($tipoNovedad === 35 && isset($datos['escala_premios']));
         
-        // Limpiar observaciones existentes de datos específicos para evitar duplicación
         $observacionesBase = isset($datos['observaciones']) ? $datos['observaciones'] : '';
         $observacionesLimpias = $this->limpiarObservacionesEspecificas($observacionesBase, $tipoNovedad);
         
-        // Determinar centro_costos según el tipo de novedad
-        $centroCostos = null;
-        if ($tipoNovedad == 1) {
-            // Para cambio de sucursal, usar sucursal_nueva_id del formulario
+        if ($esGlobal) {
+            $centroCostos = 'TODOS';
+            $legajo = 0;
+            $nombre = 'TODOS LOS LOCALES';
+            $apellido = '';
+        } elseif ($tipoNovedad == 1) {
             $centroCostos = isset($datos['sucursal_nueva_id']) ? $datos['sucursal_nueva_id'] : 
                         (isset($datos['nueva_sucursal']) ? $datos['nueva_sucursal'] : null);
             if (!$centroCostos) {
                 throw new Exception("Para cambio de sucursal debe especificar la nueva sucursal");
             }
+            $legajo = $datos['legajo'];
+            $nombre = $datos['nombre'];
+            $apellido = $datos['apellido'];
         } else {
-            // Para otros tipos, obtener centro de costos del empleado
             $centroCostos = $this->obtenerCentroCostosEmpleado($datos['legajo']);
             if (!$centroCostos) {
                 throw new Exception("No se pudo obtener el centro de costos del empleado con legajo: " . $datos['legajo']);
             }
+            $legajo = $datos['legajo'];
+            $nombre = $datos['nombre'];
+            $apellido = $datos['apellido'];
         }
         
         $datosAdaptados = [
-            'legajo' => $datos['legajo'],
-            'nombre' => $datos['nombre'],
-            'apellido' => $datos['apellido'],
+            'legajo' => $legajo,
+            'nombre' => $nombre,
+            'apellido' => $apellido,
             'centro_costos' => $centroCostos,
             'tipo_novedad' => $tipoNovedad,
             'observaciones' => $observacionesLimpias,
@@ -2539,28 +2741,32 @@ class Novedades {
             'compensa' => null,
             'tipo_permiso' => null,
             'tipo_nuevo_puesto' => null,
-            // NUEVOS CAMPOS PARA LOS NUEVOS TIPOS
             'tiene_tope' => null,
             'porcentaje_1' => null,
             'porcentaje_2' => null,
             'tipo_comision' => null,
             'aplica_vendedora' => null,
             'aplica_sub_encargada' => null,
+            'aplica_encargada' => null,
+            'es_global' => $esGlobal ? 1 : 0,
+            'lote_id' => $datos['lote_id'] ?? null,
+            'etapa_multiple' => $datos['etapa_multiple'] ?? null,
+            'convenio' => !empty($datos['convenio']) ? $datos['convenio'] : null,
+            'escala_sueldo_basico' => !empty($datos['escala_sueldo_basico']) ? $datos['escala_sueldo_basico'] : null,
+            'aplica_plus' => null,
         ];
 
-        // Adaptar según el tipo específico - INCLUYENDO TODOS LOS TIPOS
         switch ($tipoNovedad) {
-            case 1: // Cambio de centro de costos
+            case 1: // Cambio de sucursal (permite fecha_vigencia_hasta opcional)
                 $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta'] ?? '');
                 $datosAdaptados['puesto'] = 'Cambio de Sucursal';
                 
-                // Obtener la sucursal actual y nueva por número y convertir a nombres
                 $sucursalActualNumero = isset($datos['sucursal_actual']) ? $datos['sucursal_actual'] : '';
                 $nuevaSucursalNumero = isset($datos['nueva_sucursal']) ? $datos['nueva_sucursal'] : '';
                 
                 if (!empty($nuevaSucursalNumero)) {
                     $nombreNuevaSucursal = $this->obtenerNombreSucursal($nuevaSucursalNumero);
-                    
                     if (!empty($sucursalActualNumero)) {
                         $nombreSucursalActual = $this->obtenerNombreSucursal($sucursalActualNumero);
                         $datosAdaptados['observaciones'] .= " - De: $nombreSucursalActual a: $nombreNuevaSucursal";
@@ -2575,16 +2781,13 @@ class Novedades {
                 $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['tipo_nuevo_puesto'] = 'permanente';
                 $datosAdaptados['fecha_vigencia_hasta'] = null;
+                if (!empty($datos['convenio'])) {
+                    $datosAdaptados['observaciones'] .= " - Convenio: " . $datos['convenio'];
+                }
                 break;
 
-            case 3: // Nuevo salario neto
-                $datosAdaptados['valor_numerico'] = isset($datos['importe']) ? (float)$datos['importe'] : null;
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['puesto'] = 'Nuevo Salario Neto';
-                break;
-
-            case 4: // Ajuste de premios
-                $datosAdaptados['valor_numerico'] = isset($datos['importe']) ? (float)$datos['importe'] : null;
+            case 4: // Ajuste de premios (importe opcional)
+                $datosAdaptados['valor_numerico'] = (isset($datos['importe']) && $datos['importe'] !== '') ? (float)$datos['importe'] : null;
                 $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['puesto'] = 'Ajuste de Premios';
                 break;
@@ -2606,410 +2809,129 @@ class Novedades {
                 $datosAdaptados['compensa'] = isset($datos['compensa']) ? (bool)$datos['compensa'] : false;
                 $datosAdaptados['puesto'] = 'Permisos';
                 break;
-
-            case 8: // Cortes
-                $datosAdaptados['valor_numerico'] = isset($datos['cantidad_cortes']) ? (int)$datos['cantidad_cortes'] : null;
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['puesto'] = 'Cortes';
-                break;
-
-            case 9: // Producción 25%
-                $datosAdaptados['valor_numerico'] = isset($datos['cantidad_unidades']) ? (int)$datos['cantidad_unidades'] : null;
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['puesto'] = 'Producción 25%';
-                break;
-
-            case 10: // Producción 50%
-                $datosAdaptados['valor_numerico'] = isset($datos['cantidad_unidades']) ? (int)$datos['cantidad_unidades'] : null;
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['puesto'] = 'Producción 50%';
-                break;
-
-            case 11: // Producción 100%
-                $datosAdaptados['valor_numerico'] = isset($datos['cantidad_unidades']) ? (int)$datos['cantidad_unidades'] : null;
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['puesto'] = 'Producción 100%';
-                break;
             
-            case 12: // Plus de caja (compatibilidad con ID anterior)
-            case 32: // Plus de caja
-                $datosAdaptados['valor_numerico'] = isset($datos['importe']) ? (float)$datos['importe'] : null;
+            case 12:
+            case 32: // Plus de caja (no lleva importe obligatorio; permite fecha_vigencia_hasta opcional)
+                $datosAdaptados['valor_numerico'] = null;
                 $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta'] ?? '');
                 $datosAdaptados['puesto'] = 'Plus de caja';
-                // Determinar si es recibo o premio
                 $tipoPlus = isset($datos['tipo_plus_caja']) ? $datos['tipo_plus_caja'] : 'recibo';
                 $datosAdaptados['observaciones'] .= " - Tipo: " . ucfirst($tipoPlus);
                 break;
 
-            case 13: // Plus de Sub-Encargada (compatibilidad con ID anterior)
-            case 33: // Plus de Sub-Encargada
+            case 13:
+            case 33: // Plus de Sub-Encargada (solo SI/NO, sin importe; fecha_vigencia_hasta opcional)
                 $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta'] ?? '');
                 $datosAdaptados['puesto'] = 'Plus de Sub-Encargada';
-                
-                // Verificar si tiene importe
-                if (isset($datos['tiene_importe']) && $datos['tiene_importe'] === '1') {
-                    $datosAdaptados['valor_numerico'] = isset($datos['importe']) ? (float)$datos['importe'] : null;
-                    $datosAdaptados['observaciones'] .= " - Con importe: $" . number_format($datosAdaptados['valor_numerico'], 2);
-                } else {
-                    $datosAdaptados['observaciones'] .= " - Sin importe específico";
-                }
+                $datosAdaptados['valor_numerico'] = null;
+                $aplicaPlus = isset($datos['aplica_plus'])
+                    ? (bool)(int)$datos['aplica_plus']
+                    : (!(isset($datos['tiene_importe']) && $datos['tiene_importe'] === '0'));
+                $datosAdaptados['aplica_plus'] = $aplicaPlus ? 1 : 0;
+                $datosAdaptados['observaciones'] .= " - Aplica: " . ($aplicaPlus ? 'SI' : 'NO');
                 break;
 
-            case 14: // Plus de Encargada (compatibilidad con ID anterior)
-            case 34: // Plus de Encargada
+            case 14:
+            case 34: // Plus de Encargada (solo SI/NO, sin importe; fecha_vigencia_hasta opcional)
                 $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta'] ?? '');
                 $datosAdaptados['puesto'] = 'Plus de Encargada';
-                
-                // Verificar si tiene importe
-                if (isset($datos['tiene_importe']) && $datos['tiene_importe'] === '1') {
-                    $datosAdaptados['valor_numerico'] = isset($datos['importe']) ? (float)$datos['importe'] : null;
-                    $datosAdaptados['observaciones'] .= " - Con importe: $" . number_format($datosAdaptados['valor_numerico'], 2);
-                } else {
-                    $datosAdaptados['observaciones'] .= " - Sin importe específico";
-                }
+                $datosAdaptados['valor_numerico'] = null;
+                $aplicaPlusEnc = isset($datos['aplica_plus'])
+                    ? (bool)(int)$datos['aplica_plus']
+                    : (!(isset($datos['tiene_importe']) && $datos['tiene_importe'] === '0'));
+                $datosAdaptados['aplica_plus'] = $aplicaPlusEnc ? 1 : 0;
+                $datosAdaptados['observaciones'] .= " - Aplica: " . ($aplicaPlusEnc ? 'SI' : 'NO');
                 break;
 
-            case 15: // Premio Local (compatibilidad con ID anterior)
+            case 15:
             case 35: // Premio Local
-                $datosAdaptados['valor_numerico'] = isset($datos['importe']) ? (float)$datos['importe'] : null;
                 $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['puesto'] = 'Premio Local';
-                
-                // Configurar a quién aplica usando los datos booleanos directamente
-                $datosAdaptados['aplica_vendedora'] = isset($datos['aplica_vendedora']) && $datos['aplica_vendedora'];
-                $datosAdaptados['aplica_sub_encargada'] = isset($datos['aplica_sub_encargada']) && $datos['aplica_sub_encargada'];
-                
-                // Determinar el texto para las observaciones
-                $aplicacionTexto = '';
-                if ($datosAdaptados['aplica_vendedora']) {
-                    $aplicacionTexto = 'Vendedora';
-                } elseif ($datosAdaptados['aplica_sub_encargada']) {
-                    $aplicacionTexto = 'Sub-Encargada';
-                }
-                
-                if (!empty($aplicacionTexto)) {
-                    $datosAdaptados['observaciones'] .= " - Aplica a: " . $aplicacionTexto;
-                }
-                break;
-
-            case 16: // Comisión Individual (compatibilidad con ID anterior)
-            case 36: // Comisión Individual
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['puesto'] = 'Comisión Individual';
-                $datosAdaptados['tipo_comision'] = 'individual';
-                
-                // COMISIÓN INDIVIDUAL: Solo un porcentaje simple, sin estructura de tope
-                // Convertir de porcentaje (25) a decimal (0.25) dividiendo entre 100
-                $datosAdaptados['tiene_tope'] = false;
-                $datosAdaptados['porcentaje_1'] = isset($datos['porcentaje_individual']) ? ((float)$datos['porcentaje_individual'] / 100) : null;
-                $datosAdaptados['porcentaje_2'] = null;
-                
-                // Observaciones simples para comisión individual (mostrar como porcentaje)
-                $pDisplay = isset($datos['porcentaje_individual']) ? number_format($datos['porcentaje_individual'], 2) : 0;
-                $datosAdaptados['observaciones'] .= " - Porcentaje: {$pDisplay}%";
-                break;
-
-            case 17: // Comisión sobre Local (compatibilidad con ID anterior)
-            case 37: // Comisión sobre Local
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['puesto'] = 'Comisión sobre Local';
-                $datosAdaptados['tipo_comision'] = 'local';
-                
-                // COMISIÓN SOBRE LOCAL: Con estructura de tope/sin tope
-                // Convertir porcentajes de formato humano (25) a decimal (0.25)
-                $datosAdaptados['tiene_tope'] = isset($datos['tiene_tope']) ? (bool)$datos['tiene_tope'] : false;
-                
-                if ($datosAdaptados['tiene_tope']) {
-                    // Con tope: dos porcentajes
-                    $datosAdaptados['porcentaje_1'] = isset($datos['porcentaje_1']) ? ((float)$datos['porcentaje_1'] / 100) : null;
-                    $datosAdaptados['porcentaje_2'] = isset($datos['porcentaje_2']) ? ((float)$datos['porcentaje_2'] / 100) : null;
-                    $p1Display = isset($datos['porcentaje_1']) ? number_format($datos['porcentaje_1'], 2) : 0;
-                    $p2Display = isset($datos['porcentaje_2']) ? number_format($datos['porcentaje_2'], 2) : 0;
-                    $datosAdaptados['observaciones'] .= " - Con tope: {$p1Display}% y {$p2Display}%";
+                if ($esGlobal) {
+                    $datosAdaptados['valor_numerico'] = null;
+                    $datosAdaptados['observaciones'] .= " - Escala global para todos los locales";
                 } else {
-                    // Sin tope: un porcentaje
-                    $datosAdaptados['porcentaje_1'] = isset($datos['porcentaje_unico']) ? ((float)$datos['porcentaje_unico'] / 100) : null;
-                    $datosAdaptados['porcentaje_2'] = null;
-                    $pDisplay = isset($datos['porcentaje_unico']) ? number_format($datos['porcentaje_unico'], 2) : 0;
-                    $datosAdaptados['observaciones'] .= " - Sin tope: {$pDisplay}%";
-                }
-                break;
-
-            case 18: // Premios - Ajuste General (compatibilidad con ID anterior)
-            case 38: // Premios - Ajuste General
-                $datosAdaptados['valor_numerico'] = isset($datos['importe']) ? (float)$datos['importe'] : null;
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['puesto'] = 'Premios - Ajuste General';
-                break;
-
-            case 53: // Reemplazo - siempre temporario
-                $datosAdaptados['puesto'] = isset($datos['puesto']) ? $datos['puesto'] : 'Reemplazo';
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['tipo_nuevo_puesto'] = 'temporario';
-                $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta'] ?? '');
-                break;
-
-            case 55: // A prueba - siempre temporario
-                $datosAdaptados['puesto'] = isset($datos['puesto']) ? $datos['puesto'] : 'A prueba';
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['tipo_nuevo_puesto'] = 'temporario';
-                $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta'] ?? '');
-                break;
-
-            case 54: // Aumento Salarial
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['puesto'] = 'Aumento Salarial';
-                
-                // JavaScript envía directamente porcentaje_1 y valor_numerico
-                // Determinar si es por porcentaje o monto
-                if (isset($datos['tipo_aumento'])) {
-                    if ($datos['tipo_aumento'] === 'porcentaje' && !empty($datos['porcentaje_1'])) {
-                        // IMPORTANTE: Convertir porcentaje de 21 a 0.21 (formato decimal) para evitar overflow
-                        // La columna porcentaje_1 probablemente tiene NUMERIC(3,2) o NUMERIC(4,2)
-                        $porcentajeValor = (float)$datos['porcentaje_1'];
-                        $datosAdaptados['porcentaje_1'] = round($porcentajeValor / 100, 4); // Dividir entre 100: 21 -> 0.21
-                    } elseif ($datos['tipo_aumento'] === 'monto' && !empty($datos['valor_numerico'])) {
-                        // Convertir y redondear a 2 decimales para evitar overflow
-                        $datosAdaptados['valor_numerico'] = round((float)$datos['valor_numerico'], 2);
+                    $datosAdaptados['valor_numerico'] = null;
+                    $datosAdaptados['aplica_vendedora'] = !empty($datos['aplica_vendedora']) ? 1 : 0;
+                    $datosAdaptados['aplica_encargada'] = !empty($datos['aplica_encargada']) ? 1 : 0;
+                    $datosAdaptados['aplica_sub_encargada'] = !empty($datos['aplica_sub_encargada']) ? 1 : 0;
+                    $aplicacionTexto = [];
+                    if ($datosAdaptados['aplica_vendedora']) $aplicacionTexto[] = 'Vendedora';
+                    if ($datosAdaptados['aplica_encargada']) $aplicacionTexto[] = 'Encargada';
+                    if ($datosAdaptados['aplica_sub_encargada']) $aplicacionTexto[] = 'Sub-Encargada';
+                    if (!empty($aplicacionTexto)) {
+                        $datosAdaptados['observaciones'] .= " - Aplica a: " . implode(', ', $aplicacionTexto);
                     }
                 }
                 break;
 
-            default:
-                $datosAdaptados['puesto'] = 'Novedad General';
-                break;
-        }
-
-        return $datosAdaptados;
-    }
-
-    /**
-     * Adaptar datos específicamente para edición - NO concatena en observaciones
-     */
-    private function adaptarDatosParaEdicion($datos) {
-        $tipoNovedad = (int)$datos['tipo_novedad'];
-        
-        // Conservar observaciones originales sin agregar datos automáticos
-        $observacionesBase = isset($datos['observaciones']) ? $datos['observaciones'] : '';
-        
-        // Determinar centro_costos según el tipo de novedad
-        $centroCostos = null;
-        if ($tipoNovedad == 1) {
-            // Para cambio de sucursal, usar sucursal_nueva_id del formulario
-            $centroCostos = isset($datos['sucursal_nueva_id']) ? $datos['sucursal_nueva_id'] : 
-                        (isset($datos['nueva_sucursal']) ? $datos['nueva_sucursal'] : null);
-            if (!$centroCostos) {
-                throw new Exception("Para cambio de sucursal debe especificar la nueva sucursal");
-            }
-        } else {
-            // Para otros tipos, mantener el centro de costos actual si no se especifica
-            $centroCostos = isset($datos['centro_costos']) ? $datos['centro_costos'] : 
-                        $this->obtenerCentroCostosEmpleado($datos['legajo']);
-        }
-        
-        $datosAdaptados = [
-            'legajo' => $datos['legajo'],
-            'nombre' => $datos['nombre'],
-            'apellido' => $datos['apellido'],
-            'centro_costos' => $centroCostos,
-            'tipo_novedad' => $tipoNovedad,
-            'observaciones' => $observacionesBase, // NO agregar datos automáticos
-            'fecha_vigencia' => null,
-            'fecha_vigencia_hasta' => null,
-            'puesto' => '',
-            'valor_numerico' => null,
-            'fecha_permiso' => null,
-            'compensa' => null,
-            'tipo_permiso' => null,
-            'tipo_nuevo_puesto' => null,
-            // CAMPOS ESPECÍFICOS PARA NUEVOS TIPOS
-            'tiene_tope' => null,
-            'porcentaje_1' => null,
-            'porcentaje_2' => null,
-            'tipo_comision' => null,
-            'aplica_vendedora' => null,
-            'aplica_sub_encargada' => null
-        ];
-
-        // Adaptar según el tipo específico - SIN MODIFICAR OBSERVACIONES
-        switch ($tipoNovedad) {
-            case 1: // Cambio de centro de costos
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['puesto'] = 'Cambio de Sucursal';
-                break;
-
-            case 2: // Nueva Posición
-                $datosAdaptados['puesto'] = isset($datos['puesto']) ? $datos['puesto'] : 'Cambio de Puesto';
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['tipo_nuevo_puesto'] = 'permanente';
-                $datosAdaptados['fecha_vigencia_hasta'] = null;
-                break;
-
-            case 3: // Nuevo salario neto
-                $datosAdaptados['valor_numerico'] = isset($datos['importe']) ? (float)$datos['importe'] : null;
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['puesto'] = 'Nuevo Salario Neto';
-                break;
-
-            case 4: // Ajuste de premios
-                $datosAdaptados['valor_numerico'] = isset($datos['importe']) ? (float)$datos['importe'] : null;
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['puesto'] = 'Ajuste de Premios';
-                break;
-
-            case 5: // Horas extras
-                $datosAdaptados['valor_numerico'] = isset($datos['cantidad_horas']) ? (int)$datos['cantidad_horas'] : null;
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['puesto'] = 'Horas Extras';
-                break;
-
-            case 6: // Horas adicionales
-                $datosAdaptados['valor_numerico'] = isset($datos['cantidad_horas']) ? (int)$datos['cantidad_horas'] : null;
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['puesto'] = 'Horas Adicionales';
-                break;
-
-            case 7: // Permisos
-                $datosAdaptados['fecha_permiso'] = $this->formatearFechaParaSQL($datos['fecha_permiso'] ?? '');
-                $datosAdaptados['compensa'] = isset($datos['compensa']) ? (bool)$datos['compensa'] : false;
-                $datosAdaptados['puesto'] = 'Permisos';
-                break;
-
-            case 8: // Cortes
-                $datosAdaptados['valor_numerico'] = isset($datos['cantidad_cortes']) ? (int)$datos['cantidad_cortes'] : null;
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['puesto'] = 'Cortes';
-                break;
-
-            case 9: // Producción 25%
-                $datosAdaptados['valor_numerico'] = isset($datos['cantidad_unidades']) ? (int)$datos['cantidad_unidades'] : null;
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['puesto'] = 'Producción 25%';
-                break;
-
-            case 10: // Producción 50%
-                $datosAdaptados['valor_numerico'] = isset($datos['cantidad_unidades']) ? (int)$datos['cantidad_unidades'] : null;
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['puesto'] = 'Producción 50%';
-                break;
-
-            case 11: // Producción 100%
-                $datosAdaptados['valor_numerico'] = isset($datos['cantidad_unidades']) ? (int)$datos['cantidad_unidades'] : null;
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['puesto'] = 'Producción 100%';
-                break;
-            
-            case 12: // Plus de caja (compatibilidad)
-            case 32: // Plus de caja
-                $datosAdaptados['valor_numerico'] = isset($datos['importe']) ? (float)$datos['importe'] : null;
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['puesto'] = 'Plus de caja';
-                
-                // Guardar tipo de plus en observaciones (actualizar, no concatenar)
-                if (isset($datos['tipo_plus_caja'])) {
-                    $tipoPlus = ucfirst($datos['tipo_plus_caja']);
-                    $datosAdaptados['observaciones'] = "Tipo: {$tipoPlus}";
-                }
-                break;
-
-            case 13: // Plus de Sub-Encargada (compatibilidad)
-            case 33: // Plus de Sub-Encargada
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['puesto'] = 'Plus de Sub-Encargada';
-                
-                // Solo asignar valor si tiene importe
-                if (isset($datos['tiene_importe']) && $datos['tiene_importe'] === '1') {
-                    $datosAdaptados['valor_numerico'] = isset($datos['importe']) ? (float)$datos['importe'] : null;
-                } else {
-                    $datosAdaptados['valor_numerico'] = null;
-                }
-                break;
-
-            case 14: // Plus de Encargada (compatibilidad)
-            case 34: // Plus de Encargada
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['puesto'] = 'Plus de Encargada';
-                
-                // Solo asignar valor si tiene importe
-                if (isset($datos['tiene_importe']) && $datos['tiene_importe'] === '1') {
-                    $datosAdaptados['valor_numerico'] = isset($datos['importe']) ? (float)$datos['importe'] : null;
-                } else {
-                    $datosAdaptados['valor_numerico'] = null;
-                }
-                break;
-
-            case 15: // Premio Local (compatibilidad)
-            case 35: // Premio Local
-                $datosAdaptados['valor_numerico'] = isset($datos['importe']) ? (float)$datos['importe'] : null;
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['puesto'] = 'Premio Local';
-                
-                // Configurar a quién aplica usando los datos booleanos directamente
-                $datosAdaptados['aplica_vendedora'] = isset($datos['aplica_vendedora']) && $datos['aplica_vendedora'];
-                $datosAdaptados['aplica_sub_encargada'] = isset($datos['aplica_sub_encargada']) && $datos['aplica_sub_encargada'];
-                 
-                // Actualizar observaciones con aplicabilidad para evitar contradicciones
-                $aplicabilidades = [];
-                if ($datosAdaptados['aplica_vendedora']) $aplicabilidades[] = 'Vendedora';
-                if ($datosAdaptados['aplica_sub_encargada']) $aplicabilidades[] = 'Sub-Encargada';
-                
-                if (!empty($aplicabilidades)) {
-                    $datosAdaptados['observaciones'] = 'Aplica a: ' . implode(', ', $aplicabilidades);
-                } else {
-                    $datosAdaptados['observaciones'] = 'Aplica a: No especificado';
-                }
-                break;
-
-            case 16: // Comisión Individual (compatibilidad)
-            case 36: // Comisión Individual
+            case 16:
+            case 36: // Comisión Individual (Supervisoras multi-sucursal o simple)
                 $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['puesto'] = 'Comisión Individual';
                 $datosAdaptados['tipo_comision'] = 'individual';
                 
-                // COMISIÓN INDIVIDUAL: Solo un porcentaje simple, sin estructura de tope
-                // Convertir de porcentaje (25) a decimal (0.25)
-                $datosAdaptados['tiene_tope'] = false;
-                $datosAdaptados['porcentaje_1'] = isset($datos['porcentaje_individual']) ? ((float)$datos['porcentaje_individual'] / 100) : null;
-                $datosAdaptados['porcentaje_2'] = null;
-                
-                // Observaciones usando el valor original (no dividido)
-                $p_display = isset($datos['porcentaje_individual']) ? $datos['porcentaje_individual'] : 0;
-                $datosAdaptados['observaciones'] = "Comisión individual: {$p_display}%";
-                break;
-
-            case 17: // Comisión sobre Local (compatibilidad)
-            case 37: // Comisión sobre Local
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['puesto'] = 'Comisión sobre Local';
-                $datosAdaptados['tipo_comision'] = isset($datos['tipo_comision']) ? $datos['tipo_comision'] : 'local';
-                
-                // Configurar tope y porcentajes directamente en campos específicos
-                // Convertir de porcentaje (25) a decimal (0.25)
-                $datosAdaptados['tiene_tope'] = isset($datos['tiene_tope']) ? (bool)$datos['tiene_tope'] : false;
-                
-                if ($datosAdaptados['tiene_tope']) {
-                    $datosAdaptados['porcentaje_1'] = isset($datos['porcentaje_1']) ? ((float)$datos['porcentaje_1'] / 100) : null;
-                    $datosAdaptados['porcentaje_2'] = isset($datos['porcentaje_2']) ? ((float)$datos['porcentaje_2'] / 100) : null;
-                    
-                    // Observaciones con porcentajes en formato original
-                    $p1_display = isset($datos['porcentaje_1']) ? $datos['porcentaje_1'] : 0;
-                    $p2_display = isset($datos['porcentaje_2']) ? $datos['porcentaje_2'] : 0;
-                    $datosAdaptados['observaciones'] = "Comisión sobre local con tope: {$p1_display}% / {$p2_display}%";
-                } else {    
-                    $datosAdaptados['porcentaje_1'] = isset($datos['porcentaje_unico']) ? ((float)$datos['porcentaje_unico'] / 100) : null;
+                if (!empty($datos['comision_sucursales']) && is_array($datos['comision_sucursales'])) {
+                    $algunoConTope = false;
+                    $resumen = [];
+                    foreach ($datos['comision_sucursales'] as $suc) {
+                        $nom = $suc['nombre_sucursal'] ?? $this->obtenerNombreSucursal($suc['nro_sucursal']);
+                        $p1 = number_format((float)$suc['porcentaje_1'], 2);
+                        if (!empty($suc['tiene_tope'])) {
+                            $algunoConTope = true;
+                            $p2 = number_format((float)$suc['porcentaje_2'], 2);
+                            $resumen[] = "{$nom}: {$p1}% (tope -> {$p2}%)";
+                        } else {
+                            $resumen[] = "{$nom}: {$p1}% (sin tope)";
+                        }
+                    }
+                    $datosAdaptados['tiene_tope'] = $algunoConTope ? 1 : 0;
+                    $datosAdaptados['porcentaje_1'] = null;
                     $datosAdaptados['porcentaje_2'] = null;
-                    
-                    // Observaciones con porcentaje en formato original
-                    $p_display = isset($datos['porcentaje_unico']) ? $datos['porcentaje_unico'] : 0;
-                    $datosAdaptados['observaciones'] = "Comisión sobre local sin tope: {$p_display}%";
+                    $datosAdaptados['observaciones'] .= " - Sucursales: " . implode(' | ', $resumen);
+                } else {
+                    $datosAdaptados['tiene_tope'] = 0;
+                    $datosAdaptados['porcentaje_1'] = isset($datos['porcentaje_individual']) ? round((float)$datos['porcentaje_individual'] / 100, 4) : null;
+                    $datosAdaptados['porcentaje_2'] = null;
+                    $pDisplay = isset($datos['porcentaje_individual']) ? number_format((float)$datos['porcentaje_individual'], 2) : 0;
+                    $datosAdaptados['observaciones'] .= " - Porcentaje: {$pDisplay}%";
                 }
                 break;
 
-            case 18: // Premios - Ajuste General (compatibilidad)
-            case 38: // Premios - Ajuste General
-                $datosAdaptados['valor_numerico'] = isset($datos['importe']) ? (float)$datos['importe'] : null;
+            case 17:
+            case 37: // Comisión sobre Local
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['puesto'] = 'Comisión sobre Local';
+                $datosAdaptados['tipo_comision'] = 'local';
+                $datosAdaptados['tiene_tope'] = !empty($datos['tiene_tope']) ? 1 : 0;
+                
+                if ($datosAdaptados['tiene_tope']) {
+                    $datosAdaptados['porcentaje_1'] = isset($datos['porcentaje_1']) ? round((float)$datos['porcentaje_1'] / 100, 4) : null;
+                    $datosAdaptados['porcentaje_2'] = isset($datos['porcentaje_2']) ? round((float)$datos['porcentaje_2'] / 100, 4) : null;
+                    $p1Display = isset($datos['porcentaje_1']) ? number_format((float)$datos['porcentaje_1'], 2) : 0;
+                    $p2Display = isset($datos['porcentaje_2']) ? number_format((float)$datos['porcentaje_2'], 2) : 0;
+                    $datosAdaptados['observaciones'] .= " - Con tope: {$p1Display}% y {$p2Display}%";
+                } else {
+                    $datosAdaptados['porcentaje_1'] = isset($datos['porcentaje_unico']) ? round((float)$datos['porcentaje_unico'] / 100, 4) : null;
+                    $datosAdaptados['porcentaje_2'] = null;
+                    $pDisplay = isset($datos['porcentaje_unico']) ? number_format((float)$datos['porcentaje_unico'], 2) : 0;
+                    $datosAdaptados['observaciones'] .= " - Sin tope: {$pDisplay}%";
+                }
+                break;
+
+            case 18:
+            case 38: // Premios - Ajuste General (importe opcional o SI/NO)
+                $datosAdaptados['valor_numerico'] = (isset($datos['importe']) && $datos['importe'] !== '') ? (float)$datos['importe'] : null;
                 $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['puesto'] = 'Premios - Ajuste General';
+                if (isset($datos['aplica_plus'])) {
+                    $aplica = (bool)(int)$datos['aplica_plus'];
+                    $datosAdaptados['aplica_plus'] = $aplica ? 1 : 0;
+                    $datosAdaptados['observaciones'] .= " - Ajuste General: " . ($aplica ? 'SI' : 'NO');
+                }
                 break;
 
             case 53: // Reemplazo - siempre temporario
@@ -3019,34 +2941,28 @@ class Novedades {
                 $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta'] ?? '');
                 break;
 
-            case 55: // A prueba - siempre temporario
+            case 55: // A prueba (solo compatibilidad histórica)
                 $datosAdaptados['puesto'] = isset($datos['puesto']) ? $datos['puesto'] : 'A prueba';
                 $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['tipo_nuevo_puesto'] = 'temporario';
                 $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta'] ?? '');
                 break;
 
-            case 54: // Aumento Salarial
+            case 54: // Aumento Salarial / Sueldo Básico
                 $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['puesto'] = 'Aumento Salarial';
-                
-                // JavaScript envía directamente porcentaje_1 y valor_numerico
-                // Determinar si es por porcentaje o monto
                 if (isset($datos['tipo_aumento'])) {
-                    if ($datos['tipo_aumento'] === 'porcentaje') {
-                        // IMPORTANTE: Convertir porcentaje de 21 a 0.21 (formato decimal) para evitar overflow
-                        if (!empty($datos['porcentaje_1'])) {
-                            $porcentajeValor = (float)$datos['porcentaje_1'];
-                            $datosAdaptados['porcentaje_1'] = round($porcentajeValor / 100, 4); // Dividir entre 100: 21 -> 0.21
-                        }
-                        // Limpiar campo de monto
+                    if ($datos['tipo_aumento'] === 'basico') {
+                        $datosAdaptados['escala_sueldo_basico'] = $datos['escala_sueldo_basico'] ?? null;
+                        $datosAdaptados['observaciones'] .= " - Sueldo básico: " . ($datosAdaptados['escala_sueldo_basico'] ?? '');
+                    } elseif ($datos['tipo_aumento'] === 'porcentaje' && !empty($datos['porcentaje_1'])) {
+                        $datosAdaptados['porcentaje_1'] = round((float)$datos['porcentaje_1'] / 100, 4);
                         $datosAdaptados['valor_numerico'] = null;
                     } elseif ($datos['tipo_aumento'] === 'monto') {
-                        // Convertir y redondear a 2 decimales para evitar overflow
-                        if (!empty($datos['valor_numerico'])) {
-                            $datosAdaptados['valor_numerico'] = round((float)$datos['valor_numerico'], 2);
+                        $montoVal = $datos['valor_numerico'] ?? ($datos['importe'] ?? null);
+                        if (!empty($montoVal)) {
+                            $datosAdaptados['valor_numerico'] = round((float)$montoVal, 2);
                         }
-                        // Limpiar campo de porcentaje
                         $datosAdaptados['porcentaje_1'] = null;
                     }
                 }
@@ -3061,94 +2977,386 @@ class Novedades {
     }
 
     /**
-     * Crear nueva novedad - ACTUALIZADO PARA NUEVOS CAMPOS
+     * Adaptar datos específicamente para edición - NO concatena duplicados en observaciones
+     */
+    private function adaptarDatosParaEdicion($datos) {
+        $tipoNovedad = (int)$datos['tipo_novedad'];
+        $esGlobal = !empty($datos['es_global']);
+        $observacionesBase = isset($datos['observaciones']) ? $datos['observaciones'] : '';
+        
+        if ($esGlobal) {
+            $centroCostos = 'TODOS';
+            $legajo = 0;
+            $nombre = 'TODOS LOS LOCALES';
+            $apellido = '';
+        } elseif ($tipoNovedad == 1) {
+            $centroCostos = isset($datos['sucursal_nueva_id']) ? $datos['sucursal_nueva_id'] : 
+                        (isset($datos['nueva_sucursal']) ? $datos['nueva_sucursal'] : null);
+            if (!$centroCostos) {
+                throw new Exception("Para cambio de sucursal debe especificar la nueva sucursal");
+            }
+            $legajo = $datos['legajo'];
+            $nombre = $datos['nombre'];
+            $apellido = $datos['apellido'];
+        } else {
+            $centroCostos = isset($datos['centro_costos']) ? $datos['centro_costos'] : 
+                        $this->obtenerCentroCostosEmpleado($datos['legajo']);
+            $legajo = $datos['legajo'];
+            $nombre = $datos['nombre'];
+            $apellido = $datos['apellido'];
+        }
+        
+        $datosAdaptados = [
+            'legajo' => $legajo,
+            'nombre' => $nombre,
+            'apellido' => $apellido,
+            'centro_costos' => $centroCostos,
+            'tipo_novedad' => $tipoNovedad,
+            'observaciones' => $observacionesBase,
+            'fecha_vigencia' => null,
+            'fecha_vigencia_hasta' => null,
+            'puesto' => '',
+            'valor_numerico' => null,
+            'fecha_permiso' => null,
+            'compensa' => null,
+            'tipo_permiso' => null,
+            'tipo_nuevo_puesto' => null,
+            'tiene_tope' => null,
+            'porcentaje_1' => null,
+            'porcentaje_2' => null,
+            'tipo_comision' => null,
+            'aplica_vendedora' => null,
+            'aplica_sub_encargada' => null,
+            'aplica_encargada' => null,
+            'es_global' => $esGlobal ? 1 : 0,
+            'convenio' => !empty($datos['convenio']) ? $datos['convenio'] : null,
+            'escala_sueldo_basico' => !empty($datos['escala_sueldo_basico']) ? $datos['escala_sueldo_basico'] : null,
+            'aplica_plus' => null,
+        ];
+
+        switch ($tipoNovedad) {
+            case 1: // Cambio de sucursal
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta'] ?? '');
+                $datosAdaptados['puesto'] = 'Cambio de Sucursal';
+                break;
+
+            case 2: // Nueva Posición
+                $datosAdaptados['puesto'] = isset($datos['puesto']) ? $datos['puesto'] : 'Cambio de Puesto';
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['tipo_nuevo_puesto'] = 'permanente';
+                $datosAdaptados['fecha_vigencia_hasta'] = null;
+                break;
+
+            case 4: // Ajuste de premios
+                $datosAdaptados['valor_numerico'] = (isset($datos['importe']) && $datos['importe'] !== '') ? (float)$datos['importe'] : null;
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['puesto'] = 'Ajuste de Premios';
+                break;
+
+            case 5: // Horas extras
+                $datosAdaptados['valor_numerico'] = isset($datos['cantidad_horas']) ? (int)$datos['cantidad_horas'] : null;
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['puesto'] = 'Horas Extras';
+                break;
+
+            case 6: // Horas adicionales
+                $datosAdaptados['valor_numerico'] = isset($datos['cantidad_horas']) ? (int)$datos['cantidad_horas'] : null;
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['puesto'] = 'Horas Adicionales';
+                break;
+
+            case 7: // Permisos
+                $datosAdaptados['fecha_permiso'] = $this->formatearFechaParaSQL($datos['fecha_permiso'] ?? '');
+                $datosAdaptados['compensa'] = isset($datos['compensa']) ? (bool)$datos['compensa'] : false;
+                $datosAdaptados['puesto'] = 'Permisos';
+                break;
+            
+            case 12:
+            case 32: // Plus de caja
+                $datosAdaptados['valor_numerico'] = null;
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta'] ?? '');
+                $datosAdaptados['puesto'] = 'Plus de caja';
+                if (isset($datos['tipo_plus_caja'])) {
+                    $tipoPlus = ucfirst($datos['tipo_plus_caja']);
+                    $datosAdaptados['observaciones'] = trim($observacionesBase . ($observacionesBase ? ' - ' : '') . "Tipo: {$tipoPlus}");
+                }
+                break;
+
+            case 13:
+            case 33: // Plus de Sub-Encargada
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta'] ?? '');
+                $datosAdaptados['puesto'] = 'Plus de Sub-Encargada';
+                $datosAdaptados['valor_numerico'] = null;
+                $aplicaPlus = isset($datos['aplica_plus']) ? (bool)(int)$datos['aplica_plus'] : true;
+                $datosAdaptados['aplica_plus'] = $aplicaPlus ? 1 : 0;
+                break;
+
+            case 14:
+            case 34: // Plus de Encargada
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta'] ?? '');
+                $datosAdaptados['puesto'] = 'Plus de Encargada';
+                $datosAdaptados['valor_numerico'] = null;
+                $aplicaPlusEnc = isset($datos['aplica_plus']) ? (bool)(int)$datos['aplica_plus'] : true;
+                $datosAdaptados['aplica_plus'] = $aplicaPlusEnc ? 1 : 0;
+                break;
+
+            case 15:
+            case 35: // Premio Local
+                $datosAdaptados['valor_numerico'] = null;
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['puesto'] = 'Premio Local';
+                if (!$esGlobal) {
+                    $datosAdaptados['aplica_vendedora'] = !empty($datos['aplica_vendedora']) ? 1 : 0;
+                    $datosAdaptados['aplica_encargada'] = !empty($datos['aplica_encargada']) ? 1 : 0;
+                    $datosAdaptados['aplica_sub_encargada'] = !empty($datos['aplica_sub_encargada']) ? 1 : 0;
+                }
+                break;
+
+            case 16:
+            case 36: // Comisión Individual
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['puesto'] = 'Comisión Individual';
+                $datosAdaptados['tipo_comision'] = 'individual';
+                if (!empty($datos['comision_sucursales']) && is_array($datos['comision_sucursales'])) {
+                    $algunoConTope = false;
+                    foreach ($datos['comision_sucursales'] as $suc) {
+                        if (!empty($suc['tiene_tope'])) $algunoConTope = true;
+                    }
+                    $datosAdaptados['tiene_tope'] = $algunoConTope ? 1 : 0;
+                    $datosAdaptados['porcentaje_1'] = null;
+                    $datosAdaptados['porcentaje_2'] = null;
+                } else {
+                    $datosAdaptados['tiene_tope'] = 0;
+                    $datosAdaptados['porcentaje_1'] = isset($datos['porcentaje_individual']) ? round((float)$datos['porcentaje_individual'] / 100, 4) : null;
+                    $datosAdaptados['porcentaje_2'] = null;
+                    $p_display = isset($datos['porcentaje_individual']) ? $datos['porcentaje_individual'] : 0;
+                    $datosAdaptados['observaciones'] = "Comisión individual: {$p_display}%";
+                }
+                break;
+
+            case 17:
+            case 37: // Comisión sobre Local
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['puesto'] = 'Comisión sobre Local';
+                $datosAdaptados['tipo_comision'] = isset($datos['tipo_comision']) ? $datos['tipo_comision'] : 'local';
+                $datosAdaptados['tiene_tope'] = !empty($datos['tiene_tope']) ? 1 : 0;
+                
+                if ($datosAdaptados['tiene_tope']) {
+                    $datosAdaptados['porcentaje_1'] = isset($datos['porcentaje_1']) ? round((float)$datos['porcentaje_1'] / 100, 4) : null;
+                    $datosAdaptados['porcentaje_2'] = isset($datos['porcentaje_2']) ? round((float)$datos['porcentaje_2'] / 100, 4) : null;
+                    $p1_display = isset($datos['porcentaje_1']) ? $datos['porcentaje_1'] : 0;
+                    $p2_display = isset($datos['porcentaje_2']) ? $datos['porcentaje_2'] : 0;
+                    $datosAdaptados['observaciones'] = "Comisión sobre local con tope: {$p1_display}% / {$p2_display}%";
+                } else {    
+                    $datosAdaptados['porcentaje_1'] = isset($datos['porcentaje_unico']) ? round((float)$datos['porcentaje_unico'] / 100, 4) : null;
+                    $datosAdaptados['porcentaje_2'] = null;
+                    $p_display = isset($datos['porcentaje_unico']) ? $datos['porcentaje_unico'] : 0;
+                    $datosAdaptados['observaciones'] = "Comisión sobre local sin tope: {$p_display}%";
+                }
+                break;
+
+            case 18:
+            case 38: // Premios - Ajuste General
+                $datosAdaptados['valor_numerico'] = (isset($datos['importe']) && $datos['importe'] !== '') ? (float)$datos['importe'] : null;
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['puesto'] = 'Premios - Ajuste General';
+                if (isset($datos['aplica_plus'])) {
+                    $datosAdaptados['aplica_plus'] = (int)$datos['aplica_plus'] ? 1 : 0;
+                }
+                break;
+
+            case 53: // Reemplazo - siempre temporario
+                $datosAdaptados['puesto'] = isset($datos['puesto']) ? $datos['puesto'] : 'Reemplazo';
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['tipo_nuevo_puesto'] = 'temporario';
+                $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta'] ?? '');
+                break;
+
+            case 55: // A prueba - siempre temporario
+                $datosAdaptados['puesto'] = isset($datos['puesto']) ? $datos['puesto'] : 'A prueba';
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['tipo_nuevo_puesto'] = 'temporario';
+                $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta'] ?? '');
+                break;
+
+            case 54: // Aumento Salarial / Sueldo Básico
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['puesto'] = 'Aumento Salarial';
+                if (isset($datos['tipo_aumento'])) {
+                    if ($datos['tipo_aumento'] === 'basico') {
+                        $datosAdaptados['escala_sueldo_basico'] = $datos['escala_sueldo_basico'] ?? null;
+                        $datosAdaptados['porcentaje_1'] = null;
+                        $datosAdaptados['valor_numerico'] = null;
+                    } elseif ($datos['tipo_aumento'] === 'porcentaje') {
+                        if (!empty($datos['porcentaje_1'])) {
+                            $datosAdaptados['porcentaje_1'] = round((float)$datos['porcentaje_1'] / 100, 4);
+                        }
+                        $datosAdaptados['valor_numerico'] = null;
+                    } elseif ($datos['tipo_aumento'] === 'monto') {
+                        if (!empty($datos['valor_numerico'])) {
+                            $datosAdaptados['valor_numerico'] = round((float)$datos['valor_numerico'], 2);
+                        }
+                        $datosAdaptados['porcentaje_1'] = null;
+                    }
+                }
+                break;
+
+            default:
+                $datosAdaptados['puesto'] = 'Novedad General';
+                break;
+        }
+
+        return $datosAdaptados;
+    }
+
+    /**
+     * Guardar detalle de sucursales para Comisión Individual (Supervisoras)
+     */
+    private function guardarComisionSucursales($novedadId, $sucursales) {
+        $sql = "INSERT INTO FP_NOVEDADES_COMISION_SUCURSALES
+                    (novedad_id, nro_sucursal, nombre_sucursal, porcentaje_1, tiene_tope, porcentaje_2)
+                VALUES (?, ?, ?, ?, ?, ?)";
+        foreach ($sucursales as $suc) {
+            $nro = (int)$suc['nro_sucursal'];
+            $nombre = !empty($suc['nombre_sucursal']) ? trim($suc['nombre_sucursal']) : $this->obtenerNombreSucursal($nro);
+            $p1 = round((float)$suc['porcentaje_1'] / 100, 4);
+            $tieneTope = !empty($suc['tiene_tope']) ? 1 : 0;
+            $p2 = ($tieneTope && isset($suc['porcentaje_2']) && $suc['porcentaje_2'] !== '')
+                ? round((float)$suc['porcentaje_2'] / 100, 4)
+                : null;
+            $this->db->query($sql, [$novedadId, $nro, $nombre, $p1, $tieneTope, $p2]);
+        }
+    }
+
+    /**
+     * Guardar escala global de 3 niveles para Premio Local
+     */
+    private function guardarPremioLocalEscala($novedadId, $escala) {
+        $descripciones = [
+            'PRIMER_RANKING' => '1ro en el ranking al cierre del mes',
+            'CUMPLE_OBJETIVO' => 'Cumple con el objetivo',
+            'PRIMER_NO_LLEGA' => '1ro en el ranking que NO llegó al objetivo (más cercano a 0%)'
+        ];
+        $ordenes = [
+            'PRIMER_RANKING' => 1,
+            'CUMPLE_OBJETIVO' => 2,
+            'PRIMER_NO_LLEGA' => 3
+        ];
+
+        $sql = "INSERT INTO FP_NOVEDADES_PREMIO_LOCAL_ESCALA
+                    (novedad_id, nivel_codigo, nivel_orden, nivel_descripcion, importe_enc_sub, importe_vend)
+                VALUES (?, ?, ?, ?, ?, ?)";
+
+        foreach ($escala as $tramo) {
+            $cod = $tramo['nivel_codigo'];
+            $orden = $ordenes[$cod] ?? ($tramo['nivel_orden'] ?? 1);
+            $desc = $descripciones[$cod] ?? ($tramo['nivel_descripcion'] ?? $cod);
+            $impEncSub = round((float)$tramo['importe_enc_sub'], 2);
+            $impVend = round((float)$tramo['importe_vend'], 2);
+            $this->db->query($sql, [$novedadId, $cod, $orden, $desc, $impEncSub, $impVend]);
+        }
+    }
+
+    /**
+     * Inserción interna dentro de una transacción ya iniciada
+     */
+    private function insertarNovedadEnTransaccion($datos) {
+        $tipoNovedad = (int)$datos['tipo_novedad'];
+        $this->validarPermisosTipoNovedad($tipoNovedad);
+
+        $tipoNovedadInfo = $this->getTipoNovedadById($tipoNovedad);
+        if (!$tipoNovedadInfo) {
+            throw new Exception("Tipo de novedad no encontrado");
+        }
+
+        if (!class_exists('PeriodoUtils')) {
+            require_once __DIR__ . '/PeriodoUtils.php';
+        }
+
+        if (!empty($datos['periodo_mes']) && !empty($datos['periodo_anio'])) {
+            $periodo = [
+                'month' => (int)$datos['periodo_mes'],
+                'year' => (int)$datos['periodo_anio']
+            ];
+        } else {
+            $periodo = PeriodoUtils::calcularPeriodoSegunTipoCompleto($tipoNovedadInfo);
+        }
+
+        $datosAdaptados = $this->adaptarDatosParaInsercionActualizado($datos);
+
+        $sql = "INSERT INTO novedades (
+                    legajo, nombre, apellido, fecha_vigencia, puesto, 
+                    valor_numerico, fecha_permiso, compensa, tipo_permiso,
+                    observaciones, periodo_mes, periodo_anio, fecha_creacion, tipo_novedad, 
+                    tipo_nuevo_puesto, estado, fecha_vigencia_hasta, centro_costos,
+                    tiene_tope, porcentaje_1, porcentaje_2, tipo_comision, 
+                    aplica_vendedora, aplica_sub_encargada, aplica_encargada,
+                    es_global, lote_id, etapa_multiple, convenio, escala_sueldo_basico, aplica_plus
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        $params = [
+            $datosAdaptados['legajo'],
+            $datosAdaptados['nombre'],
+            $datosAdaptados['apellido'],
+            $datosAdaptados['fecha_vigencia'],
+            $datosAdaptados['puesto'],
+            $datosAdaptados['valor_numerico'],
+            $datosAdaptados['fecha_permiso'],
+            $datosAdaptados['compensa'],
+            $datosAdaptados['tipo_permiso'],
+            $datosAdaptados['observaciones'],
+            $periodo['month'],
+            $periodo['year'],
+            $datosAdaptados['tipo_novedad'],
+            $datosAdaptados['tipo_nuevo_puesto'],
+            self::ESTADO_ENVIADA,
+            $datosAdaptados['fecha_vigencia_hasta'],
+            $datosAdaptados['centro_costos'],
+            $datosAdaptados['tiene_tope'],
+            $datosAdaptados['porcentaje_1'],
+            $datosAdaptados['porcentaje_2'],
+            $datosAdaptados['tipo_comision'],
+            $datosAdaptados['aplica_vendedora'],
+            $datosAdaptados['aplica_sub_encargada'],
+            $datosAdaptados['aplica_encargada'],
+            $datosAdaptados['es_global'],
+            $datosAdaptados['lote_id'],
+            $datosAdaptados['etapa_multiple'],
+            $datosAdaptados['convenio'],
+            $datosAdaptados['escala_sueldo_basico'],
+            $datosAdaptados['aplica_plus']
+        ];
+
+        $novedadId = $this->db->insert($sql, $params);
+
+        if (($tipoNovedad === 36 || $tipoNovedad === 16) && !empty($datos['comision_sucursales']) && is_array($datos['comision_sucursales'])) {
+            $this->guardarComisionSucursales($novedadId, $datos['comision_sucursales']);
+        }
+
+        if (($tipoNovedad === 35 || $tipoNovedad === 15) && !empty($datosAdaptados['es_global']) && !empty($datos['escala_premios'])) {
+            $this->guardarPremioLocalEscala($novedadId, $datos['escala_premios']);
+        }
+
+        return $novedadId;
+    }
+
+    /**
+     * Crear nueva novedad - ACTUALIZADO PARA NUEVOS CAMPOS Y TABLAS FP_
      */
     public function crearNovedadActualizada($datos) {
+        $errores = $this->validarDatos($datos);
+        if (!empty($errores)) {
+            return ['success' => false, 'error' => implode(', ', $errores)];
+        }
         try {
             $this->db->beginTransaction();
-
-            // Validar que el usuario puede crear este tipo de novedad
-            $tipoNovedad = (int)$datos['tipo_novedad'];
-            $this->validarPermisosTipoNovedad($tipoNovedad);
-
-            // Obtener información del tipo de novedad para cálculo correcto de período
-            $tipoNovedadInfo = $this->getTipoNovedadById($tipoNovedad);
-            if (!$tipoNovedadInfo) {
-                throw new Exception("Tipo de novedad no encontrado");
-            }
-
-            // Incluir PeriodoUtils si no está ya incluido
-            if (!class_exists('PeriodoUtils')) {
-                require_once __DIR__ . '/PeriodoUtils.php';
-            }
-
-            // Calcular período según el tipo de novedad O usar los proporcionados
-            // Si se proporcionan periodo_mes y periodo_anio explícitamente (modo múltiple), usarlos
-            if (!empty($datos['periodo_mes']) && !empty($datos['periodo_anio'])) {
-                $periodo = [
-                    'month' => (int)$datos['periodo_mes'],
-                    'year' => (int)$datos['periodo_anio']
-                ];
-                error_log("🗓️ Valores recibidos del frontend - mes: " . $datos['periodo_mes'] . ", año: " . $datos['periodo_anio']);
-                error_log("🗓️ Período convertido - month: " . $periodo['month'] . ", year: " . $periodo['year']);
-            } else {
-                // Calcular período automáticamente según el tipo de novedad (modo simple)
-                $periodo = PeriodoUtils::calcularPeriodoSegunTipoCompleto($tipoNovedadInfo);
-                error_log("🗓️ Período calculado automáticamente: {$periodo['month']}/{$periodo['year']}");
-            }
-            
-            // Adaptar datos según el tipo de novedad y estructura real de tabla
-            $datosAdaptados = $this->adaptarDatosParaInsercionActualizado($datos);
-            
-            // DEBUG: Verificar valores de porcentaje_1 y valor_numerico antes del INSERT
-            error_log("🔍 DEBUG INSERT - tipo_novedad: " . $datosAdaptados['tipo_novedad']);
-            error_log("🔍 DEBUG INSERT - porcentaje_1: " . var_export($datosAdaptados['porcentaje_1'], true) . " (tipo: " . gettype($datosAdaptados['porcentaje_1']) . ")");
-            error_log("🔍 DEBUG INSERT - valor_numerico: " . var_export($datosAdaptados['valor_numerico'], true) . " (tipo: " . gettype($datosAdaptados['valor_numerico']) . ")");
-            
-            // SQL ACTUALIZADO CON NUEVOS CAMPOS
-            $sql = "INSERT INTO novedades (
-                        legajo, nombre, apellido, fecha_vigencia, puesto, 
-                        valor_numerico, fecha_permiso, compensa, tipo_permiso,
-                        observaciones, periodo_mes, periodo_anio, fecha_creacion, tipo_novedad, 
-                        tipo_nuevo_puesto, estado, fecha_vigencia_hasta, centro_costos,
-                        tiene_tope, porcentaje_1, porcentaje_2, tipo_comision, 
-                        aplica_vendedora, aplica_sub_encargada
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-            $params = [
-                $datosAdaptados['legajo'],
-                $datosAdaptados['nombre'],
-                $datosAdaptados['apellido'],
-                $datosAdaptados['fecha_vigencia'],
-                $datosAdaptados['puesto'],
-                $datosAdaptados['valor_numerico'],
-                $datosAdaptados['fecha_permiso'],
-                $datosAdaptados['compensa'],
-                $datosAdaptados['tipo_permiso'],
-                $datosAdaptados['observaciones'],
-                $periodo['month'],
-                $periodo['year'],
-                // fecha_creacion se inserta con GETDATE() directamente en SQL
-                $datosAdaptados['tipo_novedad'],
-                $datosAdaptados['tipo_nuevo_puesto'],
-                self::ESTADO_ENVIADA,
-                $datosAdaptados['fecha_vigencia_hasta'],
-                $datosAdaptados['centro_costos'],
-                // NUEVOS PARÁMETROS
-                $datosAdaptados['tiene_tope'],
-                $datosAdaptados['porcentaje_1'],
-                $datosAdaptados['porcentaje_2'],
-                $datosAdaptados['tipo_comision'],
-                $datosAdaptados['aplica_vendedora'],
-                $datosAdaptados['aplica_sub_encargada']
-            ];
-
-            $novedadId = $this->db->insert($sql, $params);
-
+            $novedadId = $this->insertarNovedadEnTransaccion($datos);
             $this->db->commit();
-            
             return ['success' => true, 'id' => $novedadId];
-            
         } catch (Exception $e) {
             $this->db->rollback();
             return ['success' => false, 'error' => $e->getMessage()];
@@ -3156,50 +3364,88 @@ class Novedades {
     }
 
     /**
-     * Obtener novedades - ACTUALIZADO PARA INCLUIR NUEVOS CAMPOS
+     * Crear lote atómico de novedades (para Carga Múltiple Checklist)
+     */
+    public function crearNovedadesLote($items) {
+        if (empty($items) || !is_array($items)) {
+            return ['success' => false, 'error' => 'Debe incluir al menos una novedad en el lote'];
+        }
+
+        $erroresTotales = [];
+        foreach ($items as $idx => $item) {
+            $errores = $this->validarDatos($item);
+            if (!empty($errores)) {
+                $erroresTotales[] = 'Ítem #' . ($idx + 1) . ': ' . implode(', ', $errores);
+            }
+        }
+        if (!empty($erroresTotales)) {
+            return ['success' => false, 'error' => implode(' | ', $erroresTotales)];
+        }
+
+        $loteId = sprintf(
+            '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+            mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+            mt_rand(0, 0xffff),
+            mt_rand(0, 0x0fff) | 0x4000,
+            mt_rand(0, 0x3fff) | 0x8000,
+            mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+        );
+
+        try {
+            $this->db->beginTransaction();
+            $ids = [];
+            foreach ($items as $item) {
+                $item['lote_id'] = $loteId;
+                $ids[] = $this->insertarNovedadEnTransaccion($item);
+            }
+            $this->db->commit();
+            return ['success' => true, 'lote_id' => $loteId, 'ids' => $ids, 'count' => count($ids)];
+        } catch (Exception $e) {
+            $this->db->rollback();
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Obtener novedades del período actual - DEDUPLICADO Y ACTUALIZADO
      */
     public function getNovedadesPeriodoActualActualizado($filtros = []) {
         try {
             $periodo = $this->getPeriodoActual();
             $tipoUsuario = Usuario::getTipoUsuario();
+            $empSubquery = $this->getSubqueryEmpleadosUnicos('rle');
             
-            // SQL actualizado con nuevos campos
+            $selectCols = "n.id, n.legajo, n.tipo_novedad, n.valor_numerico, 
+                           n.puesto, n.fecha_vigencia, n.fecha_vigencia_hasta, n.fecha_permiso, n.compensa, 
+                           n.observaciones, n.fecha_creacion, n.fecha_modificacion, n.tipo_nuevo_puesto,
+                           n.periodo_mes, n.periodo_anio, n.estado,
+                           n.tiene_tope, n.porcentaje_1, n.porcentaje_2, n.tipo_comision,
+                           n.aplica_vendedora, n.aplica_sub_encargada, n.aplica_encargada,
+                           n.es_global, n.lote_id, n.etapa_multiple, n.convenio, n.escala_sueldo_basico, n.aplica_plus,
+                           tn.descripcion as tipo_descripcion,
+                           CASE WHEN n.es_global = 1 THEN 'TODOS LOS LOCALES' ELSE COALESCE(rle.NOMBRE, n.nombre) END as nombre,
+                           CASE WHEN n.es_global = 1 THEN '' ELSE COALESCE(rle.APELLIDO, n.apellido) END as apellido,
+                           CASE WHEN n.es_global = 1 THEN 'TODOS' ELSE COALESCE(rle.COD_DEPARTAMENTO, n.centro_costos) END as codigo_centro_costos,
+                           CASE WHEN n.es_global = 1 THEN 'Todos los locales' ELSE rle.DESC_DEPARTAMENTO END as descripcion_centro_costos";
+
             if ($tipoUsuario == Usuario::TIPO_RRHH) {
-                $sql = "SELECT n.id, n.legajo, n.tipo_novedad, n.valor_numerico, 
-                            n.puesto, n.fecha_vigencia, n.fecha_vigencia_hasta, n.fecha_permiso, n.compensa, 
-                            n.observaciones, n.fecha_creacion, n.fecha_modificacion, n.tipo_nuevo_puesto,
-                            n.periodo_mes, n.periodo_anio, n.estado,
-                            n.tiene_tope, n.porcentaje_1, n.porcentaje_2, n.tipo_comision,
-                            n.aplica_vendedora, n.aplica_sub_encargada, 
-                            tn.descripcion as tipo_descripcion, 
-                            rle.NOMBRE, rle.APELLIDO,
-                            rle.COD_DEPARTAMENTO as codigo_centro_costos, 
-                            rle.DESC_DEPARTAMENTO as descripcion_centro_costos
+                $sql = "SELECT {$selectCols}
                         FROM novedades n 
                         INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
-                        LEFT JOIN [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
+                        LEFT JOIN {$empSubquery} ON n.legajo = rle.NRO_LEGAJO AND rle.rn = 1 AND ISNULL(n.es_global, 0) = 0
                         WHERE n.periodo_mes = ? AND n.periodo_anio = ?";
             } else {
                 $campoPermiso = $this->getCampoPermisoUsuario($tipoUsuario);
                 
-                $sql = "SELECT n.id, n.legajo, n.tipo_novedad, n.valor_numerico, 
-                            n.puesto, n.fecha_vigencia, n.fecha_vigencia_hasta, n.fecha_permiso, n.compensa, 
-                            n.observaciones, n.fecha_creacion, n.fecha_modificacion, n.tipo_nuevo_puesto,
-                            n.periodo_mes, n.periodo_anio, n.estado,
-                            n.tiene_tope, n.porcentaje_1, n.porcentaje_2, n.tipo_comision,
-                            n.aplica_vendedora, n.aplica_sub_encargada,
-                            tn.descripcion as tipo_descripcion, 
-                            rle.NOMBRE, rle.APELLIDO,
-                            rle.COD_DEPARTAMENTO as codigo_centro_costos, rle.DESC_DEPARTAMENTO as descripcion_centro_costos
+                $sql = "SELECT {$selectCols}
                         FROM novedades n 
                         INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
-                        LEFT JOIN [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
+                        LEFT JOIN {$empSubquery} ON n.legajo = rle.NRO_LEGAJO AND rle.rn = 1 AND ISNULL(n.es_global, 0) = 0
                         WHERE n.periodo_mes = ? AND n.periodo_anio = ? AND tn.$campoPermiso = 1";
             }
             
             $params = [$periodo['periodo_mes'], $periodo['periodo_anio']];
 
-            // Resto de filtros se mantiene igual...
             if (!empty($filtros['legajo'])) {
                 $sql .= " AND n.legajo = ?";
                 $params[] = $filtros['legajo'];
@@ -3219,59 +3465,26 @@ class Novedades {
 
             $stmt = $this->db->query($sql, $params);
             $novedades = $stmt->fetchAll();
-            
-            // Procesar los resultados para agregar campos calculados - ACTUALIZADO
-            foreach ($novedades as &$novedad) {
-                // ... código existente se mantiene ...
-                
-                // Agregar valor display actualizado para nuevos tipos
-                $tipoNovedad = (int)$novedad['tipo_novedad'];
-                $valorNumerico = (float)$novedad['valor_numerico'];
-                
-                switch ($tipoNovedad) {
-                    // ... casos existentes se mantienen ...
-                    
-                    case 32: // Plus de caja
-                        $novedad['valor_display'] = $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2) : 'Plus de caja';
-                        break;
-                    case 33: // Plus de Sub-Encargada
-                        $novedad['valor_display'] = $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2) : 'Plus de Sub-Encargada';
-                        break;
-                    case 34: // Plus de Encargada
-                        $novedad['valor_display'] = $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2) : 'Plus de Encargada';
-                        break;
-                    case 15: // Premio Local
-                        $aplicaciones = [];
-                        if ($novedad['aplica_vendedora']) $aplicaciones[] = 'V';
-                        if ($novedad['aplica_sub_encargada']) $aplicaciones[] = 'SE';
-                        $aplicaTexto = !empty($aplicaciones) ? ' (' . implode(', ', $aplicaciones) . ')' : '';
-                        $novedad['valor_display'] = ($valorNumerico != 0 ? '$' . number_format($valorNumerico, 2) : 'Premio Local') . $aplicaTexto;
-                        break;
-                    case 36: // Comisión Individual
-                        // COMISIÓN INDIVIDUAL: Solo mostrar el porcentaje simple
-                        $p = $novedad['porcentaje_1'] ? number_format($novedad['porcentaje_1'], 2) : '0';
-                        $novedad['valor_display'] = "Individual: {$p}%";
-                        break;
-                    case 37: // Comisión sobre Local
-                        // COMISIÓN SOBRE LOCAL: Con estructura de tope
-                        if ($novedad['tiene_tope']) {
-                            $p1 = $novedad['porcentaje_1'] ? number_format($novedad['porcentaje_1'], 2) : '0';
-                            $p2 = $novedad['porcentaje_2'] ? number_format($novedad['porcentaje_2'], 2) : '0';
-                            $novedad['valor_display'] = "Local con tope: {$p1}% y {$p2}%";
-                        } else {
-                            $p = $novedad['porcentaje_1'] ? number_format($novedad['porcentaje_1'], 2) : '0';
-                            $novedad['valor_display'] = "Local sin tope: {$p}%";
-                        }
-                        break;
-                    case 38: // Premios - Ajuste General
-                        $novedad['valor_display'] = $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2) : 'Ajuste General';
-                        break;
-                    default:
-                        // Casos existentes se mantienen
-                        break;
+
+            $idsComision = [];
+            $idsPremio = [];
+            foreach ($novedades as $nov) {
+                if ((int)$nov['tipo_novedad'] === 36 || (int)$nov['tipo_novedad'] === 16) {
+                    $idsComision[] = (int)$nov['id'];
                 }
-                
-                // ... resto del código existente se mantiene ...
+                if (((int)$nov['tipo_novedad'] === 35 || (int)$nov['tipo_novedad'] === 15) && !empty($nov['es_global'])) {
+                    $idsPremio[] = (int)$nov['id'];
+                }
+            }
+            $mapaComisiones = $this->obtenerMapaComisionSucursales($idsComision);
+            $mapaPremios = $this->obtenerMapaPremioLocalEscala($idsPremio);
+            
+            foreach ($novedades as &$novedad) {
+                $nid = (int)$novedad['id'];
+                $novedad['comision_sucursales'] = $mapaComisiones[$nid] ?? [];
+                $novedad['premio_local_escala'] = $mapaPremios[$nid] ?? [];
+                $novedad['valor_display'] = $this->calcularValorDisplayNovedad($novedad);
+                $novedad['estado_numero'] = $this->mapearEstadoANumero($novedad['estado']);
             }
             
             return $novedades;
@@ -3291,75 +3504,97 @@ class Novedades {
         $detalle = [];
 
         switch ($tipoNovedad) {
-            // ... casos existentes 1-11 se mantienen ...
-            
+            case 12:
             case 32: // Plus de caja
                 $detalle['tipo'] = 'Plus de caja';
-                $detalle['importe'] = $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2) : 'No especificado';
                 if (!empty($novedad['fecha_vigencia'])) {
                     $detalle['fecha_vigencia'] = $this->formatearFecha($novedad['fecha_vigencia']);
                 }
-                // Extraer tipo de plus de observaciones
-                if (preg_match('/Tipo:\s*(.+)/', $novedad['observaciones'], $matches)) {
+                $detalle['fecha_vigencia_hasta'] = !empty($novedad['fecha_vigencia_hasta'])
+                    ? $this->formatearFecha($novedad['fecha_vigencia_hasta'])
+                    : 'Sin vencimiento';
+                if (preg_match('/Tipo:\s*([^-\n]+)/i', (string)$novedad['observaciones'], $matches)) {
                     $detalle['tipo_plus'] = ucfirst(trim($matches[1]));
                 }
                 break;
 
-            case 13: // Plus de Sub-Encargada
+            case 13:
+            case 33: // Plus de Sub-Encargada
                 $detalle['tipo'] = 'Plus de Sub-Encargada';
-                $detalle['importe'] = $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2) : 'Sin importe específico';
+                $detalle['aplica'] = ($novedad['aplica_plus'] !== null) ? ($novedad['aplica_plus'] ? 'SI' : 'NO') : 'SI';
                 if (!empty($novedad['fecha_vigencia'])) {
                     $detalle['fecha_vigencia'] = $this->formatearFecha($novedad['fecha_vigencia']);
                 }
+                $detalle['fecha_vigencia_hasta'] = !empty($novedad['fecha_vigencia_hasta'])
+                    ? $this->formatearFecha($novedad['fecha_vigencia_hasta'])
+                    : 'Sin vencimiento';
                 break;
 
-            case 14: // Plus de Encargada
+            case 14:
+            case 34: // Plus de Encargada
                 $detalle['tipo'] = 'Plus de Encargada';
-                $detalle['importe'] = $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2) : 'Sin importe específico';
+                $detalle['aplica'] = ($novedad['aplica_plus'] !== null) ? ($novedad['aplica_plus'] ? 'SI' : 'NO') : 'SI';
                 if (!empty($novedad['fecha_vigencia'])) {
                     $detalle['fecha_vigencia'] = $this->formatearFecha($novedad['fecha_vigencia']);
                 }
-                break;
-            case 15: // Premio Local
-                $detalle['tipo'] = 'Premio Local';
-                $detalle['importe'] = $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2) : 'No especificado';
-                if (!empty($novedad['fecha_vigencia'])) {
-                    $detalle['fecha_vigencia'] = $this->formatearFecha($novedad['fecha_vigencia']);
-                }
-                // Mostrar aplicaciones
-                $aplicaciones = [];
-                if (!empty($novedad['aplica_vendedora'])) $aplicaciones[] = 'Vendedora';
-                if (!empty($novedad['aplica_sub_encargada'])) $aplicaciones[] = 'Sub-Encargada';
-                $detalle['aplica_a'] = !empty($aplicaciones) ? implode(', ', $aplicaciones) : 'No especificado';
+                $detalle['fecha_vigencia_hasta'] = !empty($novedad['fecha_vigencia_hasta'])
+                    ? $this->formatearFecha($novedad['fecha_vigencia_hasta'])
+                    : 'Sin vencimiento';
                 break;
 
-            case 16: // Comisión Individual
+            case 15:
+            case 35: // Premio Local
+                $detalle['tipo'] = 'Premio Local';
+                $detalle['es_global'] = !empty($novedad['es_global']);
+                if (!empty($novedad['es_global'])) {
+                    $detalle['escala'] = $novedad['premio_local_escala'] ?? [];
+                } else {
+                    $aplicaciones = [];
+                    if (!empty($novedad['aplica_vendedora'])) $aplicaciones[] = 'Vendedora';
+                    if (!empty($novedad['aplica_encargada'])) $aplicaciones[] = 'Encargada';
+                    if (!empty($novedad['aplica_sub_encargada'])) $aplicaciones[] = 'Sub-Encargada';
+                    $detalle['aplica_a'] = !empty($aplicaciones) ? implode(', ', $aplicaciones) : 'No especificado';
+                }
+                if (!empty($novedad['fecha_vigencia'])) {
+                    $detalle['fecha_vigencia'] = $this->formatearFecha($novedad['fecha_vigencia']);
+                }
+                break;
+
+            case 16:
+            case 36: // Comisión Individual
                 $detalle['tipo'] = 'Comisión Individual';
                 $detalle['tipo_comision'] = 'Individual';
-                // COMISIÓN INDIVIDUAL: Solo un porcentaje simple
-                $detalle['porcentaje_individual'] = !empty($novedad['porcentaje_1']) ? number_format($novedad['porcentaje_1'], 2) . '%' : '0%';
+                if (!empty($novedad['comision_sucursales'])) {
+                    $detalle['sucursales'] = $novedad['comision_sucursales'];
+                } else {
+                    $detalle['porcentaje_individual'] = !empty($novedad['porcentaje_1'])
+                        ? number_format((float)$novedad['porcentaje_1'] * 100, 2) . '%'
+                        : '0%';
+                }
                 if (!empty($novedad['fecha_vigencia'])) {
                     $detalle['fecha_vigencia'] = $this->formatearFecha($novedad['fecha_vigencia']);
                 }
                 break;
 
-            case 17: // Comisión sobre Local
+            case 17:
+            case 37: // Comisión sobre Local
                 $detalle['tipo'] = 'Comisión sobre el Local';
                 $detalle['tipo_comision'] = 'Sobre el Local';
                 if (!empty($novedad['tiene_tope'])) {
                     $detalle['estructura'] = 'Con tope';
-                    $detalle['porcentaje_1'] = !empty($novedad['porcentaje_1']) ? number_format($novedad['porcentaje_1'], 2) . '%' : '0%';
-                    $detalle['porcentaje_2'] = !empty($novedad['porcentaje_2']) ? number_format($novedad['porcentaje_2'], 2) . '%' : '0%';
+                    $detalle['porcentaje_1'] = !empty($novedad['porcentaje_1']) ? number_format((float)$novedad['porcentaje_1'] * 100, 2) . '%' : '0%';
+                    $detalle['porcentaje_2'] = !empty($novedad['porcentaje_2']) ? number_format((float)$novedad['porcentaje_2'] * 100, 2) . '%' : '0%';
                 } else {
                     $detalle['estructura'] = 'Sin tope';
-                    $detalle['porcentaje_unico'] = !empty($novedad['porcentaje_1']) ? number_format($novedad['porcentaje_1'], 2) . '%' : '0%';
+                    $detalle['porcentaje_unico'] = !empty($novedad['porcentaje_1']) ? number_format((float)$novedad['porcentaje_1'] * 100, 2) . '%' : '0%';
                 }
                 if (!empty($novedad['fecha_vigencia'])) {
                     $detalle['fecha_vigencia'] = $this->formatearFecha($novedad['fecha_vigencia']);
                 }
                 break;
 
-            case 18: // Premios - Ajuste General
+            case 18:
+            case 38: // Premios - Ajuste General
                 $detalle['tipo'] = 'Premios - Ajuste General';
                 $detalle['importe'] = $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2) : 'No especificado';
                 if (!empty($novedad['fecha_vigencia'])) {
@@ -3370,9 +3605,9 @@ class Novedades {
             default:
                 $detalle['tipo'] = 'Novedad general';
                 break;
-    }
+        }
 
         return $detalle;
-}
+    }
 }
 ?>

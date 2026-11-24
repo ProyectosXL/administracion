@@ -676,33 +676,7 @@ $esUsuarioRRHH = (isset($_SESSION['TipoUsuario']) && $_SESSION['TipoUsuario'] ==
                                 </div>
                             </div>
 
-                            <!-- Tipo 3: Nuevo Salario -->
-                            <div class="accordion-item">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tipo3">
-                                        <i class="fas fa-dollar-sign me-2 text-success"></i>3. Nuevo Salario Neto
-                                    </button>
-                                </h2>
-                                <div id="tipo3" class="accordion-collapse collapse">
-                                    <div class="accordion-body">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <h6><i class="fas fa-check-square text-success me-2"></i>Campos Requeridos:</h6>
-                                                <ul class="list-unstyled">
-                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Importe:</strong> Nuevo salario neto en pesos</li>
-                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Fecha de Vigencia:</strong> Cuándo comienza a regir</li>
-                                                </ul>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="alert alert-info small">
-                                                    <i class="fas fa-info-circle me-2"></i>
-                                                    Solo usuarios <strong>ADMIN</strong> y <strong>RRHH</strong> pueden crear este tipo.
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <!-- Tipo 2 -->
 
                             <!-- Tipo 4: Ajuste de Premios -->
                             <div class="accordion-item">
@@ -788,67 +762,11 @@ $esUsuarioRRHH = (isset($_SESSION['TipoUsuario']) && $_SESSION['TipoUsuario'] ==
                                 </div>
                             </div>
 
-                            <!-- Tipo 8: Cortes -->
-                            <div class="accordion-item">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tipo8">
-                                        <i class="fas fa-minus-circle me-2 text-danger"></i>8. Cortes
-                                    </button>
-                                </h2>
-                                <div id="tipo8" class="accordion-collapse collapse">
-                                    <div class="accordion-body">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <h6><i class="fas fa-check-square text-success me-2"></i>Campos Requeridos:</h6>
-                                                <ul class="list-unstyled">
-                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Cantidad de Cortes:</strong> Número entero</li>
-                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Fecha de Vigencia:</strong> Período de aplicación</li>
-                                                </ul>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="alert alert-info small">
-                                                    <i class="fas fa-info-circle me-2"></i>
-                                                    Disponible para todos los tipos de usuario.
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Tipos 9-11: Producción -->
-                            <div class="accordion-item">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tipos911">
-                                        <i class="fas fa-chart-line me-2 text-success"></i>9-11. Producción (25%, 50%, 100%)
-                                    </button>
-                                </h2>
-                                <div id="tipos911" class="accordion-collapse collapse">
-                                    <div class="accordion-body">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <h6><i class="fas fa-check-square text-success me-2"></i>Campos Requeridos:</h6>
-                                                <ul class="list-unstyled">
-                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Cantidad de Unidades:</strong> Producidas</li>
-                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Fecha de Vigencia:</strong> Período de producción</li>
-                                                </ul>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="alert alert-warning small">
-                                                    <i class="fas fa-industry me-2"></i>
-                                                    Solo disponible para usuarios de <strong>PRODUCCIÓN</strong> y <strong>RRHH</strong>.
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Tipos 12-14: Plus -->
+                            <!-- Tipos 32-34: Plus -->
                             <div class="accordion-item">
                                 <h2 class="accordion-header">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tipos1214">
-                                        <i class="fas fa-plus-circle me-2 text-primary"></i>12-14. Plus (Caja, Sub-Enc., Encargada)
+                                        <i class="fas fa-plus-circle me-2 text-primary"></i>Plus (Caja, Sub-Enc., Encargada)
                                     </button>
                                 </h2>
                                 <div id="tipos1214" class="accordion-collapse collapse">
@@ -857,21 +775,19 @@ $esUsuarioRRHH = (isset($_SESSION['TipoUsuario']) && $_SESSION['TipoUsuario'] ==
                                             <div class="col-md-6">
                                                 <h6><i class="fas fa-check-square text-success me-2"></i>Plus de Caja:</h6>
                                                 <ul class="list-unstyled">
-                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Tipo:</strong> Recibo o Premio</li>
-                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Importe:</strong> Solo si es tipo "Premio"</li>
-                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Fecha de Vigencia:</strong> Aplicación</li>
+                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Tipo:</strong> Recibo o Premio (sin importe)</li>
+                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Fecha de Vigencia y Vencimiento opcional:</strong> Si se deja vacía, es sin vencimiento</li>
                                                 </ul>
                                                 <h6 class="mt-3"><i class="fas fa-check-square text-success me-2"></i>Plus Sub-Enc./Encargada:</h6>
                                                 <ul class="list-unstyled">
-                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>¿Tiene importe?:</strong> SÍ/NO</li>
-                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Importe:</strong> Solo si respondió SÍ</li>
-                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Fecha de Vigencia:</strong> Aplicación</li>
+                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Aplica:</strong> SÍ / NO (sin importes)</li>
+                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Fecha de Vigencia y Vencimiento opcional:</strong> Si se deja vacía, es sin vencimiento</li>
                                                 </ul>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="alert alert-info small">
                                                     <i class="fas fa-users me-2"></i>
-                                                    Disponible para <strong>ADMIN</strong>, <strong>COMERCIAL</strong> y <strong>RRHH</strong>.
+                                                    Disponible para <strong>ADMIN</strong>, <strong>COMERCIAL</strong> y <strong>RRHH</strong>. El Plus de Sub-Encargada equivale al Plus de Caja.
                                                 </div>
                                             </div>
                                         </div>
@@ -879,28 +795,28 @@ $esUsuarioRRHH = (isset($_SESSION['TipoUsuario']) && $_SESSION['TipoUsuario'] ==
                                 </div>
                             </div>
 
-                            <!-- Tipo 15: Premio Local -->
+                            <!-- Tipo 35: Premio Local -->
                             <div class="accordion-item">
                                 <h2 class="accordion-header">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tipo15">
-                                        <i class="fas fa-trophy me-2 text-warning"></i>15. Premio Local
+                                        <i class="fas fa-trophy me-2 text-warning"></i>Premio Local
                                     </button>
                                 </h2>
                                 <div id="tipo15" class="accordion-collapse collapse">
                                     <div class="accordion-body">
                                         <div class="row">
                                             <div class="col-md-6">
-                                                <h6><i class="fas fa-check-square text-success me-2"></i>Campos Requeridos:</h6>
+                                                <h6><i class="fas fa-check-square text-success me-2"></i>Escala General (Todos los locales):</h6>
                                                 <ul class="list-unstyled">
-                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Importe del Premio:</strong> En pesos</li>
-                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Fecha de Vigencia:</strong> Período de aplicación</li>
-                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Aplica a:</strong> Vendedora y/o Sub-Encargada</li>
+                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>1ro en el ranking:</strong> Enc/Sub y Vendedora (obligatorios)</li>
+                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Cumple con el objetivo:</strong> Enc/Sub y Vendedora (obligatorios)</li>
+                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>1ro que NO llegó al objetivo:</strong> Enc/Sub y Vendedora (obligatorios)</li>
                                                 </ul>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="alert alert-warning small">
-                                                    <i class="fas fa-exclamation-triangle me-2"></i>
-                                                    Debe seleccionar al menos una opción en "Aplica a".
+                                                    <i class="fas fa-info-circle me-2"></i>
+                                                    Aplica a todos los locales sin seleccionar un empleado individual (en el Checklist se indica si corresponde Vendedora o Encargada).
                                                 </div>
                                             </div>
                                         </div>
@@ -908,33 +824,32 @@ $esUsuarioRRHH = (isset($_SESSION['TipoUsuario']) && $_SESSION['TipoUsuario'] ==
                                 </div>
                             </div>
 
-                            <!-- Tipos 16-17: Comisiones -->
+                            <!-- Tipos 36-37: Comisiones -->
                             <div class="accordion-item">
                                 <h2 class="accordion-header">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tipos1617">
-                                        <i class="fas fa-percentage me-2 text-info"></i>16-17. Comisiones
+                                        <i class="fas fa-percentage me-2 text-info"></i>Comisiones (Individual y Local)
                                     </button>
                                 </h2>
                                 <div id="tipos1617" class="accordion-collapse collapse">
                                     <div class="accordion-body">
                                         <div class="row">
                                             <div class="col-md-6">
-                                                <h6><i class="fas fa-check-square text-success me-2"></i>Comisión Individual:</h6>
+                                                <h6><i class="fas fa-check-square text-success me-2"></i>Comisión Individual (Supervisoras):</h6>
                                                 <ul class="list-unstyled">
-                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Porcentaje:</strong> Valor decimal (ej: 0.15 para 0.15%)</li>
-                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Fecha de Vigencia:</strong> Aplicación</li>
+                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Sucursales:</strong> Selección múltiple de sucursales <strong>PROPIOS</strong></li>
+                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Porcentaje y Tope:</strong> Por sucursal, con % post-tope opcional</li>
                                                 </ul>
                                                 <h6 class="mt-3"><i class="fas fa-check-square text-success me-2"></i>Comisión sobre Local:</h6>
                                                 <ul class="list-unstyled">
                                                     <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Estructura:</strong> Sin tope (1 %) o Con tope (2 %)</li>
-                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Porcentajes:</strong> Según estructura elegida</li>
-                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Fecha de Vigencia:</strong> Aplicación</li>
+                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Guía:</strong> 0,30%-1,00% y 0,15%-0,50% (rango de 0,05%)</li>
                                                 </ul>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="alert alert-info small">
                                                     <i class="fas fa-calculator me-2"></i>
-                                                    Los porcentajes se ingresan como decimales. Ejemplo: 0.75 para 0.75%.
+                                                    Todas las sucursales de Comisión Individual se agrupan en una única novedad para la supervisora.
                                                 </div>
                                             </div>
                                         </div>

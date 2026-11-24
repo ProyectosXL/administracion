@@ -78,7 +78,6 @@ body {
 .table {
     background-color: white;
     border-radius: 8px;
-    overflow: hidden;
     box-shadow: 0 0 10px rgba(0,0,0,0.05);
 }
 
@@ -800,16 +799,16 @@ html body #infoBtn-unica.active {
     animation: fadeIn 0.2s ease-in-out;
 }
 
-/* Mejora visual del form-check */
-.form-check {
-    padding: 0.75rem;
+/* Mejora visual del form-check solo en contenedores de fecha individual */
+.fecha-individual-container .form-check {
+    padding: 0.75rem 0.75rem 0.75rem 2.25rem;
     background-color: rgba(13, 110, 253, 0.03);
     border-radius: 6px;
     border: 1px solid rgba(13, 110, 253, 0.1);
     transition: all 0.2s ease;
 }
 
-.form-check:hover {
+.fecha-individual-container .form-check:hover {
     background-color: rgba(13, 110, 253, 0.05);
     border-color: rgba(13, 110, 253, 0.2);
 }
@@ -841,4 +840,74 @@ html body #infoBtn-unica.active {
         display: block;
         margin-top: 0.25rem;
     }
+}
+
+/* ===== MEJORAS VISUALES CONSULTAR NOVEDADES ===== */
+.consultar-wrapper {
+    max-width: 1560px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.card-resultados:hover {
+    transform: none !important;
+}
+
+.stat-card-consult {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-filters .select2-container--bootstrap-5 .select2-selection {
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+}
+
+#vista-tabla {
+    overflow-x: auto;
+}
+
+#tabla-novedades {
+    overflow: visible;
+    border-radius: 0;
+    font-size: 0.875rem;
+}
+
+#tabla-novedades thead th {
+    padding: 0.7rem 0.65rem;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    vertical-align: middle;
+}
+
+#tabla-novedades tbody td {
+    padding: 0.65rem;
+    vertical-align: middle;
+}
+
+#tabla-novedades .badge {
+    padding: 0.35em 0.6em;
+    font-size: 0.78em;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+#tabla-novedades .col-empleado {
+    min-width: 190px;
+}
+
+#tabla-novedades .col-valor {
+    min-width: 150px;
+}
+
+#tabla-novedades .col-acciones {
+    min-width: 175px;
+    text-align: center;
+}
+
+.card-resultados .card-header .btn-outline-light.active {
+    background-color: #fff;
+    color: var(--primary-color);
+    font-weight: 600;
 }
