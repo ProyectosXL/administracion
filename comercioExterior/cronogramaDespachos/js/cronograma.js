@@ -1657,15 +1657,15 @@ function configurarEventListeners() {
         actualizarFiltros();
     });
     
-    // Cerrar modal. El de confirmación se excluye: tiene su propio cierre,
-    // y si no cerraria tambien el modal de detalle que puede estar debajo.
-    $(document).on('click', '.modal-overlay:not(.modal-confirmacion)', function(e) {
+    // Cerrar modal de detalle. Se excluyen los modales persistentes del DOM
+    // (alias y resumen) y el de confirmación, que manejan su propio cierre.
+    $(document).on('click', '.modal-overlay:not(.modal-confirmacion, .modal-alias, .modal-resumen)', function(e) {
         if (e.target === this) {
             cerrarModal();
         }
     });
 
-    $(document).on('click', '.modal-overlay:not(.modal-confirmacion) .btn-close-modal', cerrarModal);
+    $(document).on('click', '.modal-overlay:not(.modal-confirmacion, .modal-alias, .modal-resumen) .btn-close-modal', cerrarModal);
 }
 
 function actualizarFiltros() {
@@ -2356,7 +2356,7 @@ function irAlHistorial() {
     // Espera a que el historial haya llegado del servidor.
     const intentar = (restantes) => {
         const $h = $('#historialFechas');
-        const $modal = $('.modal-overlay:not(.modal-confirmacion) .modal-content');
+        const $modal = $('.modal-overlay:not(.modal-confirmacion, .modal-alias, .modal-resumen) .modal-content');
 
         if ($h.length && $modal.length && $h.find('.historial-lista, .historial-vacio').length) {
             const destino = $h.position().top + $modal.scrollTop() - 12;
@@ -2414,7 +2414,7 @@ function renderizarHistorialFechas(entradas) {
     );
 
     $('.modal-title-group .btn-ir-historial').remove();
-    $('.modal-overlay:not(.modal-confirmacion) .modal-title-group').append(`
+    $('.modal-overlay:not(.modal-confirmacion, .modal-alias, .modal-resumen) .modal-title-group').append(`
         <button type="button" class="btn-ir-historial">
             <i class="bi bi-clock-history"></i>
             ${entradas.length} ${entradas.length === 1 ? 'cambio registrado' : 'cambios registrados'}
@@ -2705,8 +2705,9 @@ function verificarDemora(fechaReal, fechaEstimada) {
 }
 
 function cerrarModal() {
-    // No toca el modal de confirmación: ese se cierra solo.
-    $('.modal-overlay:not(.modal-confirmacion)').remove();
+    // No toca el modal de confirmación ni los modales persistentes (alias y
+    // resumen): esos se ocultan con hidden en lugar de eliminarse del DOM.
+    $('.modal-overlay:not(.modal-confirmacion, .modal-alias, .modal-resumen)').remove();
     despachoSeleccionado = null;
 }
 
