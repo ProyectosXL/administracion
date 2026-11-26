@@ -190,9 +190,10 @@ try {
         ]);
     }
 
-    // 10. Cascada: mover el arribo arrastra la distribución automática.
+    // 10. Cascadas automáticas según el campo que cambió.
     $recalculadas = [];
     if ($campo === 'FECHA_ARR') {
+        // Mover el arribo arrastra la distribución automática.
         $recalculadas = CronogramaFechas::recalcularDistribucion($conn, $idsGrupo, $fechaNueva);
 
         foreach ($recalculadas as $id => $nuevaDistri) {
@@ -203,6 +204,27 @@ try {
                 'campo'         => 'FECHA_DISTRI',
                 'valorAnterior' => $valorPrevio($antes[$id], 'FECHA_DISTRI'),
                 'valorNuevo'    => $nuevaDistri,
+                'motivo'        => MotivosFecha::RECALCULO_AUTOMATICO,
+                'observacion'   => null,
+                'usuario'       => $usuario,
+                'origen'        => 'CRONOGRAMA',
+            ]);
+        }
+    }
+
+    if ($campo === 'FECHA_EST_EMB') {
+        // Mover el embarque estimado recalcula el arribo para las OCs que
+        // no tienen ETA confirmada (igual que cargaInicial.js con fechaArriboIsManual).
+        $recalcArribo = CronogramaFechas::recalcularArriboEstimado($conn, $idsGrupo, $fechaNueva, $antes);
+
+        foreach ($recalcArribo as $id => $nuevaArr) {
+            CronogramaFechas::registrarHistorial($conn, [
+                'idEncabezado'  => $id,
+                'ordenCompra'   => $antes[$id]['ORDEN_COMPRA'],
+                'contenedor'    => $antes[$id]['CONTENEDOR'],
+                'campo'         => 'FECHA_ARR',
+                'valorAnterior' => isset($antes[$id]['FECHA_ARR']) ? $antes[$id]['FECHA_ARR'] : null,
+                'valorNuevo'    => $nuevaArr,
                 'motivo'        => MotivosFecha::RECALCULO_AUTOMATICO,
                 'observacion'   => null,
                 'usuario'       => $usuario,
