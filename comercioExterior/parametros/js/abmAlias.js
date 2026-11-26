@@ -179,6 +179,21 @@ $(document).on('click', '.btn-editar-alias', function () {
     abrirFormAlias($b.data('cod'), $b.data('alias'), $b.data('activo'));
 });
 
+function limpiarFormAlias() {
+    const editando = !!$('#formAliasPanel').data('editando');
+    if (!editando) {
+        $('#aliasProveedor').prop('selectedIndex', 0);
+    }
+    $('#aliasValor').val('');
+    $('#aliasError').prop('hidden', true).text('');
+    actualizarPreviewAlias();
+    $('#aliasValor').trigger('focus');
+}
+
+$(document).on('click', '#btnLimpiarAlias', function () {
+    limpiarFormAlias();
+});
+
 $(document).on('click', '#btnCancelarAlias', function () {
     $('#formAliasPanel').prop('hidden', true);
 });
@@ -212,6 +227,12 @@ $(document).on('click', '#btnGuardarAlias', function () {
                 $('#aliasError').prop('hidden', false).text(r.message);
                 return;
             }
+            // Actualizar en memoria para que si carga otro alias enseguida sin
+            // refrescar, el proveedor recién guardado ya no aparezca pendiente.
+            const prov = proveedoresAlias.find(p => p.COD_PROVEE === cod);
+            if (prov) prov.TIENE_ALIAS = 1;
+
+            limpiarFormAlias();
             $('#formAliasPanel').prop('hidden', true);
             aliasCargados = false;
             cargarAlias();
@@ -221,8 +242,6 @@ $(document).on('click', '#btnGuardarAlias', function () {
         })
         .fail(function (xhr) {
             const r = xhr.responseJSON;
-            // El mensaje del servidor dice a qué proveedor pertenece un alias
-            // duplicado; se muestra tal cual.
             $('#aliasError').prop('hidden', false)
                 .text((r && r.message) ? r.message : 'No se pudo guardar el alias.');
         })

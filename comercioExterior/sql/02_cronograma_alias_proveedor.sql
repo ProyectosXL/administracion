@@ -22,7 +22,6 @@ BEGIN
         FECHA_ALTA  DATETIME     NOT NULL CONSTRAINT DF_RO_T_IMP_ALIAS_ALTA DEFAULT GETDATE(),
         FECHA_MOD   DATETIME     NULL,
         CONSTRAINT PK_RO_T_IMP_ALIAS PRIMARY KEY (COD_PROVEE),
-        CONSTRAINT UQ_RO_T_IMP_ALIAS UNIQUE (ALIAS),
         -- El COLLATE binario es necesario: con la collation de la base
         -- (case-insensitive) el patron [A-Z] tambien aceptaria minusculas.
         CONSTRAINT CK_RO_T_IMP_ALIAS_MAYUS

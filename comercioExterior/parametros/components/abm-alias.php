@@ -88,6 +88,9 @@
         </div>
 
         <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-outline-secondary" id="btnLimpiarAlias" title="Limpiar campos">
+                <i class="bi bi-eraser"></i> Limpiar
+            </button>
             <button type="button" class="btn btn-secondary" id="btnCancelarAlias">Cancelar</button>
             <button type="button" class="btn btn-primary" id="btnGuardarAlias">Guardar</button>
         </div>

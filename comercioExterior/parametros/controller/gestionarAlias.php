@@ -45,7 +45,7 @@ try {
                         WHERE FECHA_MOV >= GETDATE()-360
                         GROUP BY COD_PROVEE
                     ) P ON A.COD_PROVEE = P.COD_PROVEE
-                    ORDER BY A.ALIAS";
+                    ORDER BY A.ALIAS, A.PROVEEDOR";
 
             $stmt = sqlsrv_query($conn, $sql);
             if ($stmt === false) {
@@ -114,23 +114,6 @@ try {
 
             if (!preg_match('/^[A-Z]{2}$/', $alias)) {
                 throw new Exception('El alias debe ser exactamente 2 letras de la A a la Z, sin números ni símbolos');
-            }
-
-            // Unicidad: si ya lo usa otro proveedor, se dice cuál.
-            $stmt = sqlsrv_query($conn,
-                "SELECT COD_PROVEE, PROVEEDOR FROM RO_T_IMPORTACIONES_PROVEEDOR_ALIAS
-                 WHERE ALIAS = ? AND COD_PROVEE <> ?",
-                [$alias, $codProvee]);
-
-            if ($stmt === false) {
-                throw new Exception('Error al validar el alias: ' . print_r(sqlsrv_errors(), true));
-            }
-            if ($duenio = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                throw new Exception(
-                    'El alias "' . $alias . '" ya lo usa ' .
-                    trim($duenio['PROVEEDOR'] ?: $duenio['COD_PROVEE']) .
-                    ' (' . trim($duenio['COD_PROVEE']) . ')'
-                );
             }
 
             // El nombre se toma del encabezado, para no depender de que el
