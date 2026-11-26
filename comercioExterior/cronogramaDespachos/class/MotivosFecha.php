@@ -20,6 +20,7 @@ class MotivosFecha
         'REPROGRAMACION_EMBARQUE' => 'Reprogramacion de embarque',
         'DEMORA_ADUANA'           => 'Demora en aduana',
         'CORRECCION_CARGA'        => 'Correccion de carga',
+        'DEMORA_PROVEEDOR'        => 'Demora entrega del proveedor',
         'OTRO'                    => 'Otro',
     ];
 

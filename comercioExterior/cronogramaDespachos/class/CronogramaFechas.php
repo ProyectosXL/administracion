@@ -678,6 +678,76 @@ class CronogramaFechas
     }
 
     /**
+     * Recalcula FECHA_ARR para las OCs indicadas tras un cambio de FECHA_EST_EMB.
+     *
+     * Solo toca las filas donde ETA_CONFIRMADA != 1: si la naviera ya confirmo
+     * la ETA, el embarque estimado no la arrastra. Es el mismo criterio que
+     * aplica cargaInicial.js con el flag fechaArriboIsManual.
+     *
+     * @param  resource $conn
+     * @param  array    $ids              IDs de encabezado del grupo
+     * @param  string   $fechaEstEmb      nueva fecha de embarque estimado 'Y-m-d'
+     * @param  array    $filasAntes       resultado de leerFechas() antes del UPDATE
+     * @return array    [idEncabezado => nuevaFechaArr] de las filas tocadas
+     */
+    public static function recalcularArriboEstimado($conn, array $ids, $fechaEstEmb, array $filasAntes)
+    {
+        if (empty($ids)) {
+            return [];
+        }
+
+        $parametros = self::obtenerParametros($conn);
+
+        if (!isset($parametros['DIAS_EMB_ARR'])) {
+            error_log('CronogramaFechas::recalcularArriboEstimado: falta DIAS_EMB_ARR, no se recalcula');
+            return [];
+        }
+
+        $nuevaFechaArr = self::sumarDias($fechaEstEmb, $parametros['DIAS_EMB_ARR']);
+        if ($nuevaFechaArr === null) {
+            return [];
+        }
+
+        $afectados = [];
+        foreach ($ids as $id) {
+            $fila = isset($filasAntes[$id]) ? $filasAntes[$id] : null;
+            if (!$fila) {
+                continue;
+            }
+
+            // Si la ETA esta confirmada, no se toca.
+            if ((int) $fila['ETA_CONFIRMADA'] === 1) {
+                continue;
+            }
+
+            // Si ya tiene un embarque real, la cadena lo usa como base y no
+            // corresponde recalcular por el estimado.
+            if (!empty($fila['FECHA_EMB'])) {
+                continue;
+            }
+
+            if ($nuevaFechaArr === $fila['FECHA_ARR']) {
+                continue;
+            }
+
+            $stmt = sqlsrv_query(
+                $conn,
+                'UPDATE RO_T_IMPORTACIONES_ENCABEZADO SET FECHA_ARR = ? WHERE ID = ? AND ETA_CONFIRMADA != 1',
+                [$nuevaFechaArr, $id]
+            );
+
+            if ($stmt === false) {
+                error_log('CronogramaFechas::recalcularArriboEstimado: ' . print_r(sqlsrv_errors(), true));
+                continue;
+            }
+
+            $afectados[$id] = $nuevaFechaArr;
+        }
+
+        return $afectados;
+    }
+
+    /**
      * IDs de todas las OCs del grupo de contenedor al que pertenece un ID.
      *
      * NO se usa Encabezado::obtenerIdsDelGrupo() aca, que agrupa solo por

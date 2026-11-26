@@ -955,6 +955,7 @@ function abrirModalConfirmacion(campo, fechaOrigen, fechaDestino, idGrupo) {
 }
 
 function cerrarModalConfirmacion() {
+    $(document).trigger('cerrarConfirmacion.arriboPreview');
     $('#modalConfirmacionFecha').remove();
 }
 
@@ -1531,6 +1532,26 @@ function configurarEventListeners() {
 
         if (!nueva || nueva === original) return;
 
+        // Cuando cambia el embarque estimado y el arribo no está confirmado por
+        // la naviera, recalcular el input de arribo como preview del impacto.
+        let arriboParaRestaurar = null;
+        if ($input.data('campo') === 'FECHA_EST_EMB' && parametrosDias.DIAS_EMB_ARR !== undefined) {
+            const idGrupo = parseInt($input.data('id-grupo'), 10);
+            const grupo = despachosDelGrupo(idGrupo);
+            const principal = grupo.find(d => d.ID === idGrupo) || grupo[0];
+
+            if (principal && parseInt(principal.ETA_CONFIRMADA) !== 1 && !principal.FECHA_EMB) {
+                const $arriboInput = $(this).closest('.editor-grid').find('.editor-input[data-campo="FECHA_ARR"]');
+                if ($arriboInput.length) {
+                    const arriboCalculado = sumarDias(nueva, parametrosDias.DIAS_EMB_ARR);
+                    if (arriboCalculado) {
+                        arriboParaRestaurar = { $el: $arriboInput, valor: $arriboInput.val() };
+                        $arriboInput.val(arriboCalculado);
+                    }
+                }
+            }
+        }
+
         // Se revierte el input: quien decide es el modal de confirmación, y
         // si se cancela el valor visible tiene que volver al anterior.
         $input.val(original);
@@ -1541,6 +1562,15 @@ function configurarEventListeners() {
             nueva,
             parseInt($input.data('id-grupo'), 10)
         );
+
+        // Si el arribo fue actualizado como preview, restaurarlo al cancelar.
+        // Al confirmar el modal de detalle se cierra igual, así que no importa.
+        if (arriboParaRestaurar) {
+            const { $el, valor } = arriboParaRestaurar;
+            $(document).one('cerrarConfirmacion.arriboPreview', function() {
+                $el.val(valor);
+            });
+        }
     });
 
     // Cancelar revierte solo: no se toco nada hasta confirmar.
